@@ -123,6 +123,7 @@ def write_config(content):
         shutil.copy2(CONFIG_FILE, CONFIG_FILE + ".bak")
     with open(CONFIG_FILE, "w", encoding="utf-8") as f:
         f.write(content)
+    return True
 
 def live_patch_config(payload):
     """热切换 mihomo 运行配置（不改文件、不重启引擎）。
@@ -470,6 +471,9 @@ def _test_config(path):
     except Exception as e:
         return False, f"校验异常: {e}"
 
+_IPINFO_CACHE = {"t": 0, "data": None}
+_SYSINFO_CACHE = {"t": 0, "data": None}
+
 def get_ip_info():
     """公网 IP 信息，带 60s 内存缓存（首页每次加载都调用，避免每次外网查询拖慢页面）。"""
     now = int(time.time())
@@ -483,97 +487,117 @@ def get_ip_info():
     return data
 
 def _get_ipinfo_uncached():
-    """Query the public exit IP via an external API (best effort).
+    """Query the public exit IP via external APIs (best effort, clash-verge-rev style).
+    Tries multiple services in order; returns the first success.
     Field set matches Clash Verge Rev's IP-info card:
     ip / asn(自治域) / isp(服务商) / organization(组织) / location(位置) / timezone(时区)."""
     import urllib.request as _ureq
-    # 首选 api.ip.sb：字段最全（asn_organization/organization/timezone/isp/country_code）
-    try:
-        req = _ureq.Request("https://api.ip.sb/geoip", headers={"User-Agent": "curl/8"},
-                            method="GET")
-        with _ureq.urlopen(req, timeout=8) as resp:
-            d = json.loads(resp.read().decode("utf-8", "replace"))
-            return {
-                "ip": d.get("ip") or "-",
-                "country": d.get("country") or "",
-                "countryCode": (d.get("country_code") or "").upper(),
-                "region": d.get("region") or "",
-                "city": d.get("city") or "",
-                "isp": d.get("isp") or d.get("organization") or "",
-                "organization": d.get("organization") or "",
-                "asn": d.get("asn") or "",
-                "asn_organization": d.get("asn_organization") or "",
-                "timezone": d.get("timezone") or "",
-                "latitude": d.get("latitude"),
-                "longitude": d.get("longitude"),
-            }
-    except Exception:
-        pass
-    # 备选 ip-api.com：支持中文 + countryCode（用于国旗 emoji）
-    try:
-        req = _ureq.Request(
-            "http://ip-api.com/json/?lang=zh-CN&fields=status,query,country,countryCode,regionName,city,isp,asn,org,timezone",
-            headers={"User-Agent": "curl/8"}, method="GET")
-        with _ureq.urlopen(req, timeout=8) as resp:
-            d = json.loads(resp.read().decode("utf-8", "replace"))
-            if d.get("status") == "success":
-                return {
-                    "ip": d.get("query") or "-",
-                    "country": d.get("country") or "",
-                    "countryCode": (d.get("countryCode") or "").upper(),
-                    "region": d.get("regionName") or "",
-                    "city": d.get("city") or "",
-                    "isp": d.get("isp") or d.get("org") or "",
-                    "organization": d.get("org") or "",
-                    "asn": d.get("asn") or "",
-                    "asn_organization": d.get("asn") or "",
-                    "timezone": d.get("timezone") or "",
-                    "latitude": d.get("lat"),
-                    "longitude": d.get("lon"),
-                }
-    except Exception:
-        pass
-    try:
-        req = _ureq.Request("https://ipinfo.io/json", headers={"User-Agent": "curl/8"},
-                            method="GET")
-        with _ureq.urlopen(req, timeout=8) as resp:
-            d = json.loads(resp.read().decode("utf-8", "replace"))
-            org = d.get("org") or ""
-            asn = ""
-            m = re.match(r"^AS(\d+)\s*(.*)$", org)
-            if m:
-                asn = m.group(1)
-                org = m.group(2)
-            return {
-                "ip": d.get("ip") or "-",
-                "country": d.get("country") or "",
-                "countryCode": (d.get("country") or "").upper(),
-                "region": d.get("region") or "",
-                "city": d.get("city") or "",
-                "isp": org,
-                "organization": org,
-                "asn": asn,
-                "asn_organization": org,
-                "timezone": d.get("timezone") or "",
-                "latitude": None,
-                "longitude": None,
-            }
-    except Exception:
-        pass
-    try:
-        req = _ureq.Request("https://myip.ipip.net/", headers={"User-Agent": "curl/8"})
-        with _ureq.urlopen(req, timeout=8) as resp:
-            text = resp.read().decode("utf-8", "replace").strip()
-            return {"ip": text, "country": "", "countryCode": "", "region": "",
-                    "city": "", "isp": "", "organization": "", "asn": "",
-                    "asn_organization": "", "timezone": "", "raw": text}
-    except Exception:
-        return {"ip": "-", "country": "", "countryCode": "", "region": "",
-                "city": "", "isp": "", "organization": "", "asn": "",
-                "asn_organization": "", "timezone": "",
-                "error": "无法获取出口 IP"}
+    import ssl
+    _ctx = ssl.create_default_context()
+    _ctx.check_hostname = False
+    _ctx.verify_mode = ssl.CERT_NONE
 
-_SYSINFO_CACHE = {"t": 0, "data": None}
+    def _fetch(url, timeout=6, use_ctx=False):
+        req = _ureq.Request(url, headers={"User-Agent": "curl/8"}, method="GET")
+        kw = {"timeout": timeout}
+        if url.startswith("https"):
+            kw["context"] = _ctx
+        with _ureq.urlopen(req, **kw) as resp:
+            return json.loads(resp.read().decode("utf-8", "replace"))
+
+    # Service 1: api.ip.sb (most complete fields)
+    try:
+        d = _fetch("https://api.ip.sb/geoip")
+        return {
+            "ip": d.get("ip") or "-",
+            "country": d.get("country") or "",
+            "countryCode": (d.get("country_code") or "").upper(),
+            "region": d.get("region") or "",
+            "city": d.get("city") or "",
+            "isp": d.get("isp") or d.get("organization") or "",
+            "organization": d.get("organization") or "",
+            "asn": d.get("asn") or "",
+            "asn_organization": d.get("asn_organization") or "",
+            "timezone": d.get("timezone") or "",
+            "latitude": d.get("latitude"),
+            "longitude": d.get("longitude"),
+        }
+    except Exception:
+        pass
+    # Service 2: ipapi.co
+    try:
+        d = _fetch("https://ipapi.co/json")
+        return {
+            "ip": d.get("ip") or "-",
+            "country": d.get("country_name") or "",
+            "countryCode": (d.get("country_code") or "").upper(),
+            "region": d.get("region") or "",
+            "city": d.get("city") or "",
+            "isp": d.get("org") or "",
+            "organization": d.get("org") or "",
+            "asn": d.get("asn") or "",
+            "asn_organization": d.get("asn") or "",
+            "timezone": d.get("timezone") or "",
+            "latitude": d.get("latitude"),
+            "longitude": d.get("longitude"),
+        }
+    except Exception:
+        pass
+    # Service 3: ip-api.com (HTTP only, supports Chinese)
+    try:
+        d = _fetch(
+            "http://ip-api.com/json/?lang=zh-CN&fields=status,query,country,countryCode,regionName,city,isp,as,org,timezone")
+        if d.get("status") == "success":
+            asn = ""
+            asn_org = ""
+            m = re.match(r"^(AS\d+)\s*(.*)$", d.get("as") or "")
+            if m:
+                asn = m.group(1).replace("AS", "")
+                asn_org = m.group(2)
+            return {
+                "ip": d.get("query") or "-",
+                "country": d.get("country") or "",
+                "countryCode": (d.get("countryCode") or "").upper(),
+                "region": d.get("regionName") or "",
+                "city": d.get("city") or "",
+                "isp": d.get("isp") or "",
+                "organization": d.get("org") or "",
+                "asn": asn,
+                "asn_organization": asn_org or d.get("org") or "",
+                "timezone": d.get("timezone") or "",
+                "latitude": d.get("lat"),
+                "longitude": d.get("lon"),
+            }
+    except Exception:
+        pass
+    # Service 4: ipinfo.io
+    try:
+        d = _fetch("https://ipinfo.io/json")
+        org = d.get("org") or ""
+        asn = ""
+        m = re.match(r"^AS(\d+)\s*(.*)$", org)
+        if m:
+            asn = m.group(1)
+            org = m.group(2)
+        loc = (d.get("loc") or "").split(",")
+        return {
+            "ip": d.get("ip") or "-",
+            "country": d.get("country") or "",
+            "countryCode": (d.get("country") or "").upper(),
+            "region": d.get("region") or "",
+            "city": d.get("city") or "",
+            "isp": org,
+            "organization": org,
+            "asn": asn,
+            "asn_organization": org,
+            "timezone": d.get("timezone") or "",
+            "latitude": float(loc[0]) if len(loc) > 0 and loc[0] else None,
+            "longitude": float(loc[1]) if len(loc) > 1 and loc[1] else None,
+        }
+    except Exception:
+        pass
+    # All services failed - return error object so frontend can show message
+    return {"ip": "-", "error": "无法获取 IP 信息，请检查网络连接"}
 
 def get_system_info():
     """系统信息,带 2s 缓存避免每次 sleep(0.4) 采样 CPU。"""
@@ -651,6 +675,14 @@ def get_system_info_cached():
         info["platform"] = platform.platform()
     except Exception:
         pass
+    # App version
+    try:
+        vf = os.path.join(TRIM_APPDEST, "VERSION")
+        if os.path.exists(vf):
+            with open(vf, "r") as f:
+                info["app_version"] = f.read().strip()
+    except Exception:
+        pass
     return info
 
 # ── HTTP Request Handler ─────────────────────────────────────────────────
@@ -709,7 +741,7 @@ class AdminHandler(BaseHTTPRequestHandler):
 
     # ── Clash Mini Clash API reverse proxy ─────────────────────────────────
     _CLASH_API_PREFIXES = (
-        "/version", "/proxies", "/rules", "/configs", "/traffic",
+        "/version", "/proxies", "/group", "/rules", "/configs", "/traffic",
         "/connections", "/logs", "/providers/proxies", "/providers/rules",
     )
 
@@ -1069,6 +1101,12 @@ class AdminHandler(BaseHTTPRequestHandler):
         # Admin panel static files
         if path == "/" or path == "":
             return self._send_file(f"{ADMIN_DIR}/index.html", "text/html")
+        if path == "/ui" or path == "/ui/" or path.startswith("/ui/"):
+            # Web UI: redirect to admin panel root
+            self.send_response(302)
+            self.send_header("Location", "/")
+            self.end_headers()
+            return
         if path.endswith(".html"):
             return self._send_file(f"{ADMIN_DIR}{path}", "text/html")
         if path.endswith(".css"):
@@ -1253,6 +1291,14 @@ class AdminHandler(BaseHTTPRequestHandler):
     def do_PUT(self):
         """Proxy PUT requests (e.g. /proxies/:sel, /configs mode) to mihomo."""
         path = self._strip_gateway_prefix(urlparse(self.path).path)
+        if path == "/api/providers/update":
+            qs = parse_qs(urlparse(self.path).query)
+            name = (qs.get("name") or [""])[0]
+            if not name:
+                return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+            return self._proxy_mihomo(
+                f"providers/proxies/{quote(name)}",
+                self.headers, "PUT", b"")
         if self._maybe_proxy_clash_api(path, "PUT", self._read_body()):
             return
         qs = urlparse(self.path).query

@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Clash Mini · Web UI</title>
+<style>
+:root{--bg:#0f0f11;--card:#1a1a1e;--card2:#202024;--border:#2a2a30;--text:#e8e8ec;--dim:#9a9aa3;--accent:#4e6ef2;--accent2:#6d8aff;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff}
+[data-theme="light"]{--bg:#f5f6f8;--card:#fff;--card2:#f0f1f4;--border:#e2e4ea;--text:#1f2328;--dim:#6b7280;--accent:#4e6ef2;--accent2:#3b5bdb;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff}
+@media(prefers-color-scheme:light){:root:not([data-theme]){--bg:#f5f6f8;--card:#fff;--card2:#f0f1f4;--border:#e2e4ea;--text:#1f2328;--dim:#6b7280;--accent:#4e6ef2;--accent2:#3b5bdb;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff}}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;border-bottom:1px solid var(--border);background:var(--bg)}
+.topbar h1{font-size:18px;font-weight:700}
+.topbar .info{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--dim)}
+.mode-badge{padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;background:var(--accent);color:var(--on-accent)}
+.container{max-width:960px;margin:0 auto;padding:24px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px}
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:16px;transition:box-shadow .15s}
+.card:hover{box-shadow:0 4px 16px rgba(0,0,0,.12)}
+.card-title{font-size:14px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.card-title .icon{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.node-list{display:flex;flex-direction:column;gap:4px}
+.node-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-radius:10px;cursor:pointer;font-size:13px;transition:all .12s;border:1px solid transparent}
+.node-item:hover{background:var(--card2)}
+.node-item.active{background:var(--card2);border-color:var(--accent);font-weight:600}
+.node-item .delay{font-size:11px;color:var(--dim);min-width:50px;text-align:right}
+.node-item .delay.good{color:var(--green)}
+.node-item .delay.warn{color:var(--yellow)}
+.node-item .delay.bad{color:var(--red)}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:10px;border:1px solid var(--border);background:var(--card);color:var(--text);font-size:13px;cursor:pointer;transition:all .12s}
+.btn:hover{background:var(--card2)}
+.btn-primary{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent2)}
+.btn-sm{padding:5px 12px;font-size:12px}
+.toast{position:fixed;top:20px;right:20px;z-index:9999;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;animation:slideIn .3s ease;box-shadow:0 4px 16px rgba(0,0,0,.2)}
+.toast-success{background:rgba(34,197,94,.92);color:#fff}
+.toast-error{background:rgba(239,68,68,.92);color:#fff}
+@keyframes slideIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+.empty{text-align:center;padding:40px;color:var(--dim);font-size:14px}
+.loading{text-align:center;padding:40px;color:var(--dim)}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .6s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.traffic{display:flex;gap:16px;font-size:13px;margin-bottom:20px}
+.traffic span{display:flex;align-items:center;gap:4px}
+.t-down{color:var(--accent2)}
+.t-up{color:var(--green)}
+.bar{height:4px;border-radius:2px;margin-top:8px;background:var(--border);overflow:hidden}
+.bar-fill{height:100%;border-radius:2px;background:var(--accent);transition:width .3s}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>Clash Mini</h1>
+  <div class="info">
+    <span id="modeBadge" class="mode-badge">Rule</span>
+    <span id="trafficInfo">↓ 0 B/s &nbsp; ↑ 0 B/s</span>
+  </div>
+</div>
+<div class="container">
+  <div class="traffic" id="trafficBar" style="display:none">
+    <span class="t-down">↓ <b id="downSpeed">0</b></span>
+    <span class="t-up">↑ <b id="upSpeed">0</b></span>
+  </div>
+  <div id="groupsWrap" class="grid"><div class="loading"><div class="spinner"></div></div></div>
+</div>
+<script>
+var API = '';
+
+function $(id){return document.getElementById(id)}
+
+function showToast(msg,type){
+  type=type||'success';
+  var t=document.createElement('div');
+  t.className='toast toast-'+type;
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(function(){t.remove()},3000);
+}
+
+async function fetchJSON(path){
+  var r=await fetch(API+path);
+  return r.json();
+}
+
+function fmtSpeed(n){
+  if(n==null||n<0)return'0 B/s';
+  if(n<1024)return n+' B/s';
+  if(n<1048576)return(n/1024).toFixed(1)+' KB/s';
+  if(n<1073741824)return(n/1048576).toFixed(1)+' MB/s';
+  return(n/1073741824).toFixed(2)+' GB/s';
+}
+
+async function loadAll(){
+  try{
+    var ver=await fetchJSON('/version');
+    $('modeBadge').textContent=ver.mode||'Rule';
+    var proxies=await fetchJSON('/proxies');
+    var groups=await fetchJSON('/group');
+    renderGroups(groups, proxies.proxies);
+  }catch(e){
+    document.getElementById('groupsWrap').innerHTML='<div class="empty">无法连接 mihomo 内核</div>';
+  }
+}
+
+function renderGroups(groups, allProxies){
+  var groupsList=groups.groups||[];
+  if(!groupsList.length){
+    document.getElementById('groupsWrap').innerHTML='<div class="empty">没有策略组</div>';
+    return;
+  }
+  var html='';
+  var colors=['#4e6ef2','#2e9e4f','#e03131','#b8860b','#8b5cf6','#ec4899','#06b6d4','#f97316'];
+  groupsList.forEach(function(g,gi){
+    var name=g.name||'';
+    var now=g.now||'';
+    var type=g.type||'';
+    var all=g.all||[];
+    var color=colors[gi%colors.length];
+    html+='<div class="card">';
+    html+='<div class="card-title"><span class="icon" style="background:'+color+'20;color:'+color+'">'+(name[0]||'?')+'</span>'+name+'</div>';
+    html+='<div class="node-list">';
+    all.forEach(function(n){
+      var active=n===now;
+      var delay=allProxies[n]&&allProxies[n].history&&allProxies[n].history.length?allProxies[n].history[allProxies[n].history.length-1].delay:-1;
+      var dClass='';
+      if(delay>0&&delay<200)dClass='good';
+      else if(delay>=200&&delay<500)dClass='warn';
+      else if(delay>=500)dClass='bad';
+      var dText=delay>0?delay+'ms':delay===0?'0ms':'-';
+      html+='<div class="node-item'+(active?' active':'')+'" onclick="switchProxy(\''+name.replace(/'/g,"\\'")+'\',\''+n.replace(/'/g,"\\'")+'\')">';
+      html+='<span>'+n+'</span><span class="delay '+dClass+'">'+dText+'</span>';
+      html+='</div>';
+    });
+    html+='</div></div>';
+  });
+  document.getElementById('groupsWrap').innerHTML=html;
+}
+
+async function switchProxy(group, node){
+  try{
+    var r=await fetch(API+'/proxies/'+encodeURIComponent(group),{
+      method:'PUT',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({name:node})
+    });
+    if(r.ok){showToast('已切换至 '+node);loadAll();}
+    else{showToast('切换失败','error');}
+  }catch(e){showToast('切换失败','error');}
+}
+
+// Traffic polling
+var lastDown=0,lastUp=0;
+async function pollTraffic(){
+  try{
+    var d=await fetchJSON('/traffic');
+    if(d.downloadTotal!=null){
+      var down=Math.max(0,d.downloadTotal-lastDown||0);
+      var up=Math.max(0,d.uploadTotal-lastUp||0);
+      $('downSpeed').textContent=fmtSpeed(down);
+      $('upSpeed').textContent=fmtSpeed(up);
+      $('trafficBar').style.display='flex';
+    }
+    lastDown=d.downloadTotal||0;
+    lastUp=d.uploadTotal||0;
+  }catch(e){}
+}
+
+loadAll();
+setInterval(loadAll,10000);
+setInterval(pollTraffic,2000);
+pollTraffic();
+</script>
+</body>
+</html>
