@@ -1,0 +1,31 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# Clash Mini architecture-aware launcher
+# Detects system architecture and runs the correct mihomo binary
+# ---------------------------------------------------------------------------
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+ARCH="$(uname -m)"
+
+case "${ARCH}" in
+    x86_64|amd64)
+        MIHOMO_BIN="${SCRIPT_DIR}/mihomo-amd64"
+        ;;
+    aarch64|arm64)
+        MIHOMO_BIN="${SCRIPT_DIR}/mihomo-arm64"
+        ;;
+    armv7l|armv7|armhf)
+        MIHOMO_BIN="${SCRIPT_DIR}/mihomo-arm64"
+        ;;
+    *)
+        echo "Unsupported architecture: ${ARCH}" >&2
+        exit 1
+        ;;
+esac
+
+if [ ! -x "${MIHOMO_BIN}" ]; then
+    echo "Clash Mini binary not found or not executable: ${MIHOMO_BIN}" >&2
+    exit 1
+fi
+
+exec "${MIHOMO_BIN}" "$@"

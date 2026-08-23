@@ -1,0 +1,190 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# Clash Mini fnOS Service Setup
+# ---------------------------------------------------------------------------
+
+LOG_FILE="${TRIM_PKGVAR}/${TRIM_APPNAME}.log"
+PID_FILE="${TRIM_PKGVAR}/${TRIM_APPNAME}.pid"
+
+APP_DIR="${TRIM_APPDEST}"
+APP_DATA_DIR="${TRIM_PKGVAR}"
+
+# The launcher script auto-detects architecture and picks the right binary
+MIHOMO_BIN="${APP_DIR}/bin/mihomo"
+MIHOMO_CONFIG="${APP_DATA_DIR}/config.yaml"
+MIHOMO_DASHBOARD="${APP_DIR}/dashboard"
+
+# Default ports (can be overridden by wizard variables)
+MIHOMO_MIXED_PORT="${wizard_mixed_port:-7890}"
+MIHOMO_EXTERNAL_PORT="${wizard_external_port:-9090}"
+MIHOMO_ZASHBOARD_PORT="${wizard_zashboard_port:-9098}"
+MIHOMO_METACUBEXD_PORT="${wizard_metacubexd_port:-9097}"
+MIHOMO_ADMIN_PORT="${wizard_admin_port:-9099}"
+
+# Admin server: handles config editing, service control, Unix socket gateway for fnOS iframe
+ADMIN_SERVER="${TRIM_APPDEST}/admin/admin_server.py"
+
+# Main service command: mihomo with -d pointing to data dir
+# -d flag tells mihomo to use APP_DATA_DIR as its home (reads config.yaml from there)
+# The engine line goes through $MIHOMO_BIN (bin/mihomo → architecture wrapper),
+# which itself brings up the admin panel server — so there is deliberately NO
+# separate admin line here: a second launcher races the wrapper's admin start
+# and produces "Address already in use" on port 9099. The wrapper's port probes
+# also make repeated starts idempotent (no duplicate engine → no port conflicts).
+# IMPORTANT: do NOT put a trailing "&" on this line.
+# start_daemon() already backgrounds the command via "${service} ... &" when
+# SVC_BACKGROUND=true, and then captures the foreground PID into the PID file
+# via $!. If the line already ends with "&", the inner background sub-shell
+# exits immediately, so $! becomes the dead wrapper PID and the PID file is
+# useless — the real service is never tracked, can never be stopped, and its
+# port eventually gets stuck as "address already in use" on restart.
+SERVICE_COMMAND="$MIHOMO_BIN -d $APP_DATA_DIR"
+
+# ── Install hooks ─────────────────────────────────────────────────────────
+service_postinst()
+{
+    mkdir -p "${TRIM_PKGVAR}" 2>/dev/null || true
+    mkdir -p "${TRIM_PKGVAR}/cache" 2>/dev/null || true
+
+    # Make data dir writable by all so admin server (running as admin user) can edit
+    chmod -R a+rwX "${TRIM_PKGVAR}" 2>/dev/null || true
+
+    # Copy dashboard to data dir (mihomo requires external-ui under home)
+    if [ -d "${TRIM_APPDEST}/dashboard" ]; then
+        rm -rf "${TRIM_PKGVAR}/dashboard" 2>/dev/null || true
+        cp -r "${TRIM_APPDEST}/dashboard" "${TRIM_PKGVAR}/dashboard"
+        chmod -R a+rX "${TRIM_PKGVAR}/dashboard" 2>/dev/null || true
+        echo "Copied dashboard to data dir" >> "${LOG_FILE}"
+    fi
+
+    # Copy geo data to data dir (mihomo needs these files to start)
+    if [ ! -f "${TRIM_PKGVAR}/geoip.dat" ] && [ -f "${TRIM_APPDEST}/default-config/geoip.dat" ]; then
+        cp "${TRIM_APPDEST}/default-config/geoip.dat" "${TRIM_PKGVAR}/geoip.dat"
+        echo "Copied geoip.dat to data dir" >> "${LOG_FILE}"
+    fi
+    if [ ! -f "${TRIM_PKGVAR}/geoip.metadb" ] && [ -f "${TRIM_APPDEST}/default-config/geoip.metadb" ]; then
+        cp "${TRIM_APPDEST}/default-config/geoip.metadb" "${TRIM_PKGVAR}/geoip.metadb"
+        echo "Copied geoip.metadb to data dir" >> "${LOG_FILE}"
+    fi
+    if [ ! -f "${TRIM_PKGVAR}/geosite.dat" ] && [ -f "${TRIM_APPDEST}/default-config/geosite.dat" ]; then
+        cp "${TRIM_APPDEST}/default-config/geosite.dat" "${TRIM_PKGVAR}/geosite.dat"
+        echo "Copied geosite.dat to data dir" >> "${LOG_FILE}"
+    fi
+    if [ ! -f "${TRIM_PKGVAR}/Country.mmdb" ] && [ -f "${TRIM_APPDEST}/default-config/Country.mmdb" ]; then
+        cp "${TRIM_APPDEST}/default-config/Country.mmdb" "${TRIM_PKGVAR}/Country.mmdb"
+        echo "Copied Country.mmdb to data dir" >> "${LOG_FILE}"
+    fi
+
+    # Copy cache.db if available
+    if [ ! -f "${TRIM_PKGVAR}/cache.db" ] && [ -f "${TRIM_APPDEST}/default-config/cache.db" ]; then
+        cp "${TRIM_APPDEST}/default-config/cache.db" "${TRIM_PKGVAR}/cache.db"
+    fi
+
+    # If no config.yaml exists, create a default one from the template
+    if [ ! -f "${MIHOMO_CONFIG}" ]; then
+        if [ -f "${TRIM_APPDEST}/default-config/config.yaml" ]; then
+            cp "${TRIM_APPDEST}/default-config/config.yaml" "${MIHOMO_CONFIG}"
+            echo "Created default config.yaml from template" >> "${LOG_FILE}"
+        else
+            echo "WARNING: No default config template found" >> "${LOG_FILE}"
+        fi
+    fi
+
+    # Apply wizard settings to config.yaml
+    if [ -n "${wizard_mixed_port:-}" ]; then
+        sed -i "s/^mixed-port:.*/mixed-port: ${wizard_mixed_port}/" "${MIHOMO_CONFIG}" 2>/dev/null || true
+    fi
+    if [ -n "${wizard_external_port:-}" ]; then
+        sed -i "s|external-controller:.*|external-controller: '0.0.0.0:${wizard_external_port}'|" "${MIHOMO_CONFIG}" 2>/dev/null || true
+    fi
+
+    # Configure external-ui as relative path (mihomo resolves relative to -d dir)
+    # The dashboard is copied to TRIM_PKGVAR/dashboard above
+    if grep -q "^external-ui:" "${MIHOMO_CONFIG}" 2>/dev/null; then
+        sed -i "s|^external-ui:.*|external-ui: dashboard|" "${MIHOMO_CONFIG}" 2>/dev/null || true
+    else
+        echo "external-ui: dashboard" >> "${MIHOMO_CONFIG}" 2>/dev/null || true
+    fi
+
+    # Prevent mihomo from trying to download external-ui from GitHub
+    if grep -q "^external-ui-url:" "${MIHOMO_CONFIG}" 2>/dev/null; then
+        sed -i "s|^external-ui-url:.*|external-ui-url: \"skip\"|" "${MIHOMO_CONFIG}" 2>/dev/null || true
+    else
+        echo 'external-ui-url: "skip"' >> "${MIHOMO_CONFIG}" 2>/dev/null || true
+    fi
+
+    # Configure proxy-providers from wizard subscription link
+    if [ -n "${wizard_sub_link:-}" ] && [ -n "${wizard_sub_link}" ]; then
+        local interval="${wizard_sub_interval:-86400}"
+        local provider_block=""
+        provider_block="proxy-providers:\n"
+        provider_block+="  subscription:\n"
+        provider_block+="    url: \"${wizard_sub_link}\"\n"
+        provider_block+="    type: http\n"
+        provider_block+="    interval: ${interval}\n"
+        provider_block+="    health-check:\n"
+        provider_block+="      enable: true\n"
+        provider_block+="      url: https://www.gstatic.com/generate_204\n"
+        provider_block+="      interval: 180\n"
+
+        # Only add if proxy-providers section is empty (just "proxy-providers: {}")
+        if grep -q "^proxy-providers: {}" "${MIHOMO_CONFIG}" 2>/dev/null; then
+            sed -i "/^proxy-providers: {}$/c\\proxy-providers:\n  subscription:\n    url: \"${wizard_sub_link}\"\n    type: http\n    interval: ${interval}\n    health-check:\n      enable: true\n      url: https://www.gstatic.com/generate_204\n      interval: 180" "${MIHOMO_CONFIG}" 2>/dev/null || true
+        fi
+    fi
+
+    # Apply DNS settings
+    if [ "${wizard_dns_enable:-true}" = "false" ]; then
+        sed -i "s/  enable: true/  enable: false/" "${MIHOMO_CONFIG}" 2>/dev/null || true
+    fi
+    if [ "${wizard_tun_enable:-true}" = "false" ]; then
+        # Comment out tun enable
+        sed -i "/^tun:/,/^  [a-z]/{s/  enable: true/  enable: false/}" "${MIHOMO_CONFIG}" 2>/dev/null || true
+    fi
+
+    # Fix ownership for non-root installation
+    fix_data_ownership 2>/dev/null || true
+}
+
+service_postupgrade()
+{
+    service_postinst
+}
+
+service_preuninst()
+{
+    # Kill all mihomo processes (note: the engine runs as mihomo-amd64.real /
+    # mihomo-arm64.real after the wrapper execs it, so pkill -f is required —
+    # killall can't match the truncated 15-char comm name).
+    pkill -f "bin/mihomo-amd64.real" 2>/dev/null || true
+    pkill -f "bin/mihomo-arm64.real" 2>/dev/null || true
+    pkill -f "bin/mihomo-amd64 -d" 2>/dev/null || true
+    pkill -f "bin/mihomo-arm64 -d" 2>/dev/null || true
+    killall mihomo-amd64 mihomo-arm64 mihomo 2>/dev/null || true
+    # Kill the admin panel server too
+    pkill -f "admin/admin_server.py" 2>/dev/null || true
+    pkill -f "app/admin/admin_server.py" 2>/dev/null || true
+    local pid
+    for pid_file in "${PID_FILE}"; do
+        [ -f "$pid_file" ] || continue
+        pid="$(cat "$pid_file" 2>/dev/null || true)"
+        case "$pid" in
+            ''|*[!0-9]*) rm -f "$pid_file" 2>/dev/null || true ;;
+            *) kill "$pid" 2>/dev/null || true ;;
+        esac
+    done
+}
+
+service_poststop()
+{
+    # Clean up any remaining mihomo processes AND the admin panel server
+    # (the admin server PID is recorded in the PID file; this is a backstop
+    # for processes that escaped tracking, e.g. during a hard crash).
+    pkill -f "bin/mihomo-amd64.real" 2>/dev/null || true
+    pkill -f "bin/mihomo-arm64.real" 2>/dev/null || true
+    pkill -f "bin/mihomo-amd64 -d" 2>/dev/null || true
+    pkill -f "bin/mihomo-arm64 -d" 2>/dev/null || true
+    killall mihomo-amd64 mihomo-arm64 mihomo 2>/dev/null || true
+    pkill -f "admin/admin_server.py" 2>/dev/null || true
+    pkill -f "app/admin/admin_server.py" 2>/dev/null || true
+}

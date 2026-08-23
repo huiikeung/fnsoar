@@ -1,0 +1,16 @@
+#!/bin/bash
+# Config callback — runs after user changes environment variables
+# Restart mihomo to apply new config
+COMMON=$(dirname $0)"/common"
+if [ -r "${COMMON}" ]; then . "${COMMON}"; fi
+SVC_SETUP=$(dirname $0)"/service-setup"
+if [ -r "${SVC_SETUP}" ]; then . "${SVC_SETUP}"; fi
+
+# Restart mihomo if running
+if daemon_status; then
+    stop_daemon
+    sleep 1
+    start_daemon
+fi
+
+config_callback

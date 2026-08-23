@@ -1,0 +1,137 @@
+[
+    {
+        "stepTitle": "欢迎安装 Clash Mini",
+        "items": [
+            {
+                "type": "tips",
+                "helpText": "Clash Mini 是一个基于 Clash Mini (Clash Meta) 内核的代理工具，内置 Clash Mini 引擎 + metacubexd/zashboard 双管理面板，支持 TUN 模式、规则引擎、DNS 分流等功能。"
+            },
+            {
+                "type": "tips",
+                "helpText": "⚠️ 安装完成后，通过 http://&lt;NAS IP&gt;:9098 访问 Zashboard（默认板）或 http://&lt;NAS IP&gt;:9097 访问 MetaCubeX。"
+            }
+        ]
+    },
+    {
+        "stepTitle": "端口配置",
+        "items": [
+            {
+                "type": "text",
+                "field": "mixed_port",
+                "label": "混合端口 (Mixed Port)",
+                "initValue": "7890",
+                "placeholder": "默认 7890，留空使用默认值",
+                "rules": [
+                    {
+                        "pattern": "^$|^(1[0-9]{4}|[1-9][0-9]{0,3}|[1-5][0-9]{0,4})$",
+                        "message": "请输入 1-65535 之间的数字或留空"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "external_port",
+                "label": "控制面板端口 (External Controller)",
+                "initValue": "9090",
+                "placeholder": "默认 9090，留空使用默认值",
+                "rules": [
+                    {
+                        "pattern": "^$|^(1[0-9]{4}|[1-9][0-9]{0,3}|[1-5][0-9]{0,4})$",
+                        "message": "请输入 1-65535 之间的数字或留空"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "zashboard_port",
+                "label": "Zashboard 面板端口",
+                "initValue": "9098",
+                "placeholder": "默认 9098，留空使用默认值",
+                "rules": [
+                    {
+                        "pattern": "^$|^(1[0-9]{4}|[1-9][0-9]{0,3}|[1-5][0-9]{0,4})$",
+                        "message": "请输入 1-65535 之间的数字或留空"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "metacubexd_port",
+                "label": "MetaCubeX 面板端口",
+                "initValue": "9097",
+                "placeholder": "默认 9097，留空使用默认值",
+                "rules": [
+                    {
+                        "pattern": "^$|^(1[0-9]{4}|[1-9][0-9]{0,3}|[1-5][0-9]{0,4})$",
+                        "message": "请输入 1-65535 之间的数字或留空"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "stepTitle": "代理订阅",
+        "items": [
+            {
+                "type": "text",
+                "field": "sub_link",
+                "label": "代理订阅链接 (Clash Meta 格式)",
+                "initValue": "",
+                "placeholder": "例如：https://example.com/sub?token=xxx&clash",
+                "rules": [
+                    {
+                        "pattern": "^$|https://.+",
+                        "message": "请输入有效的 https 链接或留空"
+                    }
+                ]
+            },
+            {
+                "type": "text",
+                "field": "sub_interval",
+                "label": "订阅更新间隔 (秒)",
+                "initValue": "86400",
+                "placeholder": "默认 86400 (24小时)",
+                "rules": [
+                    {
+                        "required": true,
+                        "message": "请输入更新间隔"
+                    },
+                    {
+                        "pattern": "^[0-9]+$",
+                        "message": "请输入数字"
+                    }
+                ]
+            }
+        ]
+    },
+    {
+        "stepTitle": "DNS 配置",
+        "items": [
+            {
+                "type": "switch",
+                "field": "dns_enable",
+                "label": "启用 DNS 服务",
+                "initValue": "true"
+            },
+            {
+                "type": "switch",
+                "field": "fakeip_enable",
+                "label": "启用 Fake-IP 模式",
+                "initValue": "true"
+            },
+            {
+                "type": "text",
+                "field": "dns_server",
+                "label": "DNS 服务器 (IPv4, 换行分隔)",
+                "initValue": "https://120.53.53.53/dns-query",
+                "placeholder": "输入 DNS 服务器地址，每行一个"
+            },
+            {
+                "type": "switch",
+                "field": "tun_enable",
+                "label": "启用 TUN 模式",
+                "initValue": "true"
+            }
+        ]
+    }
+]

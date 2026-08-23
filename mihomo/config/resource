@@ -1,0 +1,25 @@
+{
+    "port-config":
+    {
+        "protocol-file": "clashmini.sc"
+    },
+    "data-share":
+    {
+        "shares":
+        [
+            {
+                "name": "mihomo",
+                "permission":
+                {
+                    "rw":
+                    [
+                        "mihomo"
+                    ]
+                }
+            }
+        ]
+    },
+    "systemd-unit":
+    {
+    }
+}

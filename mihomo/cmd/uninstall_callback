@@ -1,0 +1,8 @@
+#!/bin/bash
+# Uninstall callback — runs after application is removed
+COMMON=$(dirname $0)"/common"
+if [ -r "${COMMON}" ]; then . "${COMMON}"; fi
+SVC_SETUP=$(dirname $0)"/service-setup"
+if [ -r "${SVC_SETUP}" ]; then . "${SVC_SETUP}"; fi
+
+uninstall_callback

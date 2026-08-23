@@ -1,0 +1,18 @@
+{
+    ".url": {
+        "fnnas.clashmini.Application": {
+            "title": "Clash Mini",
+            "icon": "images/icon_{0}.png",
+            "type": "iframe",
+            "protocol": "http",
+            "port": "9099",
+            "url": "/",
+            "allUsers": true,
+            "gatewaySocket": "clashmini.sock",
+            "gatewayPrefix": "/app/fnnas.clashmini",
+            "control": {
+                "accessPerm": "readwrite"
+            }
+        }
+    }
+}

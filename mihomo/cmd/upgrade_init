@@ -1,0 +1,8 @@
+#!/bin/bash
+# Upgrade init — runs before application files are replaced
+COMMON=$(dirname $0)"/common"
+if [ -r "${COMMON}" ]; then . "${COMMON}"; fi
+SVC_SETUP=$(dirname $0)"/service-setup"
+if [ -r "${SVC_SETUP}" ]; then . "${SVC_SETUP}"; fi
+
+upgrade_init
