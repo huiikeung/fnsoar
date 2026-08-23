@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# Clash Mini fnOS Service Setup
+# FnSoar fnOS Service Setup
 # ---------------------------------------------------------------------------
 
 LOG_FILE="${TRIM_PKGVAR}/${TRIM_APPNAME}.log"

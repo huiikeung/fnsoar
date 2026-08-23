@@ -4,9 +4,9 @@ const path = require('path');
 const { execSync, spawn } = require('child_process');
 
 const PORT = 9091;
-const CONFIG_PATH = '/vol1/@appdata/fnnas.clashmini/config.yaml';
-const PID_PATH = '/vol1/@appdata/fnnas.clashmini/clashmini.pid';
-const MIHOMO_BIN = '/vol1/@appcenter/fnnas.clashmini/bin/mihomo-amd64';
+const CONFIG_PATH = '/vol1/@appdata/fnnas.fnsoar/config.yaml';
+const PID_PATH = '/vol1/@appdata/fnnas.fnsoar/clashmini.pid';
+const MIHOMO_BIN = '/vol1/@appcenter/fnnas.fnsoar/bin/mihomo-amd64';
 
 // Simple YAML parser for proxy-providers
 function parseProxyProviders(yaml) {
@@ -59,7 +59,7 @@ function getConfig() {
 
 function startService() {
     try {
-        execSync('appcenter-cli start fnnas.clashmini', {stdio: 'ignore'});
+        execSync('appcenter-cli start fnnas.fnsoar', {stdio: 'ignore'});
         return {success: true};
     } catch (e) {
         return {success: false, error: e.message};
@@ -68,7 +68,7 @@ function startService() {
 
 function stopService() {
     try {
-        execSync('appcenter-cli stop fnnas.clashmini', {stdio: 'ignore'});
+        execSync('appcenter-cli stop fnnas.fnsoar', {stdio: 'ignore'});
         return {success: true};
     } catch (e) {
         return {success: false, error: e.message};
@@ -111,7 +111,7 @@ const server = http.createServer((req, res) => {
                     const data = JSON.parse(body);
                     writeConfig(data.config);
                     // Restart mihomo to apply
-                    execSync('appcenter-cli restart fnnas.clashmini', {stdio: 'ignore'});
+                    execSync('appcenter-cli restart fnnas.fnsoar', {stdio: 'ignore'});
                     res.end(JSON.stringify({success: true}));
                 } catch (e) {
                     res.statusCode = 500;
@@ -144,7 +144,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`Clash Mini Admin Server running on port ${PORT}`);
+    console.log(`FnSoar Admin Server running on port ${PORT}`);
 });
 
 module.exports = {parseProxyProviders, writeConfig, getConfig, startService, stopService, getStatus};

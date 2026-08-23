@@ -1,15 +1,15 @@
 {
     ".url": {
-        "fnnas.clashmini.Application": {
-            "title": "Clash Mini",
+        "fnnas.fnsoar.Application": {
+            "title": "FnSoar",
             "icon": "images/icon_{0}.png",
             "type": "iframe",
             "protocol": "http",
             "port": "9099",
             "url": "/",
             "allUsers": true,
-            "gatewaySocket": "clashmini.sock",
-            "gatewayPrefix": "/app/fnnas.clashmini",
+            "gatewaySocket": "fnsoar.sock",
+            "gatewayPrefix": "/app/fnnas.fnsoar",
             "control": {
                 "accessPerm": "readwrite"
             }

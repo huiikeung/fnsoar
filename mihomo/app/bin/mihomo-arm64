@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# Clash Mini amd64 wrapper
+# FnSoar amd64 wrapper
 # fnOS launches this binary directly (it never calls cmd/main), so this
 # wrapper is the ONLY guaranteed hook to also bring up the admin panel
 # server. It starts admin_server.py in the background, then execs the
@@ -17,7 +17,7 @@ APP_ROOT="$(dirname "$SCRIPT_DIR")"
 # Precedence mirrors admin_server.py: explicit MIHOMO_* vars first, then the
 # fnOS-provided TRIM_* vars, then sane defaults.
 DEST_DIR="${MIHOMO_DEST_DIR:-${TRIM_APPDEST:-${APP_ROOT}}}"
-DATA_DIR="${MIHOMO_DATA_DIR:-${TRIM_PKGVAR:-/vol1/@appdata/fnnas.clashmini}}"
+DATA_DIR="${MIHOMO_DATA_DIR:-${TRIM_PKGVAR:-/vol1/@appdata/fnnas.fnsoar}}"
 ADMIN_PORT="${MIHOMO_ADMIN_PORT:-9099}"
 ENGINE_PORT="${MIHOMO_ENGINE_PORT:-9090}"
 
@@ -25,11 +25,11 @@ ADMIN_SERVER="${APP_ROOT}/admin/admin_server.py"
 if [ -f "$ADMIN_SERVER" ]; then
     # Skip if an admin server is already listening on the port
     if ! (exec 3<>/dev/tcp/127.0.0.1/${ADMIN_PORT}) 2>/dev/null; then
-        MIHOMO_APP_NAME="fnnas.clashmini" \
+        MIHOMO_APP_NAME="fnnas.fnsoar" \
         MIHOMO_DATA_DIR="${DATA_DIR}" \
         MIHOMO_DEST_DIR="${DEST_DIR}" \
         MIHOMO_ADMIN_PORT="${ADMIN_PORT}" \
-        MIHOMO_GATEWAY_SOCK="${DEST_DIR}/clashmini.sock" \
+        MIHOMO_GATEWAY_SOCK="${DEST_DIR}/fnsoar.sock" \
         nohup python3 "$ADMIN_SERVER" >> "${DATA_DIR}/admin.log" 2>&1 &
     fi
 fi
@@ -43,17 +43,17 @@ if (exec 3<>/dev/tcp/127.0.0.1/${ENGINE_PORT}) 2>/dev/null; then
     echo "[wrapper] mihomo engine already running on :${ENGINE_PORT}, skipping duplicate start" >> "${DATA_DIR}/admin.log"
     EXISTING_PID="$(pgrep -f 'mihomo-(amd64|arm64)\.real -d' 2>/dev/null | head -1)"
     if [ -n "${EXISTING_PID}" ] && [ -d "${DATA_DIR}" ]; then
-        echo "${EXISTING_PID}" > "${DATA_DIR}/${MIHOMO_APP_NAME:-fnnas.clashmini}.pid"
+        echo "${EXISTING_PID}" > "${DATA_DIR}/${MIHOMO_APP_NAME:-fnnas.fnsoar}.pid"
     fi
     exit 0
 fi
 
 # Record our PID before exec so fnOS's cmd/common stop/status (which reads
-# $TRIM_PKGVAR/${MIHOMO_APP_NAME:-fnnas.clashmini}.pid) can track the engine even when fnOS launched
+# $TRIM_PKGVAR/${MIHOMO_APP_NAME:-fnnas.fnsoar}.pid) can track the engine even when fnOS launched
 # this wrapper directly instead of via cmd/main. $$ stays the same across
 # exec, so this is the engine's real PID.
 if [ -n "${DATA_DIR}" ] && [ -d "${DATA_DIR}" ]; then
-    echo $$ > "${DATA_DIR}/${MIHOMO_APP_NAME:-fnnas.clashmini}.pid"
+    echo $$ > "${DATA_DIR}/${MIHOMO_APP_NAME:-fnnas.fnsoar}.pid"
 fi
 
 exec "${SCRIPT_DIR}/mihomo-arm64.real" "$@"

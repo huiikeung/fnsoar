@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# Clash Mini fnOS main lifecycle script
+# FnSoar fnOS main lifecycle script
 # Handles: start / stop / status / log
 # ---------------------------------------------------------------------------
 

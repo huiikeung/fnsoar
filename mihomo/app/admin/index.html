@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
-<title>Clash Mini 控制面板</title>
+<title>FnSoar 控制面板</title>
 <link rel="icon" type="image/png" href="./favicon.png">
 <style>
 :root{
@@ -515,6 +515,29 @@ tbody tr:hover{background:var(--card2)}
 #section-rules .card{flex:1;min-height:0}
 #section-config{flex-direction:column;flex:1;min-height:0}
 #section-config .card{flex:1;min-height:0}
+.vcfg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.vcfg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.vcfg-card-title{display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:13.5px;font-weight:600;border-bottom:1px solid var(--border-soft);background:var(--card2)}
+.vcfg-card-title .vcfg-ic{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.vcfg-card-title .vcfg-ic svg{width:14px;height:14px}
+.vcfg-ic.cfg-basic{background:rgba(78,110,242,.14);color:var(--accent)}
+.vcfg-ic.cfg-in{background:rgba(245,158,11,.14);color:#f59e0b}
+.vcfg-ic.cfg-tun{background:rgba(139,92,246,.14);color:#8b5cf6}
+.vcfg-ic.cfg-dns{background:rgba(59,130,246,.14);color:#3b82f6}
+.vcfg-ic.cfg-ctrl{background:rgba(239,68,68,.14);color:#ef4444}
+.vcfg-ic.cfg-adv{background:rgba(107,114,128,.14);color:var(--dim)}
+.vcfg-card-body{padding:10px 16px;display:flex;flex-direction:column;gap:8px}
+.vcfg-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
+.vcfg-row .vcfg-label{font-size:13px;color:var(--text);flex-shrink:0}
+.vcfg-row .vcfg-hint{font-size:10.5px;color:var(--faint);font-weight:400}
+.vcfg-row input[type=text],.vcfg-row input[type=number],.vcfg-row select{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:12.5px;color:var(--text);outline:none;width:150px;text-align:left;transition:border-color .15s;font-family:inherit}
+.vcfg-row input:focus,.vcfg-row select:focus{border-color:var(--accent)}
+.vcfg-row select{width:160px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px}
+.vcfg-row input[type=text]{width:180px}
+.vcfg-row input[type=number]{width:110px}
+.con-raw-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--dim);font-size:12px;cursor:pointer;transition:all .12s;font-family:inherit}
+.con-raw-btn:hover{background:var(--card);color:var(--text);border-color:var(--accent)}
+@media(max-width:760px){.vcfg-grid{grid-template-columns:1fr}}
 
 /* ── 节点订阅（Clash Verge Rev 风格） ───────── */
 .prov-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
@@ -640,10 +663,10 @@ tbody tr:hover{background:var(--card2)}
   <!-- 左侧栏（背景与右侧一致） -->
   <aside class="sidebar">
     <div class="sidebar-header" onclick="toggleSidebar()" title="折叠/展开侧边栏" style="cursor:pointer">
-      <img src="./favicon.png" alt="Clash Mini">
+      <img src="./favicon.png" alt="Mihomo">
       <div>
-        <div class="t1">Clash Mini</div>
-        <div class="t2">Clash Mini 代理引擎 · fnOS</div>
+        <div class="t1">Mihomo</div>
+        <div class="t2">Mihomo 代理引擎 · fnOS</div>
       </div>
     </div>
     <nav class="nav">
@@ -981,20 +1004,99 @@ tbody tr:hover{background:var(--card2)}
 
 <!-- 配置 -->
     <section id="section-config" style="display:none">
-      <div class="con-head">
-        <h3>配置</h3>
+      <div id="configVisual">
+        <div class="con-head">
+          <h3>配置</h3>
+          <button class="con-raw-btn" onclick="showConfigRaw()" title="编辑原始配置">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+            编辑源文件
+          </button>
+        </div>
+        <div class="vcfg-grid" id="vcfgGrid">
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span>基础设置</div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label">运行模式<span class="vcfg-hint">mode</span></span><select id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule">规则</option><option value="global">全局</option><option value="direct">直连</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">日志级别<span class="vcfg-hint">log-level</span></span><select id="vcfgLogLevel" onchange="saveVcfg('log-level')"><option value="silent">silent</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option><option value="debug">debug</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">IPv6<span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">统一延迟<span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">TCP 并发<span class="vcfg-hint">tcp-concurrent</span></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">查找进程<span class="vcfg-hint">find-process-mode</span></span><select id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5m0 3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg></span>入站设置</div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label">HTTP 端口<span class="vcfg-hint">mixed-port</span></span><input type="number" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">Socks 端口<span class="vcfg-hint">socks-port</span></span><input type="number" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">Redir 端口<span class="vcfg-hint">redir-port</span></span><input type="number" id="vcfgRedirPort" placeholder="7892" onchange="saveVcfg('redir-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">TProxy 端口<span class="vcfg-hint">tproxy-port</span></span><input type="number" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">局域网连接<span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">认证<span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass" onchange="saveVcfg('auth')"></div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-tun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span>TUN 设置</div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label">TUN 启用<span class="vcfg-hint">tun.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgTun" onchange="saveVcfg('tun')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">设备名称<span class="vcfg-hint">tun.device</span></span><input type="text" id="vcfgTunDevice" placeholder="Mihomo" onchange="saveVcfg('tun-device')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">协议栈<span class="vcfg-hint">tun.stack</span></span><select id="vcfgTunStack" onchange="saveVcfg('tun-stack')"><option value="gvisor">gvisor</option><option value="system">system</option><option value="mixed">mixed</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">DNS 劫持<span class="vcfg-hint">tun.dns-hijack</span></span><select id="vcfgTunDnsHijack" onchange="saveVcfg('tun-dns-hijack')"><option value="">(默认)</option><option value="any:53">any:53</option><option value="tcp://any:53">tcp://any:53</option><option value="udp://any:53">udp://any:53</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">自动路由<span class="vcfg-hint">tun.auto-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveVcfg('tun-auto-route')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">自动检测接口<span class="vcfg-hint">tun.auto-detect-interface</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoDetect" onchange="saveVcfg('tun-auto-detect')"><span class="toggle-track"></span></label></div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span>DNS 设置</div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label">DNS 启用<span class="vcfg-hint">dns.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsEnable" onchange="saveVcfg('dns-enable')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">增强模式<span class="vcfg-hint">dns.enhanced-mode</span></span><select id="vcfgDnsEnhanced" onchange="saveVcfg('dns-enhanced')"><option value="fake-ip">fake-ip</option><option value="redir-host">redir-host</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">Fake-IP 范围<span class="vcfg-hint">dns.fake-ip-range</span></span><input type="text" id="vcfgFakeIpRange" placeholder="198.18.0.1/16" onchange="saveVcfg('fake-ip-range')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">IPv6 DNS<span class="vcfg-hint">dns.ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsIpv6" onchange="saveVcfg('dns-ipv6')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">使用 hosts<span class="vcfg-hint">dns.use-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsHosts" onchange="saveVcfg('dns-use-hosts')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label">系统 hosts<span class="vcfg-hint">dns.use-system-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsSysHosts" onchange="saveVcfg('dns-use-sys-hosts')"><span class="toggle-track"></span></label></div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-ctrl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8H5v2h4V8zm0 3H5v2h4v-2zm0 3H5v2h4v-2zm3-6h7v2h-7V8zm0 3h7v2h-7v-2zm0 3h7v2h-7v-2z"/></svg></span>外部控制</div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label">监听地址<span class="vcfg-hint">external-controller</span></span><input type="text" id="vcfgExtAddr" placeholder="0.0.0.0:9090" onchange="saveVcfg('ext-addr')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">密钥<span class="vcfg-hint">secret</span></span><input type="text" id="vcfgExtSecret" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">外部 UI<span class="vcfg-hint">external-ui</span></span><input type="text" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')"></div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-adv"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>高级设置</div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label">性能模式<span class="vcfg-hint">profile</span></span><select id="vcfgProfile" onchange="saveVcfg('profile')"><option value="">(默认)</option><option value="low">low</option><option value="balance">balance</option><option value="high">high</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">GEO 加载<span class="vcfg-hint">geodata-mode</span></span><select id="vcfgGeodataMode" onchange="saveVcfg('geodata-mode')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">GEO 更新间隔<span class="vcfg-hint">geodata-loader</span></span><select id="vcfgGeoLoader" onchange="saveVcfg('geo-loader')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label">全局 UA<span class="vcfg-hint">global-ua</span></span><input type="text" id="vcfgGlobalUa" placeholder="clash.meta" onchange="saveVcfg('global-ua')"></div>
+              <div class="vcfg-row"><span class="vcfg-label">保活间隔<span class="vcfg-hint">keep-alive-interval</span></span><input type="number" id="vcfgKeepAlive" placeholder="30" onchange="saveVcfg('keep-alive')"></div>
+            </div>
+          </div>
+        </div>
       </div>
-      <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto">
-        <p style="color:var(--dim);font-size:12.5px;margin:0 0 12px 0">直接编辑 config.yaml。保存后服务将自动重启。</p>
-        <textarea id="configYaml" style="flex:1;width:100%;min-height:300px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.5;padding:12px;resize:vertical;outline:none" spellcheck="false"></textarea>
-        <div class="con-toolbar" style="margin-top:12px;margin-bottom:0;justify-content:flex-end">
-          <button onclick="loadConfigToEditor()" class="con-close-all"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重新加载</button>
-          <button onclick="saveConfig()" class="btn btn-primary" style="padding:5px 16px;font-size:12px"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存并重启</button>
+      <div id="configRaw" style="display:none;flex:1;flex-direction:column;min-height:0">
+        <div class="con-head">
+          <h3>编辑源文件</h3>
+          <button class="con-raw-btn" onclick="showConfigVisual()" title="返回可视化配置">
+            <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/></svg>
+            可视化配置
+          </button>
+        </div>
+        <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto">
+          <p style="color:var(--dim);font-size:12.5px;margin:0 0 12px 0">直接编辑 config.yaml。保存后服务将自动重启。</p>
+          <textarea id="configYaml" style="flex:1;width:100%;min-height:300px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.5;padding:12px;resize:vertical;outline:none" spellcheck="false"></textarea>
+          <div class="con-toolbar" style="margin-top:12px;margin-bottom:0;justify-content:flex-end">
+            <button onclick="loadConfigToEditor()" class="con-close-all"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重新加载</button>
+            <button onclick="saveConfig()" class="btn btn-primary" style="padding:5px 16px;font-size:12px"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存并重启</button>
+          </div>
         </div>
       </div>
     </section>
 
-    <!-- 日志 -->
+<!-- 日志 -->
     <section id="section-logs" style="display:none">
       <div class="con-head">
         <h3>日志</h3>
@@ -1038,7 +1140,7 @@ tbody tr:hover{background:var(--card2)}
       <div class="con-head">
         <h3>设置</h3>
         <div class="con-head-actions">
-          <a class="con-view-btn" href="https://github.com/huiikeung/fnclash" target="_blank" title="GitHub" style="text-decoration:none"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M12 1.27a11 11 0 0 0-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.66-3.67-1.61-3.67-1.61-.55-1.29-1.28-1.65-1.28-1.65-1.06-.7.09-.66.09-.66 1.06.09 1.63 1.09 1.63 1.09 1.05 1.75 2.6 1.25 3.24.96.09-.75.37-1.25.64-1.55-2.32-.26-4.72-1.16-4.72-5.19 0-1.15.38-2.07 1.08-2.82-.1-.26-.46-1.34.1-2.75 0 0 .87-.28 2.83 1.09a9.8 9.8 0 0 1 2.57-.34c.87 0 1.77.12 2.57.34 1.96-1.37 2.82-1.09 2.82-1.09.56 1.41.2 2.49.1 2.75.7.75 1.08 1.67 1.08 2.82 0 4.03-2.4 4.93-4.72 5.19.38.32.71.96.71 1.93v2.86c0 .27.18.61.73.55A11 11 0 0 0 12 1.27z"/></svg></a>
+          <a class="con-view-btn" href="https://github.com/Huiikeung/fnsoar" target="_blank" title="GitHub" style="text-decoration:none"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M12 1.27a11 11 0 0 0-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.66-3.67-1.61-3.67-1.61-.55-1.29-1.28-1.65-1.28-1.65-1.06-.7.09-.66.09-.66 1.06.09 1.63 1.09 1.63 1.09 1.05 1.75 2.6 1.25 3.24.96.09-.75.37-1.25.64-1.55-2.32-.26-4.72-1.16-4.72-5.19 0-1.15.38-2.07 1.08-2.82-.1-.26-.46-1.34.1-2.75 0 0 .87-.28 2.83 1.09a9.8 9.8 0 0 1 2.57-.34c.87 0 1.77.12 2.57.34 1.96-1.37 2.82-1.09 2.82-1.09.56 1.41.2 2.49.1 2.75.7.75 1.08 1.67 1.08 2.82 0 4.03-2.4 4.93-4.72 5.19.38.32.71.96.71 1.93v2.86c0 .27.18.61.73.55A11 11 0 0 0 12 1.27z"/></svg></a>
         </div>
       </div>
       <div class="set-grid">
@@ -1329,6 +1431,7 @@ function showSection(name) {
   if (name === 'logs') { loadLogs(); startLogPolling(); }
   if (name === 'test') loadUnlock();
   if (name === 'settings') loadSettings();
+  if (name === 'config') { loadVcfg(); }
   // 离开连接/日志页面时停止轮询
   if (name !== 'connections') stopConnPolling();
   if (name !== 'logs') stopLogPolling();
@@ -2121,10 +2224,10 @@ async function runWebTest() {
  }
  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  async function loadProviders() {
+  async function loadProviders(silent) {
    const grid = document.getElementById('provGrid');
    if (!grid) return;
-   grid.innerHTML = '<div class="prov-empty">' + t('conn.loading') + '</div>';
+   if (!silent) grid.innerHTML = '<div class="prov-empty">' + t('conn.loading') + '</div>';
    const [p] = await Promise.all([fetchJSON('api/proxy-providers'), fetchProvLive()]);
    provStatic = (p && p.providers) ? p.providers : {};
    const entries = Object.entries(provStatic);
@@ -2138,9 +2241,10 @@ async function runWebTest() {
      const updated = lv.updatedAt || info.updatedAt || '';
      const url = info.url || '';
      const interval = info.interval || 3600;
-     const type = (lv.vehicleType || info.type || 'http').toLowerCase();
-     return `<div class="prov-card" id="provcard-${esc(name)}">
-         <div class="prov-card-top"><span class="prov-badge">${type === 'compatible' ? t('config.title') : 'HTTP'}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
+     const urlLower = (url || '').toLowerCase();
+      const badge = urlLower.startsWith('https://') ? 'HTTPS' : urlLower.startsWith('http://') ? 'HTTP' : ((lv.vehicleType || info.type || 'http').toLowerCase() === 'compatible' ? t('config.title') : 'HTTP');
+      return `<div class="prov-card" id="provcard-${esc(name)}">
+          <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
          <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
          <div class="prov-stats">
            <span class="prov-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b> ${t('home.node')}</span>
@@ -2195,16 +2299,29 @@ async function runWebTest() {
    } catch (err) { showToast('请求出错: ' + err, 'error'); }
    finally { btn.disabled = false; btn.textContent = '保存'; }
  }
- function updateProvider(name) {
-   const card = document.getElementById('provcard-' + name);
-   if (card) card.classList.add('syncing');
-   fetch('api/providers/update?name=' + encodeURIComponent(name), { method: 'PUT' })
-     .then(r => {
-       if (!r.ok) showToast('更新请求失败 (' + r.status + ')', 'error');
-       setTimeout(() => { loadProviders(); if (card) card.classList.remove('syncing'); }, 1500);
-     })
-     .catch(() => { if (card) card.classList.remove('syncing'); showToast('更新请求失败', 'error'); });
- }
+ async function updateProvider(name, opts) {
+    opts = opts || {};
+    const silent = !!opts.silent;
+    const card = document.getElementById('provcard-' + name);
+    if (card) card.classList.add('syncing');
+    try {
+      const r = await fetch('api/providers/update?name=' + encodeURIComponent(name), { method: 'PUT' });
+      if (!r.ok) {
+        let msg = '';
+        try { const j = await r.json(); msg = j.error || j.message || ''; } catch(e) { try { msg = await r.text(); } catch(e2) {} }
+        showToast((name + ' 更新失败' + (msg ? ': ' + msg : ' (' + r.status + ')')), 'error');
+        return false;
+      }
+      showToast(name + ' 更新完成', 'success');
+      if (!silent) setTimeout(() => loadProviders(true), 800);
+      return true;
+    } catch (e) {
+      showToast(name + ' 更新失败: ' + e, 'error');
+      return false;
+    } finally {
+      if (card) setTimeout(() => card.classList.remove('syncing'), 800);
+    }
+  }
  function deleteProvider(name) {
    if (!confirm('确认删除订阅源「' + name + '」？')) return;
    fetch('api/providers/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name}) })
@@ -2230,11 +2347,22 @@ async function importProvider() {
   finally { btn.disabled = false; btn.textContent = "导入"; }
 }
 // ── 一键更新所有订阅 ──────────────────────────
-function updateAllProviders() {
+async function updateAllProviders() {
   const entries = Object.entries(provStatic);
   if (!entries.length) { showToast("暂无订阅可更新", "warning"); return; }
-  entries.forEach(([name]) => updateProvider(name));
   showToast("正在更新 " + entries.length + " 个订阅…", "info");
+  const results = [];
+  for (const [name] of entries) {
+    // 串行更新，避免并发打爆远端订阅链接；每条之间稍微间隔
+    const ok = await updateProvider(name, { silent: true });
+    results.push(ok);
+    await new Promise(r => setTimeout(r, 300));
+  }
+  // 批量完成后只刷新一次，且不闪 loading
+  await loadProviders(true);
+  const okCount = results.filter(Boolean).length;
+  if (okCount === entries.length) showToast("全部 " + okCount + " 个订阅更新完成", "success");
+  else if (okCount > 0) showToast(okCount + "/" + entries.length + " 个订阅更新完成", "success");
 }
 // ── 策略组（verge 风格） ────────────────────
 let currentMode = 'rule';
@@ -3133,6 +3261,124 @@ function saveConfig() {
       if (d.success) { showToast('配置已保存！服务正在重启...', 'success'); setTimeout(() => { loadDashboard(); loadServiceStatus(); }, 2500); }
       else showToast('保存失败: ' + (d.error || '未知错误'), 'error');
     }).catch(e => showToast('保存出错: ' + e, 'error'));
+}
+
+// ── 可视化配置 ────────────────────────────────
+function showConfigRaw() {
+  document.getElementById('configVisual').style.display = 'none';
+  var raw = document.getElementById('configRaw');
+  raw.style.display = 'flex';
+  loadConfigToEditor();
+}
+function showConfigVisual() {
+  document.getElementById('configRaw').style.display = 'none';
+  document.getElementById('configVisual').style.display = 'block';
+  loadVcfg();
+}
+function loadVcfg() {
+  fetch('api/config').then(r => r.json()).then(d => {
+    var cfg = d.config || '';
+    function getVal(key, def) {
+      var m = cfg.match(new RegExp(key + ':\\s*(.+)'));
+      return m ? m[1].trim().replace(/^"|"$/g,'').replace(/^'|'$/g,'') : def;
+    }
+    function getBool(key) { return new RegExp(key + ':\\s*true').test(cfg); }
+    var vmp = document.getElementById('vcfgMixedPort'); if (vmp) vmp.value = getVal('mixed-port', '7890');
+    var vm = document.getElementById('vcfgMode'); if (vm) vm.value = getVal('mode', 'rule');
+    var vll = document.getElementById('vcfgLogLevel'); if (vll) vll.value = getVal('log-level', 'info');
+    var vud = document.getElementById('vcfgUnifiedDelay'); if (vud) vud.checked = getBool('unified-delay');
+    var val = document.getElementById('vcfgAllowLan'); if (val) val.checked = getBool('allow-lan');
+    var v6 = document.getElementById('vcfgIpv6'); if (v6) v6.checked = getBool('ipv6');
+    var vt = document.getElementById('vcfgTun'); if (vt) vt.checked = getBool('enable') && /tun:/.test(cfg);
+    var vtd = document.getElementById('vcfgTunDevice'); if (vtd) vtd.value = getVal('device', 'Mihomo');
+    var vts = document.getElementById('vcfgTunStack'); if (vts) vts.value = getVal('stack', 'gvisor');
+    var vde = document.getElementById('vcfgDnsEnable'); if (vde) vde.checked = /\bdns:/.test(cfg) && getBool('enable');
+    var vdh = document.getElementById('vcfgDnsEnhanced'); if (vdh) vdh.value = getVal('enhanced-mode', 'fake-ip');
+    var vfir = document.getElementById('vcfgFakeIpRange'); if (vfir) vfir.value = getVal('fake-ip-range', '198.18.0.1/16');
+    var vea = document.getElementById('vcfgExtAddr'); if (vea) vea.value = getVal('external-controller', '0.0.0.0:9090');
+    var ves = document.getElementById('vcfgExtSecret'); if (ves) ves.value = getVal('secret', '');
+  });
+}
+function saveVcfg(key) {
+  var elId = {
+    'mixed-port':'vcfgMixedPort','mode':'vcfgMode','log-level':'vcfgLogLevel',
+    'unified-delay':'vcfgUnifiedDelay','allow-lan':'vcfgAllowLan','ipv6':'vcfgIpv6',
+    'tcp-concurrent':'vcfgTcpConcurrent','find-process':'vcfgFindProcess',
+    'socks-port':'vcfgSocksPort','redir-port':'vcfgRedirPort','tproxy-port':'vcfgTproxyPort',
+    'auth':'vcfgAuth',
+    'tun':'vcfgTun','tun-device':'vcfgTunDevice','tun-stack':'vcfgTunStack',
+    'tun-dns-hijack':'vcfgTunDnsHijack','tun-auto-route':'vcfgTunAutoRoute','tun-auto-detect':'vcfgTunAutoDetect',
+    'dns-enable':'vcfgDnsEnable','dns-enhanced':'vcfgDnsEnhanced','fake-ip-range':'vcfgFakeIpRange',
+    'dns-ipv6':'vcfgDnsIpv6','dns-use-hosts':'vcfgDnsHosts','dns-use-sys-hosts':'vcfgDnsSysHosts',
+    'ext-addr':'vcfgExtAddr','ext-secret':'vcfgExtSecret','ext-ui':'vcfgExtUi',
+    'profile':'vcfgProfile','geodata-mode':'vcfgGeodataMode','geo-loader':'vcfgGeoLoader',
+    'global-ua':'vcfgGlobalUa','keep-alive':'vcfgKeepAlive'
+  }[key];
+  if (!elId) return;
+  var el = document.getElementById(elId);
+  var val = el.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
+  if (!val && val !== 'false') return;
+  fetch('api/config').then(r => r.json()).then(d => {
+    var raw = d.config || '';
+    var lines = raw.split('\n');
+    var yamlKey = key;
+    var section = null;
+    if (key.startsWith('tun-')) section = 'tun';
+    if (key.startsWith('dns-')) section = 'dns';
+    if (key === 'tun') { yamlKey = 'enable'; section = 'tun'; }
+    if (key === 'tun-device') yamlKey = 'device';
+    if (key === 'tun-stack') yamlKey = 'stack';
+    if (key === 'tun-dns-hijack') yamlKey = 'dns-hijack';
+    if (key === 'tun-auto-route') yamlKey = 'auto-route';
+    if (key === 'tun-auto-detect') yamlKey = 'auto-detect-interface';
+    if (key === 'dns-enable') yamlKey = 'enable';
+    if (key === 'dns-enhanced') yamlKey = 'enhanced-mode';
+    if (key === 'fake-ip-range') yamlKey = 'fake-ip-range';
+    if (key === 'dns-ipv6') yamlKey = 'ipv6';
+    if (key === 'dns-use-hosts') yamlKey = 'use-hosts';
+    if (key === 'dns-use-sys-hosts') yamlKey = 'use-system-hosts';
+    if (key === 'ext-addr') yamlKey = 'external-controller';
+    if (key === 'ext-secret') yamlKey = 'secret';
+    if (key === 'ext-ui') yamlKey = 'external-ui';
+    if (key === 'geo-loader') yamlKey = 'geodata-loader';
+    var found = false;
+    for (var i = 0; i < lines.length; i++) {
+      var line = lines[i];
+      var indent = line.match(/^(\s*)/)[0].length;
+      if (section && indent === 0 && line.trim() === section + ':') {
+        for (var j = i + 1; j < lines.length; j++) {
+          var l2 = lines[j]; var ind2 = l2.match(/^(\s*)/)[0].length;
+          if (ind2 <= indent && l2.trim() !== '') break;
+          var re = new RegExp('^\\s{2}' + yamlKey.replace(/-/g, '\\-') + ':\\s*');
+          if (re.test(l2)) {
+            lines[j] = '  ' + yamlKey + ': ' + val;
+            found = true; break;
+          }
+        }
+        break;
+      }
+      if (section) continue;
+      var re = new RegExp('^' + yamlKey.replace(/-/g, '\\-') + ':\\s*');
+      if (re.test(line)) {
+        lines[i] = yamlKey + ': ' + val;
+        found = true; break;
+      }
+    }
+    if (!found && section) {
+      for (var k = 0; k < lines.length; k++) {
+        if (lines[k].match(/^(\s*)/)[0].length === 0 && lines[k].trim() === section + ':') {
+          lines.splice(k + 1, 0, '  ' + yamlKey + ': ' + val); found = true; break;
+        }
+      }
+    }
+    if (!found && !section) { lines.push(yamlKey + ': ' + val); }
+    var newCfg = lines.join('\n');
+    fetch('api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({config: newCfg}) })
+      .then(r => r.json()).then(d2 => {
+        if (d2.success) showToast('已保存: ' + key, 'success');
+        else showToast('保存失败: ' + (d2.error || ''), 'error');
+      });
+  });
 }
 
 // ── 设置 ─────────────────────────────────────

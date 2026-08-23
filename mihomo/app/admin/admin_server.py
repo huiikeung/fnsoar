@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Clash Mini Admin Server
+FnSoar Admin Server
 - HTTP admin panel on port 9099 (for direct access)
 - Unix socket gateway for fnOS iframe integration
 - Manages config.yaml, service start/stop, proxy providers, logs
@@ -26,12 +26,12 @@ from urllib.parse import urlparse, parse_qs, quote
 from pathlib import Path
 
 # ── Paths (set by service-setup or fallback) ──────────────────────────────
-TRIM_APPNAME  = os.environ.get("MIHOMO_APP_NAME", "fnnas.clashmini")
-TRIM_PKGVAR   = os.environ.get("MIHOMO_DATA_DIR", "/vol1/@appdata/fnnas.clashmini")
-TRIM_APPDEST  = os.environ.get("MIHOMO_DEST_DIR", "/vol1/@appcenter/fnnas.clashmini")
+TRIM_APPNAME  = os.environ.get("MIHOMO_APP_NAME", "fnnas.fnsoar")
+TRIM_PKGVAR   = os.environ.get("MIHOMO_DATA_DIR", "/vol1/@appdata/fnnas.fnsoar")
+TRIM_APPDEST  = os.environ.get("MIHOMO_DEST_DIR", "/vol1/@appcenter/fnnas.fnsoar")
 ADMIN_PORT    = int(os.environ.get("MIHOMO_ADMIN_PORT", "9099"))
 SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
-                                f"/vol1/@appcenter/{TRIM_APPNAME}/clashmini.sock")
+                                f"/vol1/@appcenter/{TRIM_APPNAME}/fnsoar.sock")
 
 CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
 ICON_DIR      = f"{TRIM_PKGVAR}/icons"
@@ -84,7 +84,7 @@ def localize_icon(url):
                 ct = _ICON_EXT_MIME.get("." + f.rsplit(".", 1)[-1].lower(), "image/png")
                 return os.path.join(ICON_DIR, f), ct
         # 下载
-        req = urllib.request.Request(url, headers={"User-Agent": "fn-mihomo/1.0"})
+        req = urllib.request.Request(url, headers={"User-Agent": "FnSoar/1.0"})
         with urllib.request.urlopen(req, timeout=15, context=_SSL_CTX) as resp:
             data = resp.read()
             ctype = (resp.headers.get("Content-Type") or "image/png").split(";")[0].strip().lower()
@@ -448,7 +448,7 @@ def edit_provider_delete(name):
 def _http_get(url, timeout=20):
     import urllib.request as _ureq
     req = _ureq.Request(url, headers={
-        "User-Agent": "ClashMini/1.0 (fnOS mihomo)",
+        "User-Agent": "FnSoar/1.0 (fnOS)",
         "Accept": "application/yaml,application/x-yaml,text/yaml,text/plain,*/*",
     })
     with _ureq.urlopen(req, timeout=timeout) as r:
@@ -698,9 +698,9 @@ class AdminHandler(BaseHTTPRequestHandler):
         log(f"{addr} - {fmt % args}")
 
     def _strip_gateway_prefix(self, path):
-        """fnOS gateway may forward /app/fnnas.clashmini/... with the prefix intact.
+        """fnOS gateway may forward /app/fnnas.fnsoar/... with the prefix intact.
         Strip it so routing below works either way."""
-        prefix = os.environ.get("MIHOMO_GATEWAY_PREFIX", "/app/fnnas.clashmini")
+        prefix = os.environ.get("MIHOMO_GATEWAY_PREFIX", "/app/fnnas.fnsoar")
         if path == prefix or path.startswith(prefix + "/"):
             return path[len(prefix):] or "/"
         return path
@@ -739,7 +739,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         except FileNotFoundError:
             self.send_error(404)
 
-    # ── Clash Mini Clash API reverse proxy ─────────────────────────────────
+    # ── FnSoar Clash API reverse proxy ─────────────────────────────────
     _CLASH_API_PREFIXES = (
         "/version", "/proxies", "/group", "/rules", "/configs", "/traffic",
         "/connections", "/logs", "/providers/proxies", "/providers/rules",
@@ -1094,7 +1094,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             return
         if self._maybe_proxy_clash_api(path):
             return
-        # Dashboard static files (zashboard, metacubexd) — served from /vol1/@appdata/fnnas.clashmini/dashboard/
+        # Dashboard static files (zashboard, metacubexd) — served from /vol1/@appdata/fnnas.fnsoar/dashboard/
         served = self._try_serve_dashboard(path)
         if served is not False:
             return served
@@ -1217,7 +1217,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             try:
                 import subprocess
                 cli = "/usr/local/bin/appcenter-cli"
-                cmd = f"cd /vol1/@appcenter/fnnas.clashmini && {cli} restart fnnas.clashmini"
+                cmd = f"cd /vol1/@appcenter/fnnas.fnsoar && {cli} restart fnnas.fnsoar"
                 subprocess.Popen(["sh", "-c", "sleep 1 && " + cmd + " >/dev/null 2>&1 &"], start_new_session=True)
                 return self._send_json({"success": True, "message": "正在重启内核…"})
             except Exception as e:
@@ -1356,7 +1356,7 @@ def start_unix_socket_server():
         return None
 
 def main():
-    log(f"Starting Clash Mini Admin Server")
+    log(f"Starting FnSoar Admin Server")
     log(f"  HTTP port : {ADMIN_PORT}")
     log(f"  Unix sock : {SOCKET_PATH}")
     log(f"  Config    : {CONFIG_FILE}")

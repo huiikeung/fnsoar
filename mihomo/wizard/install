@@ -1,10 +1,10 @@
 [
     {
-        "stepTitle": "欢迎安装 Clash Mini",
+        "stepTitle": "欢迎安装 FnSoar",
         "items": [
             {
                 "type": "tips",
-                "helpText": "Clash Mini 是一个基于 Clash Mini (Clash Meta) 内核的代理工具，内置 Clash Mini 引擎 + metacubexd/zashboard 双管理面板，支持 TUN 模式、规则引擎、DNS 分流等功能。"
+                "helpText": "FnSoar 是一个基于 FnSoar (Clash Meta) 内核的代理工具，内置 FnSoar 引擎 + metacubexd/zashboard 双管理面板，支持 TUN 模式、规则引擎、DNS 分流等功能。"
             },
             {
                 "type": "tips",
