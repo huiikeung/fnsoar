@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# FnSoar admin server launcher (legacy copy under cmd/)
+# fnSoar admin server launcher (legacy copy under cmd/)
 # NOTE: cmd/ does NOT persist into $TRIM_APPDEST after install. The copy
 # that actually runs is $TRIM_APPDEST/admin/start_admin.sh (ships inside
 # app.tgz). This file is kept for reference / direct invocation only.

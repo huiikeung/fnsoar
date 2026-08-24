@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# FnSoar fnOS Service Setup
+# fnSoar fnOS Service Setup
 # ---------------------------------------------------------------------------
 
 LOG_FILE="${TRIM_PKGVAR}/${TRIM_APPNAME}.log"
@@ -88,6 +88,13 @@ service_postinst()
         echo "Copied default config.yaml template" >> "${LOG_FILE}"
     else
         echo "WARNING: No default config template found" >> "${LOG_FILE}"
+    fi
+
+    # Copy icons.yaml template (ensure readable permissions)
+    if [ -f "${TRIM_APPDEST}/default-config/icons.yaml" ]; then
+        cp "${TRIM_APPDEST}/default-config/icons.yaml" "${TRIM_PKGVAR}/icons.yaml"
+        chmod 644 "${TRIM_PKGVAR}/icons.yaml"
+        echo "Copied icons.yaml template" >> "${LOG_FILE}"
     fi
 
     # Apply wizard settings to config.yaml

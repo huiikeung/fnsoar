@@ -3,8 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>FnSoar · Web UI</title>
+<title>fnSoar · Web UI</title>
 <style>
+/* 全局隐藏滚动条 */
+*::-webkit-scrollbar{display:none}
+*{scrollbar-width:none;-ms-overflow-style:none}
 :root{--bg:#0f0f11;--card:#1a1a1e;--card2:#202024;--border:#2a2a30;--text:#e8e8ec;--dim:#9a9aa3;--accent:#4e6ef2;--accent2:#6d8aff;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff}
 [data-theme="light"]{--bg:#f5f6f8;--card:#fff;--card2:#f0f1f4;--border:#e2e4ea;--text:#1f2328;--dim:#6b7280;--accent:#4e6ef2;--accent2:#3b5bdb;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff}
 @media(prefers-color-scheme:light){:root:not([data-theme]){--bg:#f5f6f8;--card:#fff;--card2:#f0f1f4;--border:#e2e4ea;--text:#1f2328;--dim:#6b7280;--accent:#4e6ef2;--accent2:#3b5bdb;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff}}
@@ -51,7 +54,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 </head>
 <body>
 <div class="topbar">
-  <h1>FnSoar</h1>
+  <h1>fnSoar</h1>
   <div class="info">
     <span id="modeBadge" class="mode-badge">Rule</span>
     <span id="trafficInfo">↓ 0 B/s &nbsp; ↑ 0 B/s</span>

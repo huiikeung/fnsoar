@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# FnSoar fnOS Installer — runs before install/upgrade to set up environment
+# fnSoar fnOS Installer — runs before install/upgrade to set up environment
 # ---------------------------------------------------------------------------
 
 INST_LOG="/var/log/apps/${TRIM_APPNAME}.log"

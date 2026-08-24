@@ -4,9 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">
-<title>FnSoar 控制面板</title>
+<title>fnSoar 控制面板</title>
 <link rel="icon" type="image/png" href="./favicon.png">
 <style>
+/* 全局隐藏滚动条 */
+*::-webkit-scrollbar{display:none}
+*{scrollbar-width:none;-ms-overflow-style:none}
 :root{
   --bg:#0f0f11;          /* 全局背景（侧栏与主区一致） */
   --card:#1a1a1e;        /* 卡片 */
@@ -62,9 +65,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar{width:232px;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s ease}
 .sidebar.collapsed{width:56px}
 .sidebar.hidden{display:none}
-@media(max-width:860px){.sidebar.expanded{width:232px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
+@media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:232px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
 .sidebar-hidden-toggle{display:none;position:fixed;z-index:200;width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);align-items:center;justify-content:center;cursor:grab;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);user-select:none;touch-action:none}
-@media(max-width:860px){.sidebar.hidden~.sidebar-hidden-toggle{display:flex}}
+@media(max-width:860px){.sidebar-hidden-toggle{display:flex}}
 .sidebar.collapsed .sidebar-header{padding:14px 0 10px;justify-content:center}
 .sidebar.collapsed .sidebar-header>div{display:none}
 .sidebar.collapsed .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}
@@ -139,9 +142,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .home-settings-item:hover{background:var(--card2)}
 .home-settings-item input[type="checkbox"]{accent-color:var(--accent);width:15px;height:15px;cursor:pointer}
 .home-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px}
-.hcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px}
+.hcard{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:18px 20px;min-width:0;overflow:hidden}
 .hcard.full{grid-column:1/-1}
-.hcard-title{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.hcard-title{display:flex;align-items:center;gap:10px;margin-bottom:16px;min-width:0;overflow:hidden}
 .hcard-ic{width:32px;height:32px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .hcard-ic svg{width:19px;height:19px;fill:currentColor;stroke:none}
 .hcard-ic.cloud{background:rgba(78,110,242,.16);color:var(--accent2)}
@@ -154,7 +157,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .hcard-ic.clash{background:rgba(245,158,11,.13);color:#f59e0b}
 .hcard-ic.sys{background:rgba(148,163,184,.14);color:#94a3b8}
 .hcard-ic.traffic{background:rgba(240,101,41,.14);color:#f0a341}
-.hcard-name{font-weight:700;font-size:15px;color:var(--text)}
+.hcard-name{font-weight:700;font-size:15px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .flex-sp{flex:1}
 .mini-btn{background:transparent;border:1px solid var(--accent);color:var(--accent2);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
 .mini-btn:hover{background:var(--accent);color:var(--on-accent)}
@@ -181,7 +184,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .udp-tag{border:1px solid var(--accent);color:var(--accent2);background:rgba(78,110,242,.08);border-radius:10px;padding:1px 8px;font-size:10px;font-weight:600}
 .sel-row{display:flex;align-items:center;gap:12px;padding:8px 0}
 .sel-label{color:var(--dim);font-size:12.5px;min-width:52px}
-.sel-row select{background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 10px;font-size:12.5px;outline:none;flex:1;min-width:0}
+.sel-row select{background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);padding:9px 36px 9px 13px;font-size:13px;outline:none;flex:1;min-width:0;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.sel-row select:hover{border-color:var(--dim)}
+.sel-row select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+
+/* ── 自定义下拉框 ─────────────────────────── */
+.custom-select{position:relative;flex:1;min-width:0}
+.custom-select-trigger{display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:13px;cursor:pointer;transition:border-color .15s,box-shadow .15s;gap:8px;min-width:0;user-select:none}
+.custom-select-trigger:hover{border-color:var(--accent);border-style:dashed}
+.custom-select-trigger.open{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
+.custom-select-trigger .cs-arrow{flex-shrink:0;transition:transform .2s;color:var(--dim);display:flex;align-items:center}
+.custom-select-trigger .cs-arrow svg{width:14px;height:14px}
+.custom-select-trigger.open .cs-arrow{transform:rotate(180deg);color:var(--accent2)}
+.custom-select-trigger .cs-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;min-width:0;text-align:left}
+.custom-select-panel{position:fixed;z-index:9999;background:var(--card);border:1.5px solid var(--border);border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.4);max-height:260px;overflow-y:auto;display:none;min-width:120px}
+.custom-select-panel.open{display:block;animation:csFadeIn .12s ease}
+@keyframes csFadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.custom-select-option{padding:10px 14px;font-size:13px;cursor:pointer;transition:background .08s;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.custom-select-option:hover{background:var(--card2);color:var(--accent2)}
+.custom-select-option.active{background:rgba(78,110,242,.12);color:var(--accent2);font-weight:600}
+.custom-select-panel::-webkit-scrollbar{width:6px}
+.custom-select-panel::-webkit-scrollbar-track{background:transparent}
+.custom-select-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .mode-big{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
 .mode-big-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px 8px;border-radius:12px;border:1.5px solid var(--border);background:var(--card2);color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;transition:all .12s}
 .mode-big-btn:hover{border-color:var(--faint)}
@@ -254,9 +278,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .traffic-total{font-size:12px;color:var(--dim)}
 .traffic-total b{color:var(--text);font-weight:700}
 @media(max-width:760px){.home-grid{grid-template-columns:1fr}.traffic-speed-row{flex-direction:column;gap:8px}}
+@media(max-width:480px){.main{padding:14px 10px}.card{padding:14px 12px}.grid{grid-template-columns:1fr;gap:8px}.home-grid{grid-template-columns:1fr;gap:10px}.info-grid{grid-template-columns:1fr}.con-head{padding:10px 0}}
 .hint{font-size:12px;color:var(--faint);margin-top:8px}
-input[type="text"],input[type="number"],textarea,select{background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:13px;outline:none;font-family:inherit;width:100%}
-input:focus,textarea:focus,select:focus{border-color:var(--accent)}
+input[type="text"],input[type="number"],textarea,select{background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:13px;outline:none;font-family:inherit;width:100%;transition:border-color .15s,box-shadow .15s}
+select{appearance:none;-webkit-appearance:none;padding-right:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer}
+input:focus,textarea:focus,select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 textarea{resize:vertical;font-family:'SF Mono','Menlo',monospace;line-height:1.6;font-size:12px}
 .form-row{display:flex;gap:12px;margin-bottom:14px}
 .table-wrap{overflow-x:auto;border-radius:10px;border:1px solid var(--border)}
@@ -297,12 +323,14 @@ tbody tr:hover{background:var(--card2)}
 .gcard-info .gcard-count{font-size:11px;color:var(--dim);font-weight:400;flex-shrink:0;white-space:nowrap}
 .gcard-info .gcard-now{font-size:11px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:26ch}
 .gcard-head-spacer{flex:1;min-width:0}
+.gcard-count-right{font-size:11px;color:var(--dim);font-weight:500;flex-shrink:0;margin-right:4px;display:flex;align-items:center;min-width:2ch;justify-content:flex-end}
 /* 右侧按钮组（参考 clash-verge-rev ProxyHead：定位/测速/排序/测速URL/详情/筛选） */
 .ghead-tools{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .ghead-tool{width:28px;height:28px;border-radius:7px;border:none;background:transparent;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;flex-shrink:0;padding:0}
 .ghead-tool:hover{color:var(--accent2);background:rgba(78,110,242,.14)}
 .ghead-tool.active{color:var(--accent2)}
-.ghead-tool.testing{color:var(--accent2);animation:pulse 1s infinite}
+.ghead-tool.testing{width:auto;min-width:28px;padding:0 7px;gap:5px;color:var(--accent2);animation:pulse 1s infinite;white-space:nowrap}
+.test-progress{font-size:11px;font-weight:600;line-height:1;white-space:nowrap}
 .ghead-tool svg{width:16px;height:16px;fill:currentColor}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
 /* 组内工具条：筛选 / 测速URL */
@@ -315,6 +343,22 @@ tbody tr:hover{background:var(--card2)}
 .gcard-body{max-height:64vh;overflow-y:auto;padding:4px 9px 11px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;align-content:start}
 .gcard.collapsed .gcard-body{display:none}
 @media(max-width:880px){.gcard-body{grid-template-columns:1fr}}
+/* 手机端：第一行保留标题和节点数量，操作按钮独占第二行，避免 hover 覆盖关键信息。 */
+@media(max-width:480px){
+  .gcard-head{display:grid;grid-template-columns:24px minmax(0,1fr) auto;grid-template-areas:"icon main count" ". tools tools";align-items:center;gap:5px 6px;padding:9px 8px 8px 10px;min-height:82px}
+  .gcard-ic{grid-area:icon;align-self:center}
+  .gcard-main{grid-area:main;min-width:0;width:auto;align-self:center}
+  .gcard-head-spacer{display:none}
+  .gcard-count-right{grid-area:count;align-self:start;min-width:18px;margin:2px 0 0 1px}
+  .ghead-tools{grid-area:tools;display:flex;align-items:center;justify-content:flex-end;gap:0;width:100%;align-self:start;border-top:1px solid var(--border-soft);padding-top:3px}
+  .ghead-tool{width:28px;height:28px}
+  .ghead-tool svg{width:15px;height:15px}
+  .gcard-name{max-width:none}
+  .gcard-info .gcard-now{max-width:none}
+  .global-toolbar{justify-content:flex-start;flex-wrap:nowrap;gap:6px}
+  .global-toolbar .ghead-tools{order:0;flex:0 0 auto;width:auto;justify-content:flex-start;border-top:0;padding-top:0}
+  .global-toolbar-now{margin-left:auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+}
 .gsub{display:flex;align-items:center;gap:9px;padding:9px 12px;border-radius:10px;background:var(--card2);border:1px solid var(--border);cursor:pointer;transition:all .12s;min-width:0;box-sizing:border-box}
 .gsub:hover{border-color:var(--faint)}
 .gsub.active{border-left:3px solid var(--accent);background:rgba(78,110,242,.14);margin-left:1px}
@@ -350,6 +394,7 @@ tbody tr:hover{background:var(--card2)}
 .node-grid-all{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;grid-column:1/-1;width:100%}
 .global-toolbar{display:flex;align-items:center;gap:10px;grid-column:1/-1;width:100%;margin-bottom:4px;flex-wrap:wrap}
 .global-toolbar .mini-btn{display:inline-flex;align-items:center;gap:6px}
+.global-toolbar .ghead-tools{margin-left:0;order:0}
 .global-toolbar-now{margin-left:auto;font-size:12.5px;color:var(--dim);font-weight:600}
 .node-card{background:var(--card);border:1px solid var(--border);border-radius:11px;padding:11px 14px;cursor:pointer;transition:all .12s;position:relative;display:flex;flex-direction:column;gap:7px;min-width:0}
 .node-card:hover{border-color:var(--faint);transform:translateY(-1px)}
@@ -436,7 +481,7 @@ tbody tr:hover{background:var(--card2)}
 .log-item .log-msg{flex:1;word-break:break-all;color:var(--text)}
 /* 设置 */
 #section-settings{flex-direction:column;flex:1;min-height:0}
-.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;overflow:auto;min-height:0;align-content:start}
+.set-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;flex:1;overflow:auto;min-height:0;align-content:start;padding-bottom:32px}
 .set-col{display:flex;flex-direction:column;gap:14px;min-width:0}
 .set-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:80px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .set-title{font-size:15px;font-weight:600;color:var(--text);padding:18px 20px 10px;letter-spacing:-.1px}
@@ -451,9 +496,9 @@ tbody tr:hover{background:var(--card2)}
 .set-input{width:100px;max-width:140px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:14px;text-align:right;outline:none;font-variant-numeric:tabular-nums;transition:border-color .15s}
 .set-input:hover{border-color:var(--dim)}
 .set-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
-.set-select{padding:8px 30px 8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:14px;outline:none;appearance:none;cursor:pointer;transition:border-color .15s;max-width:140px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='%23888'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.set-select{padding:9px 34px 9px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);font-size:13.5px;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;max-width:150px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 .set-select:hover{border-color:var(--dim)}
-.set-select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
+.set-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 /* toggle */
 .toggle{position:relative;display:inline-flex;align-items:center;cursor:pointer;flex-shrink:0}
 .toggle input{position:absolute;opacity:0;width:0;height:0}
@@ -472,6 +517,10 @@ tbody tr:hover{background:var(--card2)}
 .con-detail-grid dd{color:var(--text);word-break:break-all;margin:0}
 .con-detail-close{position:absolute;top:10px;right:14px;width:28px;height:28px;border-radius:6px;border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center}
 .con-detail-close:hover{background:var(--card2);color:var(--text)}
+.vcfg-confirm-btns{display:flex;gap:10px;justify-content:flex-end;margin-top:16px}
+.vcfg-confirm-btns button{padding:7px 20px;border-radius:8px;font-size:13px;font-family:inherit;cursor:pointer;border:none;font-weight:600}
+.vcfg-confirm-btns .btn-cancel{background:var(--card2);color:var(--dim)}
+.vcfg-confirm-btns .btn-danger{background:var(--red);color:#fff}
 /* 列设置弹窗 */
 .col-settings-box{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;max-width:380px;width:90%;max-height:80vh;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,.4)}
 .col-settings-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;font-size:15px;font-weight:600;color:var(--text)}
@@ -515,11 +564,14 @@ tbody tr:hover{background:var(--card2)}
 #section-rules .card{flex:1;min-height:0}
 #section-config{flex-direction:column;flex:1;min-height:0}
 #section-config .card{flex:1;min-height:0}
-.vcfg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.vcfg-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;padding-bottom:32px}
 .vcfg-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
 .vcfg-card-title{display:flex;align-items:center;gap:8px;padding:10px 16px;font-size:13.5px;font-weight:600;border-bottom:1px solid var(--border-soft);background:var(--card2)}
 .vcfg-card-title .vcfg-ic{width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
 .vcfg-card-title .vcfg-ic svg{width:14px;height:14px}
+.vcfg-reset-btn{background:transparent;border:1px solid var(--border);color:var(--dim);font-size:12px;cursor:pointer;padding:3px 8px;border-radius:6px;margin-left:auto;line-height:1;transition:all .12s;font-family:inherit;display:inline-flex;align-items:center;gap:4px}
+.vcfg-reset-btn:hover{color:var(--accent);border-color:var(--accent);background:rgba(59,130,246,.08)}
+.vcfg-reset-btn svg{width:12px;height:12px}
 .vcfg-ic.cfg-basic{background:rgba(78,110,242,.14);color:var(--accent)}
 .vcfg-ic.cfg-in{background:rgba(245,158,11,.14);color:#f59e0b}
 .vcfg-ic.cfg-tun{background:rgba(139,92,246,.14);color:#8b5cf6}
@@ -528,13 +580,21 @@ tbody tr:hover{background:var(--card2)}
 .vcfg-ic.cfg-adv{background:rgba(107,114,128,.14);color:var(--dim)}
 .vcfg-card-body{padding:10px 16px;display:flex;flex-direction:column;gap:8px}
 .vcfg-row{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:30px}
-.vcfg-row .vcfg-label{font-size:13px;color:var(--text);flex-shrink:0}
-.vcfg-row .vcfg-hint{font-size:10.5px;color:var(--faint);font-weight:400}
-.vcfg-row input[type=text],.vcfg-row input[type=number],.vcfg-row select{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:12.5px;color:var(--text);outline:none;width:150px;text-align:left;transition:border-color .15s;font-family:inherit}
+.vcfg-row .vcfg-label{font-size:13px;color:var(--text);flex-shrink:0;min-width:100px}
+.vcfg-row .vcfg-hint{display:none}
+.vcfg-row input[type=text],.vcfg-row input[type=number],.vcfg-row select{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:5px 10px;font-size:12.5px;color:var(--text);outline:none;width:180px;text-align:left;transition:border-color .15s;font-family:inherit}
 .vcfg-row input:focus,.vcfg-row select:focus{border-color:var(--accent)}
-.vcfg-row select{width:160px;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:26px}
+.vcfg-row select{width:160px;cursor:pointer;appearance:none;-webkit-appearance:none;transition:border-color .15s,box-shadow .15s;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;padding-right:28px}
+.vcfg-row select:hover{border-color:var(--dim)}
+.vcfg-row select:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.1)}
 .vcfg-row input[type=text]{width:180px}
 .vcfg-row input[type=number]{width:110px}
+.vcfg-row textarea{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;resize:vertical;width:220px}
+.vcfg-row textarea:focus{border-color:var(--accent)}
+.pg-check{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:18px;background:var(--card2);border:1px solid transparent;cursor:pointer;font-size:12.5px;color:var(--text);transition:all .12s;user-select:none}
+.pg-check:hover{border-color:var(--border)}
+.pg-check.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pg-check input{display:none}
 .con-raw-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--dim);font-size:12px;cursor:pointer;transition:all .12s;font-family:inherit}
 .con-raw-btn:hover{background:var(--card);color:var(--text);border-color:var(--accent)}
 @media(max-width:760px){.vcfg-grid{grid-template-columns:1fr}}
@@ -626,7 +686,8 @@ tbody tr:hover{background:var(--card2)}
 .unlock-time{font-size:11px;color:var(--dim);text-align:right;padding:6px 14px 10px}
 
 @media(max-width:860px){
-  .sidebar{width:56px}
+  .sidebar{width:56px;display:none!important}
+  .sidebar.mobile-visible{display:flex!important}
   .sidebar-header{padding:14px 0 10px;justify-content:center}
   .sidebar-header>div{display:none}
   .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}
@@ -661,11 +722,11 @@ tbody tr:hover{background:var(--card2)}
 <div class="toast-container" id="toastContainer"></div>
 <div class="layout">
   <!-- 左侧栏（背景与右侧一致） -->
-  <aside class="sidebar">
+  <aside class="sidebar hidden">
     <div class="sidebar-header" onclick="toggleSidebar()" title="折叠/展开侧边栏" style="cursor:pointer">
-      <img src="./favicon.png" alt="Mihomo">
+      <img src="./favicon.png" alt="fnSoar">
       <div>
-        <div class="t1">Mihomo</div>
+        <div class="t1">fnSoar</div>
         <div class="t2">Mihomo 代理引擎 · fnOS</div>
       </div>
     </div>
@@ -1006,91 +1067,125 @@ tbody tr:hover{background:var(--card2)}
     <section id="section-config" style="display:none">
       <div id="configVisual">
         <div class="con-head">
-          <h3>配置</h3>
-          <button class="con-raw-btn" onclick="showConfigRaw()" title="编辑原始配置">
-            <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
-            编辑源文件
-          </button>
+          <h3 data-i18n="config.title">配置</h3>
+          <div class="con-head-actions">
+            <button class="con-raw-btn" onclick="resetAllConfigSections()" data-i18n-title="vcfg.resetAll" title="重置所有可视化模块为默认">
+              <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              <span data-i18n="vcfg.resetAll">重置全部</span>
+            </button>
+            <button class="con-raw-btn" onclick="showConfigRaw()" data-i18n-title="config.editRawTitle" title="编辑原始配置">
+              <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
+              <span data-i18n="config.editRaw">编辑源文件</span>
+            </button>
+          </div>
         </div>
         <div class="vcfg-grid" id="vcfgGrid">
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span>基础设置</div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.basic">基础设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('basic')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label">运行模式<span class="vcfg-hint">mode</span></span><select id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule">规则</option><option value="global">全局</option><option value="direct">直连</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">日志级别<span class="vcfg-hint">log-level</span></span><select id="vcfgLogLevel" onchange="saveVcfg('log-level')"><option value="silent">silent</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option><option value="debug">debug</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">IPv6<span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">统一延迟<span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">TCP 并发<span class="vcfg-hint">tcp-concurrent</span></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">查找进程<span class="vcfg-hint">find-process-mode</span></span><select id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.mode">运行模式</span><span class="vcfg-hint">mode</span></span><select id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule" data-i18n="vcfg.modeRule">规则</option><option value="global" data-i18n="vcfg.modeGlobal">全局</option><option value="direct" data-i18n="vcfg.modeDirect">直连</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.logLevel">日志级别</span><span class="vcfg-hint">log-level</span></span><select id="vcfgLogLevel" onchange="saveVcfg('log-level')"><option value="silent">silent</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option><option value="debug">debug</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.ipv6">IPv6</span><span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tcpConcurrent">TCP 并发</span><span class="vcfg-hint">tcp-concurrent</span></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.findProcess">查找进程</span><span class="vcfg-hint">find-process-mode</span></span><select id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
             </div>
           </div>
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5m0 3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg></span>入站设置</div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5m0 3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg></span><span data-i18n="vcfg.inbound">入站设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('inbound')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label">HTTP 端口<span class="vcfg-hint">mixed-port</span></span><input type="number" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">Socks 端口<span class="vcfg-hint">socks-port</span></span><input type="number" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">Redir 端口<span class="vcfg-hint">redir-port</span></span><input type="number" id="vcfgRedirPort" placeholder="7892" onchange="saveVcfg('redir-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">TProxy 端口<span class="vcfg-hint">tproxy-port</span></span><input type="number" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">局域网连接<span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">认证<span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass" onchange="saveVcfg('auth')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><span class="vcfg-hint">mixed-port</span></span><input type="number" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.socksPort">Socks 端口</span><span class="vcfg-hint">socks-port</span></span><input type="number" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.redirPort">Redir 端口</span><span class="vcfg-hint">redir-port</span></span><input type="number" id="vcfgRedirPort" placeholder="7892" onchange="saveVcfg('redir-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tproxyPort">TProxy 端口</span><span class="vcfg-hint">tproxy-port</span></span><input type="number" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.allowLan">局域网连接</span><span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.auth">认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass" onchange="saveVcfg('auth')"></div>
             </div>
           </div>
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-tun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span>TUN 设置</div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-tun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span><span data-i18n="vcfg.tun">TUN 设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('tun')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label">TUN 启用<span class="vcfg-hint">tun.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgTun" onchange="saveVcfg('tun')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">设备名称<span class="vcfg-hint">tun.device</span></span><input type="text" id="vcfgTunDevice" placeholder="Mihomo" onchange="saveVcfg('tun-device')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">协议栈<span class="vcfg-hint">tun.stack</span></span><select id="vcfgTunStack" onchange="saveVcfg('tun-stack')"><option value="gvisor">gvisor</option><option value="system">system</option><option value="mixed">mixed</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">DNS 劫持<span class="vcfg-hint">tun.dns-hijack</span></span><select id="vcfgTunDnsHijack" onchange="saveVcfg('tun-dns-hijack')"><option value="">(默认)</option><option value="any:53">any:53</option><option value="tcp://any:53">tcp://any:53</option><option value="udp://any:53">udp://any:53</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">自动路由<span class="vcfg-hint">tun.auto-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveVcfg('tun-auto-route')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">自动检测接口<span class="vcfg-hint">tun.auto-detect-interface</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoDetect" onchange="saveVcfg('tun-auto-detect')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunEnable">TUN 启用</span><span class="vcfg-hint">tun.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgTun" onchange="saveVcfg('tun')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDevice">设备名称</span><span class="vcfg-hint">tun.device</span></span><input type="text" id="vcfgTunDevice" placeholder="Mihomo" onchange="saveVcfg('tun-device')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunStack">协议栈</span><span class="vcfg-hint">tun.stack</span></span><select id="vcfgTunStack" onchange="saveVcfg('tun-stack')"><option value="gvisor">gvisor</option><option value="system">system</option><option value="mixed">mixed</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDnsHijack">DNS 劫持</span><span class="vcfg-hint">tun.dns-hijack</span></span><select id="vcfgTunDnsHijack" onchange="saveVcfg('tun-dns-hijack')"><option value="" data-i18n="vcfg.default">(默认)</option><option value="any:53">any:53</option><option value="tcp://any:53">tcp://any:53</option><option value="udp://any:53">udp://any:53</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunAutoRoute">自动路由</span><span class="vcfg-hint">tun.auto-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveVcfg('tun-auto-route')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunAutoDetect">自动检测接口</span><span class="vcfg-hint">tun.auto-detect-interface</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoDetect" onchange="saveVcfg('tun-auto-detect')"><span class="toggle-track"></span></label></div>
             </div>
           </div>
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span>DNS 设置</div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.dns">DNS 设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('dns')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label">DNS 启用<span class="vcfg-hint">dns.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsEnable" onchange="saveVcfg('dns-enable')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">增强模式<span class="vcfg-hint">dns.enhanced-mode</span></span><select id="vcfgDnsEnhanced" onchange="saveVcfg('dns-enhanced')"><option value="fake-ip">fake-ip</option><option value="redir-host">redir-host</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">Fake-IP 范围<span class="vcfg-hint">dns.fake-ip-range</span></span><input type="text" id="vcfgFakeIpRange" placeholder="198.18.0.1/16" onchange="saveVcfg('fake-ip-range')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">IPv6 DNS<span class="vcfg-hint">dns.ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsIpv6" onchange="saveVcfg('dns-ipv6')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">使用 hosts<span class="vcfg-hint">dns.use-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsHosts" onchange="saveVcfg('dns-use-hosts')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label">系统 hosts<span class="vcfg-hint">dns.use-system-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsSysHosts" onchange="saveVcfg('dns-use-sys-hosts')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsEnable">DNS 启用</span><span class="vcfg-hint">dns.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsEnable" onchange="saveVcfg('dns-enable')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsEnhanced">增强模式</span><span class="vcfg-hint">dns.enhanced-mode</span></span><select id="vcfgDnsEnhanced" onchange="saveVcfg('dns-enhanced')"><option value="fake-ip">fake-ip</option><option value="redir-host">redir-host</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.fakeIpRange">Fake-IP 范围</span><span class="vcfg-hint">dns.fake-ip-range</span></span><input type="text" id="vcfgFakeIpRange" placeholder="198.18.0.1/16" onchange="saveVcfg('fake-ip-range')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsIpv6">IPv6 DNS</span><span class="vcfg-hint">dns.ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsIpv6" onchange="saveVcfg('dns-ipv6')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsUseHosts">使用 hosts</span><span class="vcfg-hint">dns.use-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsHosts" onchange="saveVcfg('dns-use-hosts')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsUseSysHosts">系统 hosts</span><span class="vcfg-hint">dns.use-system-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsSysHosts" onchange="saveVcfg('dns-use-sys-hosts')"><span class="toggle-track"></span></label></div>
             </div>
           </div>
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-ctrl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8H5v2h4V8zm0 3H5v2h4v-2zm0 3H5v2h4v-2zm3-6h7v2h-7V8zm0 3h7v2h-7v-2zm0 3h7v2h-7v-2z"/></svg></span>外部控制</div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-ctrl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8H5v2h4V8zm0 3H5v2h4v-2zm0 3H5v2h4v-2zm3-6h7v2h-7V8zm0 3h7v2h-7v-2zm0 3h7v2h-7v-2z"/></svg></span><span data-i18n="vcfg.external">外部控制</span><button class="vcfg-reset-btn" onclick="resetConfigSection('external')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label">监听地址<span class="vcfg-hint">external-controller</span></span><input type="text" id="vcfgExtAddr" placeholder="0.0.0.0:9090" onchange="saveVcfg('ext-addr')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">密钥<span class="vcfg-hint">secret</span></span><input type="text" id="vcfgExtSecret" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">外部 UI<span class="vcfg-hint">external-ui</span></span><input type="text" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.extAddr">监听地址</span><span class="vcfg-hint">external-controller</span></span><input type="text" id="vcfgExtAddr" placeholder="0.0.0.0:9090" onchange="saveVcfg('ext-addr')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.extSecret">密钥</span><span class="vcfg-hint">secret</span></span><input type="text" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.extUi">外部 UI</span><span class="vcfg-hint">external-ui</span></span><input type="text" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')"></div>
             </div>
           </div>
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-adv"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span>高级设置</div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-adv"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span><span data-i18n="vcfg.advanced">高级设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('advanced')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label">性能模式<span class="vcfg-hint">profile</span></span><select id="vcfgProfile" onchange="saveVcfg('profile')"><option value="">(默认)</option><option value="low">low</option><option value="balance">balance</option><option value="high">high</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">GEO 加载<span class="vcfg-hint">geodata-mode</span></span><select id="vcfgGeodataMode" onchange="saveVcfg('geodata-mode')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">GEO 更新间隔<span class="vcfg-hint">geodata-loader</span></span><select id="vcfgGeoLoader" onchange="saveVcfg('geo-loader')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label">全局 UA<span class="vcfg-hint">global-ua</span></span><input type="text" id="vcfgGlobalUa" placeholder="clash.meta" onchange="saveVcfg('global-ua')"></div>
-              <div class="vcfg-row"><span class="vcfg-label">保活间隔<span class="vcfg-hint">keep-alive-interval</span></span><input type="number" id="vcfgKeepAlive" placeholder="30" onchange="saveVcfg('keep-alive')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.profile">性能模式</span><span class="vcfg-hint">profile</span></span><select id="vcfgProfile" onchange="saveVcfg('profile')"><option value="" data-i18n="vcfg.default">(默认)</option><option value="low">low</option><option value="balance">balance</option><option value="high">high</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.geoMode">GEO 加载</span><span class="vcfg-hint">geodata-mode</span></span><select id="vcfgGeodataMode" onchange="saveVcfg('geodata-mode')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.geoLoader">GEO 更新间隔</span><span class="vcfg-hint">geodata-loader</span></span><select id="vcfgGeoLoader" onchange="saveVcfg('geo-loader')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.globalUa">全局 UA</span><span class="vcfg-hint">global-ua</span></span><input type="text" id="vcfgGlobalUa" placeholder="clash.meta" onchange="saveVcfg('global-ua')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.keepAlive">保活间隔</span><span class="vcfg-hint">keep-alive-interval</span></span><input type="number" id="vcfgKeepAlive" placeholder="30" onchange="saveVcfg('keep-alive')"></div>
             </div>
-          </div>
         </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.sniffer">Sniffer</span><button class="vcfg-reset-btn" onclick="resetConfigSection('sniffer')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.snifferEnable">Sniffer 启用</span><span class="vcfg-hint">sniffer.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgSniffer" onchange="saveVcfg('sniffer-enable');document.getElementById('vcfgSnifferGroup').style.display=this.checked?'flex':'none'"><span class="toggle-track"></span></label></div>
+              <div id="vcfgSnifferGroup" style="display:flex;flex-direction:column;gap:24px">
+                <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.sniffing">协议</span></span><div style="display:flex;gap:12px"><label class="pg-check" id="vcfgSniffTlsCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">TLS</label><label class="pg-check" id="vcfgSniffHttpCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">HTTP</label></div></div>
+                <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.sniffSkip">跳过域名</span></span><textarea id="vcfgSniffSkip" rows="2" onchange="saveSnifferSection()"></textarea></div>
+              </div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.dnsAdv">DNS 高级</span><button class="vcfg-reset-btn" onclick="resetConfigSection('dns')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsNameserver">nameserver</span></span><textarea id="vcfgDnsNs" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsFallback">fallback</span></span><textarea id="vcfgDnsFb" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.fbGeoip">fallback-filter geoip</span></span><label class="toggle"><input type="checkbox" id="vcfgFbGeoip" onchange="saveDnsAdvSection()"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.fbDomain">fallback-filter domain</span></span><textarea id="vcfgFbDomain" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.geo">Geo 数据</span><button class="vcfg-reset-btn" onclick="resetConfigSection('geox-url')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label">geoip</span><input type="text" id="vcfgGeoIp" onchange="saveGeoSection()"></div>
+              <div class="vcfg-row"><span class="vcfg-label">geosite</span><input type="text" id="vcfgGeoSite" onchange="saveGeoSection()"></div>
+              <div class="vcfg-row"><span class="vcfg-label">mmdb</span><input type="text" id="vcfgMmdb" onchange="saveGeoSection()"></div>
+              <div class="vcfg-row"><span class="vcfg-label">asn</span><input type="text" id="vcfgAsn" onchange="saveGeoSection()"></div>
+            </div>
+          </div>
+      </div>
       </div>
       <div id="configRaw" style="display:none;flex:1;flex-direction:column;min-height:0">
         <div class="con-head">
-          <h3>编辑源文件</h3>
-          <button class="con-raw-btn" onclick="showConfigVisual()" title="返回可视化配置">
+          <h3 data-i18n="config.editRaw">编辑源文件</h3>
+          <button class="con-raw-btn" onclick="showConfigVisual()" data-i18n-title="config.visualTitle" title="返回可视化配置">
             <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M10,20V14H14V20H19V12H22L12,3L2,12H5V20H10Z"/></svg>
-            可视化配置
+            <span data-i18n="config.visual">可视化配置</span>
           </button>
         </div>
         <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto">
-          <p style="color:var(--dim);font-size:12.5px;margin:0 0 12px 0">直接编辑 config.yaml。保存后服务将自动重启。</p>
+          <p style="color:var(--dim);font-size:12.5px;margin:0 0 12px 0" data-i18n="config.desc">直接编辑 config.yaml。保存后服务将自动重启。</p>
           <textarea id="configYaml" style="flex:1;width:100%;min-height:300px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.5;padding:12px;resize:vertical;outline:none" spellcheck="false"></textarea>
           <div class="con-toolbar" style="margin-top:12px;margin-bottom:0;justify-content:flex-end">
-            <button onclick="loadConfigToEditor()" class="con-close-all"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重新加载</button>
-            <button onclick="saveConfig()" class="btn btn-primary" style="padding:5px 16px;font-size:12px"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>保存并重启</button>
+            <button onclick="loadConfigToEditor()" class="con-close-all"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span data-i18n="config.reload">重新加载</span></button>
+            <button onclick="saveConfig()" class="btn btn-primary" style="padding:5px 16px;font-size:12px"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg><span data-i18n="config.save">保存并重启</span></button>
           </div>
         </div>
       </div>
@@ -1138,43 +1233,40 @@ tbody tr:hover{background:var(--card2)}
     <!-- 设置 -->
     <section id="section-settings" style="display:none">
       <div class="con-head">
-        <h3>设置</h3>
+        <h3 data-i18n="settings.title">设置</h3>
         <div class="con-head-actions">
           <a class="con-view-btn" href="https://github.com/Huiikeung/fnsoar" target="_blank" title="GitHub" style="text-decoration:none"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M12 1.27a11 11 0 0 0-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.66-3.67-1.61-3.67-1.61-.55-1.29-1.28-1.65-1.28-1.65-1.06-.7.09-.66.09-.66 1.06.09 1.63 1.09 1.63 1.09 1.05 1.75 2.6 1.25 3.24.96.09-.75.37-1.25.64-1.55-2.32-.26-4.72-1.16-4.72-5.19 0-1.15.38-2.07 1.08-2.82-.1-.26-.46-1.34.1-2.75 0 0 .87-.28 2.83 1.09a9.8 9.8 0 0 1 2.57-.34c.87 0 1.77.12 2.57.34 1.96-1.37 2.82-1.09 2.82-1.09.56 1.41.2 2.49.1 2.75.7.75 1.08 1.67 1.08 2.82 0 4.03-2.4 4.93-4.72 5.19.38.32.71.96.71 1.93v2.86c0 .27.18.61.73.55A11 11 0 0 0 12 1.27z"/></svg></a>
         </div>
       </div>
       <div class="set-grid">
-        <!-- 左列 -->
         <div class="set-col">
-          <!-- 系统设置 -->
           <div class="set-card">
-            <div class="set-title">系统设置</div>
+            <div class="set-title" data-i18n="settings.system">系统设置</div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">系统服务</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.service">系统服务</span></div>
               <label class="toggle"><input type="checkbox" id="setService" onchange="toggleSetting('service')"><span class="toggle-track"></span></label>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">TUN 模式</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.tun">TUN 模式</span></div>
               <label class="toggle"><input type="checkbox" id="setTun" onchange="toggleSetting('tun')"><span class="toggle-track"></span></label>
             </div>
           </div>
-          <!-- Clash 设置 -->
           <div class="set-card">
             <div class="set-title" data-i18n="settings.clash">Clash设置</div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">局域网连接</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.allowLan">局域网连接</span></div>
               <label class="toggle"><input type="checkbox" id="setAllowLan" onchange="saveSetting('allow-lan')"><span class="toggle-track"></span></label>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">IPv6</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.ipv6">IPv6</span></div>
               <label class="toggle"><input type="checkbox" id="setIpv6" onchange="saveSetting('ipv6')"><span class="toggle-track"></span></label>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">统一延迟</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.unifiedDelay">统一延迟</span></div>
               <label class="toggle"><input type="checkbox" id="setUnifiedDelay" onchange="saveSetting('unified-delay')"><span class="toggle-track"></span></label>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">日志等级</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.logLevel">日志等级</span></div>
               <select class="set-select" id="setLogLevel" onchange="saveSetting('log-level')">
                 <option value="debug">debug</option>
                 <option value="info">info</option>
@@ -1184,7 +1276,7 @@ tbody tr:hover{background:var(--card2)}
               </select>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">端口配置</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.port">端口配置</span></div>
               <input type="number" class="set-input" id="setMixedPort" placeholder="7890" onchange="saveSetting('mixed-port')">
             </div>
             <div class="set-item">
@@ -1193,7 +1285,7 @@ tbody tr:hover{background:var(--card2)}
               <span class="set-chev" onclick="showExtCtrlPopup()" style="cursor:pointer;font-size:14px;color:var(--dim);margin-left:4px" title="设置">⚙</span>
             </div>
             <div class="set-item set-item-chev" onclick="window.open('/ui/','_blank')">
-              <div class="set-item-left"><span class="set-item-label">Web UI</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.webui">Web UI</span></div>
               <span class="set-chev">›</span>
             </div>
             <div class="set-item">
@@ -1202,83 +1294,101 @@ tbody tr:hover{background:var(--card2)}
               <span class="set-chev" onclick="showCoreUpdatePopup()" style="cursor:pointer;font-size:14px;color:var(--dim);margin-left:4px" title="更新内核">⚙</span>
             </div>
             <div class="set-item set-item-chev" onclick="updateGeoData()">
-              <div class="set-item-left"><span class="set-item-label">更新 GEO 数据</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.geo">更新 GEO 数据</span></div>
               <span class="set-chev">›</span>
             </div>
           </div>
         </div>
-        <!-- 右列 -->
         <div class="set-col">
-          <!-- 基础设置 -->
           <div class="set-card">
-            <div class="set-title">基础设置</div>
+            <div class="set-title" data-i18n="settings.basic">基础设置</div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">语言</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.language">语言</span></div>
               <select class="set-select" id="setLanguage" onchange="saveBasicSetting('language')">
-                <option value="zh">简体中文</option>
-                <option value="en">English</option>
+                <option value="zh" data-i18n="settings.langZh">简体中文</option>
+                <option value="en" data-i18n="settings.langEn">English</option>
               </select>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">主题模式</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.theme">主题模式</span></div>
               <select class="set-select" id="setThemeMode" onchange="saveBasicSetting('theme_mode')">
-                <option value="dark">深色</option>
-                <option value="light">浅色</option>
-                <option value="system">系统</option>
+                <option value="dark" data-i18n="settings.themeDark">深色</option>
+                <option value="light" data-i18n="settings.themeLight">浅色</option>
+                <option value="system" data-i18n="settings.themeSystem">系统</option>
               </select>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">起始页</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.startPage">起始页</span></div>
               <select class="set-select" id="setStartPage" onchange="saveBasicSetting('start_page')">
-                <option value="home">首页</option>
-                <option value="groups">策略组</option>
-                <option value="connections">连接</option>
-                <option value="rules">规则</option>
-                <option value="providers">订阅</option>
-                <option value="config">配置</option>
-                <option value="logs">日志</option>
-                <option value="test">测试</option>
-                <option value="settings">设置</option>
+                <option value="home" data-i18n="startPage.home">首页</option>
+                <option value="groups" data-i18n="startPage.groups">策略组</option>
+                <option value="connections" data-i18n="startPage.connections">连接</option>
+                <option value="rules" data-i18n="startPage.rules">规则</option>
+                <option value="providers" data-i18n="startPage.providers">订阅</option>
+                <option value="config" data-i18n="startPage.config">配置</option>
+                <option value="logs" data-i18n="startPage.logs">日志</option>
+                <option value="test" data-i18n="startPage.test">测试</option>
+                <option value="settings" data-i18n="startPage.settings">设置</option>
               </select>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">启动脚本</span></div>
-              <input class="set-input" style="width:180px;text-align:left" placeholder="留空则不执行" id="setStartupScript" onchange="saveBasicSetting('startup_script')">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.startupScript">启动脚本</span></div>
+              <input class="set-input" style="width:180px;text-align:left" data-i18n-placeholder="settings.startupScriptPlaceholder" placeholder="留空则不执行" id="setStartupScript" onchange="saveBasicSetting('startup_script')">
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.showIcons">显示图标</span></div>
+              <label class="toggle"><input type="checkbox" id="setShowIcons" checked onchange="saveBasicSetting('show_icons')"><span class="toggle-track"></span></label>
             </div>
           </div>
-          <!-- 高级设置 -->
           <div class="set-card">
-            <div class="set-title">高级设置</div>
+            <div class="set-title" data-i18n="settings.advanced">高级设置</div>
             <div class="set-item set-item-chev" onclick="showSection('config')">
-              <div class="set-item-left"><span class="set-item-label">运行时配置</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.runtimeConfig">运行时配置</span></div>
               <span class="set-chev">›</span>
             </div>
             <div class="set-item set-item-chev" onclick="copyPath('config')">
-              <div class="set-item-left"><span class="set-item-label">打开配置目录</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.openConfDir">打开配置目录</span></div>
               <span class="set-val" id="setConfigDir" style="font-size:12px;color:var(--dim)">-</span>
               <span class="set-chev">›</span>
             </div>
             <div class="set-item set-item-chev" onclick="copyPath('core')">
-              <div class="set-item-left"><span class="set-item-label">打开核心目录</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.openCoreDir">打开核心目录</span></div>
               <span class="set-val" id="setCoreDir" style="font-size:12px;color:var(--dim)">-</span>
               <span class="set-chev">›</span>
             </div>
             <div class="set-item set-item-chev" onclick="showSection('logs')">
-              <div class="set-item-left"><span class="set-item-label">打开日志</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.openLogs">打开日志</span></div>
               <span class="set-chev">›</span>
             </div>
             <div class="set-item set-item-chev" onclick="checkUpdates()">
-              <div class="set-item-left"><span class="set-item-label">检查更新</span></div>
-              <span class="set-val" id="setUpdateStatus" style="font-size:12px;color:var(--dim)">-</span>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.checkUpdate">检查更新</span></div>
+              <span class="set-val" id="setUpdateStatus" style="font-size:12px;color:var(--dim)"></span>
               <span class="set-chev">›</span>
             </div>
             <div class="set-item set-item-chev" onclick="exportDiagnosticInfo()">
-              <div class="set-item-left"><span class="set-item-label">导出诊断信息</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.exportDiag">导出诊断信息</span></div>
               <span class="set-chev">›</span>
             </div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label">应用版本</span></div>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.version">应用版本</span></div>
               <span class="set-val" id="setVersion">-</span>
+            </div>
+          </div>
+          <div class="set-card">
+            <div class="set-title" data-i18n="settings.dashboard">面板升级</div>
+            <div class="set-item">
+              <div class="set-item-left"><span style="font-size:13px;color:var(--text)">Zashboard</span></div>
+              <span class="set-val" id="dashZasVer" style="font-size:12px;color:var(--dim);text-align:right">-</span>
+              <button class="btn btn-primary" id="dashZasBtn" onclick="updateDashboard('zashboard')" style="padding:6px 12px;font-size:12px">升级</button>
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span style="font-size:13px;color:var(--text)">Metacubexd</span></div>
+              <span class="set-val" id="dashMetaVer" style="font-size:12px;color:var(--dim);text-align:right">-</span>
+              <button class="btn btn-primary" id="dashMetaBtn" onclick="updateDashboard('metacubexd')" style="padding:6px 12px;font-size:12px">升级</button>
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.dashStatus">状态</span></div>
+              <span class="set-val" id="dashUpdateStatus" style="font-size:12px;color:var(--dim)">-</span>
             </div>
           </div>
         </div>
@@ -1320,54 +1430,83 @@ function removeToast(toast) {
   setTimeout(function() { if (toast.parentNode) toast.parentNode.removeChild(toast); }, 300);
 }
 
+// ── 确认弹窗 ──────────────────────────────────
+function showConfirm(msg, onOk, onCancel) {
+  var overlay = document.createElement('div');
+  overlay.className = 'con-detail-overlay';
+  overlay.style.cssText = 'z-index:9999';
+  overlay.innerHTML = '<div class="con-detail-box" style="padding:18px 22px;text-align:center;max-width:360px">'
+    + '<div style="font-size:13.5px;color:var(--text);margin-bottom:14px;line-height:1.5">' + (t(msg) || msg).replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>'
+    + '<div class="vcfg-confirm-btns" style="justify-content:center">'
+    + '<button class="btn-cancel" id="vcfgConfirmCancel">' + (t('cancel') || '取消') + '</button>'
+    + '<button class="btn-danger" id="vcfgConfirmOk">' + (t('confirm') || '确定') + '</button>'
+    + '</div></div>';
+  document.body.appendChild(overlay);
+  overlay.querySelector('#vcfgConfirmOk').onclick = function() {
+    document.body.removeChild(overlay);
+    if (onOk) onOk();
+  };
+  overlay.querySelector('#vcfgConfirmCancel').onclick = function() {
+    document.body.removeChild(overlay);
+    if (onCancel) onCancel();
+  };
+  overlay.onclick = function(e) {
+    if (e.target === overlay) { document.body.removeChild(overlay); if (onCancel) onCancel(); }
+  };
+}
+
 // ── 侧边栏折叠 ────────────────────────────────
 function toggleSidebar() {
   var sb = document.querySelector('.sidebar');
   if (!sb) return;
   if (window.innerWidth <= 860) {
-    sb.classList.toggle('hidden');
-    sb.classList.remove('expanded');
+    // 窄屏点击左上角图标只在窄栏/宽栏之间切换。
+    sb.classList.toggle('expanded');
   } else {
     sb.classList.toggle('collapsed');
   }
 }
 
-// 汉堡按钮：单击展开图标，双击展开全栏
+// 窄屏汉堡：单击显示窄栏，双击显示宽栏。
 var _hamburgerTimer = 0;
 function hamburgerClick() {
   var sb = document.querySelector('.sidebar');
-  if (!sb) return;
+  if (!sb || window.innerWidth > 860) return;
   if (_hamburgerTimer) {
-    // 双击
     clearTimeout(_hamburgerTimer);
     _hamburgerTimer = 0;
     sb.classList.remove('hidden');
+    sb.classList.add('mobile-visible');
     sb.classList.add('expanded');
-  } else {
-    _hamburgerTimer = setTimeout(function() {
-      _hamburgerTimer = 0;
-      // 单击
-      if (sb.classList.contains('hidden')) {
-        sb.classList.remove('hidden');
-        sb.classList.remove('expanded');
-      } else {
-        sb.classList.add('hidden');
-        sb.classList.remove('expanded');
-      }
-    }, 280);
+    return;
   }
+  _hamburgerTimer = setTimeout(function() {
+    _hamburgerTimer = 0;
+    sb.classList.remove('hidden');
+    sb.classList.add('mobile-visible');
+    sb.classList.remove('expanded');
+  }, 280);
 }
 
+// 窄屏点击任意侧栏按钮后回到汉堡状态。
 function autoHideSidebar() {
   if (window.innerWidth <= 860) {
     var sb = document.querySelector('.sidebar');
-    if (sb) { sb.classList.add('hidden'); sb.classList.remove('expanded'); }
+    if (sb) { sb.classList.remove('expanded'); sb.classList.remove('mobile-visible'); sb.classList.add('hidden'); }
   }
 }
 
 // ── 汉堡按钮拖拽 ─────────────────────────────
 function initHamburgerDrag() {
+  var sb = document.querySelector('.sidebar');
   var btn = document.querySelector('.sidebar-hidden-toggle');
+  if (sb) {
+    // 所有侧栏操作按钮在窄屏下执行后都回到汉堡状态（导航、服务和 TUN 均适用）。
+    sb.addEventListener('click', function(e) {
+      if (window.innerWidth <= 860 && e.target.closest('.nav-item')) autoHideSidebar();
+    });
+    if (window.innerWidth <= 860) { sb.classList.add('hidden'); sb.classList.remove('mobile-visible'); }
+  }
   if (!btn) return;
   var saved = localStorage.getItem('hamburger_pos');
   if (saved) {
@@ -1424,7 +1563,7 @@ function showSection(name) {
   if (nav) nav.classList.add('active');
   autoHideSidebar();
   if (name === 'home') { loadDashboard(); refreshTun(); }
-  if (name === 'groups') loadGroups();
+  if (name === 'groups') { document.getElementById('groupsWrap').innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">加载中…</div>'; loadGroups(); }
   if (name === 'providers') loadProviders();
   if (name === 'connections') { loadConnections(); startConnPolling(); }
   if (name === 'rules') loadRules();
@@ -1450,9 +1589,15 @@ function openPanel(name, title) {
 }
 
 // ── 通用 ───────────────────────────────────
-async function fetchJSON(url) {
+async function fetchJSON(url, timeoutMs) {
   try {
-    const r = await fetch(url);
+    var p = fetch(url);
+    if (timeoutMs > 0) {
+      var t = new Promise(function(_, reject) { setTimeout(function(){ reject(new Error('timeout')); }, timeoutMs); });
+      var r = await Promise.race([p, t]);
+    } else {
+      var r = await p;
+    }
     if (!r.ok) throw new Error(r.status);
     return await r.json();
   } catch (e) { return null; }
@@ -1585,6 +1730,7 @@ async function loadDashboard() {
       if (prev && groups.some(([n]) => n === prev)) target = groups.find(([n]) => n === prev);
       curGroup = target[0];
       sel.value = curGroup;
+      if (sel._csRefresh) sel._csRefresh();
       renderCurNode();
     }
   }
@@ -1611,7 +1757,90 @@ function renderCurNode() {
   } else {
     sel.innerHTML = '<option value="">-</option>';
   }
+  if (sel._csRefresh) sel._csRefresh();
 }
+
+// ── 自定义下拉框组件 ──────────────────────
+var _csOpen = null;  // 当前打开的自定义下拉
+function csCloseAll() { if (_csOpen) { _csOpen.classList.remove('open'); _csOpen.parentElement.querySelector('.custom-select-trigger').classList.remove('open'); _csOpen = null; } }
+document.addEventListener('click', function(e) { if (_csOpen && !e.target.closest('.custom-select')) csCloseAll(); });
+
+function csBuild(selectEl) {
+  var wrap = document.createElement('div'); wrap.className = 'custom-select';
+  var trigger = document.createElement('div'); trigger.className = 'custom-select-trigger';
+  trigger.innerHTML = '<span class="cs-text"></span><span class="cs-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></span>';
+  var panel = document.createElement('div'); panel.className = 'custom-select-panel';
+  document.body.appendChild(panel);
+  
+  var selVal = selectEl.value;
+  trigger.querySelector('.cs-text').textContent = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text : '';
+  
+  trigger.onclick = function(e) { e.stopPropagation();
+    if (panel.classList.contains('open')) { csCloseAll(); return; }
+    csCloseAll();
+    var rect = trigger.getBoundingClientRect();
+    panel.style.left = rect.left + 'px';
+    panel.style.top = (rect.bottom + 4) + 'px';
+    panel.style.minWidth = rect.width + 'px';
+    // If panel goes off bottom, flip above
+    panel.classList.add('open'); trigger.classList.add('open'); _csOpen = panel;
+    var pRect = panel.getBoundingClientRect();
+    if (pRect.bottom > window.innerHeight - 10) {
+      panel.style.top = (rect.top - pRect.height - 4) + 'px';
+    }
+  };
+  
+  function fillOptions() {
+    panel.innerHTML = '';
+    for (var i = 0; i < selectEl.options.length; i++) {
+      var opt = selectEl.options[i];
+      var div = document.createElement('div'); div.className = 'custom-select-option';
+      if (opt.value === selectEl.value) div.classList.add('active');
+      div.textContent = opt.text;
+      div.dataset.value = opt.value;
+      div.onclick = function(e) { e.stopPropagation();
+        selectEl.value = this.dataset.value;
+        trigger.querySelector('.cs-text').textContent = this.textContent;
+        panel.querySelectorAll('.custom-select-option').forEach(function(o) { o.classList.remove('active'); });
+        this.classList.add('active');
+        csCloseAll();
+        selectEl.dispatchEvent(new Event('change', {bubbles: true}));
+      };
+      panel.appendChild(div);
+    }
+  }
+  fillOptions();
+  
+  // Expose refresh method
+  selectEl._csRefresh = function() {
+    trigger.querySelector('.cs-text').textContent = selectEl.options[selectEl.selectedIndex] ? selectEl.options[selectEl.selectedIndex].text : '';
+    fillOptions();
+  };
+  
+  wrap.appendChild(trigger);
+  selectEl.parentNode.insertBefore(wrap, selectEl);
+  selectEl.style.display = 'none';
+  return wrap;
+}
+
+// Auto-init custom selects on all .sel-row select and .set-select
+function csInitAll() {
+  document.querySelectorAll('select:not([data-cs-skip])').forEach(function(sel) {
+    if (!sel._csInited && sel.id !== 'curGroupSel' && sel.id !== 'curNodeSel') { sel._csInited = true; csBuild(sel); }
+  });
+  // Always init the two dynamic selects
+  ['curGroupSel','curNodeSel'].forEach(function(id) {
+    var s = document.getElementById(id);
+    if (s && !s._csInited) { s._csInited = true; csBuild(s); }
+  });
+}
+document.addEventListener('DOMContentLoaded', csInitAll);
+// Also init on page switch
+var _origShowSection = showSection;
+showSection = function(name) {
+  _origShowSection(name);
+  setTimeout(csInitAll, 300);
+};
 
 function selectCurGroup(name) {
   curGroup = name;
@@ -1762,7 +1991,7 @@ function toggleService() {
     .then(r => r.json()).then(d => {
       if (!d.success && turnOn) showToast('启动失败: ' + (d.error || ''), 'error');
       loadServiceStatus();
-      if (document.getElementById('section-home').style.display !== 'none') loadDashboard();
+      if (turnOn && document.getElementById('section-home').style.display !== 'none') loadDashboard();
     }).catch(() => { loadServiceStatus(); showToast('请求失败', 'error'); });
 }
 
@@ -2374,7 +2603,7 @@ async function loadGroups() {
   // 模式切换/重启后引擎需要几秒就绪，等待并重试，避免显示"无策略组"
   let p = null;
   for (let i = 0; i < 20; i++) {
-    p = await fetchJSON('proxies');
+    p = await fetchJSON('proxies', 5000);
     const cnt = (p && p.proxies) ? Object.keys(p.proxies).length : 0;
     if (cnt >= 5) break;  // 引擎就绪且数据完整
     await new Promise(r => setTimeout(r, 1000));
@@ -2491,8 +2720,14 @@ function renderGroups() {
     groups = ordered;
   }
   // 隐藏组过滤（config.yaml 中 hidden: true 的组，默认不显示）
+  // 兜底：若 API 未返回 hidden 数据，按名称自动隐藏地区组（含"自动/手动/故转/均衡"）
+  const _hiddenKeys = Object.keys(hiddenGroups);
   if (!showHidden) {
-    groups = groups.filter(([name]) => !hiddenGroups[name]);
+    if (_hiddenKeys.length) {
+      groups = groups.filter(([name]) => !hiddenGroups[name]);
+    } else {
+      groups = groups.filter(([name]) => !/自动|手动|故转|均衡/.test(name));
+    }
   }
   if (currentMode === 'global') {
     // 全局模式：显示订阅中的所有真实节点（每个节点一张卡片），点击切换 GLOBAL 组
@@ -2627,11 +2862,6 @@ function renderGroups() {
     }).join('');
     const typeEn = ({Selector:'selector',URLTest:'url-test',Fallback:'fallback',LoadBalance:'load-balance'})[info.type] || info.type;
     const now = info.now || '-';
-    // 成员多数是策略组 → 显示「xx 分组」（如 人工智能）；多数是真实节点 → 「xx 节点」（如 美国-自动）
-    const _gt = new Set(['Selector','URLTest','Fallback','LoadBalance']);
-    const grpCnt = all.filter(n => { const m = proxiesData[n]; return m && _gt.has(m.type); }).length;
-    const unit = (all.length > 0 && grpCnt >= all.length / 2) ? '分组' : '节点';
-    const countText = all.length + ' ' + unit;
     const sortIcon = h.sortType===1 ? GT.sortDelay : (h.sortType===2 ? GT.sortName : GT.sort);
     const tools = `
       <button class="ghead-tool" onclick="event.stopPropagation();locateGroupNode('${jstr(name)}')" title="定位当前节点">${toolSvg(GT.locate)}</button>
@@ -2645,19 +2875,19 @@ function renderGroups() {
     </div>` : '';
     return `<div class="gcard${h.collapsed ? ' collapsed' : ''}${h.hideDetails ? ' hide-details' : ''}" data-group="${name.replace(/"/g,'&quot;')}" id="${gcardId(name)}">
       <div class="gcard-head" onclick="toggleGroupCard(this)" title="点击展开/折叠">
-        ${groupIcons[name] ? `<img class="gcard-ic" src="${localIcon(groupIcons[name])}" onerror="this.style.display='none'" alt="">` : ''}
+        ${(groupIcons[name] && showIconsEnabled()) ? `<img class="gcard-ic" src="${localIcon(groupIcons[name])}" onerror="this.style.display='none'" alt="">` : ''}
         <div class="gcard-main">
           <div class="gcard-title">
             <span class="gcard-name" title="${name}">${name}</span>
           </div>
           <div class="gcard-info">
             <span class="gcard-type">${typeEn}</span>
-            <span class="gcard-count">${countText}</span>
             <span class="gcard-now" title="${now}">${now}</span>
           </div>
         </div>
         <span class="gcard-head-spacer"></span>
         <span class="ghead-tools">${tools}</span>
+        <span class="gcard-count-right">${all.length}</span>
       </div>
       ${toolsbar}
       <div class="gcard-body">${rows || '<div class="group-empty">无匹配节点</div>'}</div>
@@ -2669,6 +2899,12 @@ function renderGroups() {
 // ── 策略组头部状态（每组的排序/详情/筛选/测速URL，参考 clash-verge-rev HeadState） ──
 let groupHead = {};                 // 组名 -> {sortType, showType, filterText, filterOpen, urlOpen, testUrl}
 let groupIcons = {};                // 组名 -> 图标 URL（config.yaml proxy-groups 的 icon 字段，支持 http(s) 与 data:）
+function showIconsEnabled() {
+  try {
+    var s = JSON.parse(localStorage.getItem('vergeSettings') || '{}');
+    return s.show_icons !== false;
+  } catch(e) { return true; }
+}
 let groupOrder = [];                // 策略组配置顺序（config.yaml proxy-groups 的排列）
 let hiddenGroups = {};              // 组名 -> true（config.yaml 中 hidden: true 的组）
 let showHidden = false;             // 是否显示隐藏组
@@ -3015,7 +3251,7 @@ async function testAllGlobal() {
   const btn = document.querySelector('.global-toolbar .ghead-tool[data-act="test"]');
   const total = nodes.length;
   let done = 0;
-  if (btn) btn.innerHTML = '⏳ 测速中 ' + done + '/' + total;
+  if (btn) { btn.classList.add('testing'); btn.innerHTML = toolSvg(GT.speed) + '<span class="test-progress">测速中 ' + done + '/' + total + '</span>'; }
   let idx = 0;
   const workers = Array.from({length:8}, async () => {
     while (idx < nodes.length) {
@@ -3027,13 +3263,13 @@ async function testAllGlobal() {
         if (p) { p.history = p.history || []; p.history.push({delay, time: Date.now()}); if (p.history.length > 10) p.history.shift(); }
       }
       done++;
-      if (btn) btn.innerHTML = '⏳ 测速中 ' + done + '/' + total;
+      if (btn) btn.innerHTML = toolSvg(GT.speed) + '<span class="test-progress">测速中 ' + done + '/' + total + '</span>';
       updateNodeCardLatency(name); // 单个节点测完立即刷新对应卡片延迟
     }
   });
   await Promise.all(workers);
   globalTesting = false;
-  if (btn) btn.innerHTML = toolSvg(GT.speed);
+  if (btn) { btn.classList.remove('testing'); btn.innerHTML = toolSvg(GT.speed); }
   saveDelayCache();
   renderGroups();
 }
@@ -3297,6 +3533,7 @@ function loadVcfg() {
     var vfir = document.getElementById('vcfgFakeIpRange'); if (vfir) vfir.value = getVal('fake-ip-range', '198.18.0.1/16');
     var vea = document.getElementById('vcfgExtAddr'); if (vea) vea.value = getVal('external-controller', '0.0.0.0:9090');
     var ves = document.getElementById('vcfgExtSecret'); if (ves) ves.value = getVal('secret', '');
+    loadVcfgSections(cfg);
   });
 }
 function saveVcfg(key) {
@@ -3312,7 +3549,7 @@ function saveVcfg(key) {
     'dns-ipv6':'vcfgDnsIpv6','dns-use-hosts':'vcfgDnsHosts','dns-use-sys-hosts':'vcfgDnsSysHosts',
     'ext-addr':'vcfgExtAddr','ext-secret':'vcfgExtSecret','ext-ui':'vcfgExtUi',
     'profile':'vcfgProfile','geodata-mode':'vcfgGeodataMode','geo-loader':'vcfgGeoLoader',
-    'global-ua':'vcfgGlobalUa','keep-alive':'vcfgKeepAlive'
+    'global-ua':'vcfgGlobalUa','keep-alive':'vcfgKeepAlive','sniffer-enable':'vcfgSniffer'
   }[key];
   if (!elId) return;
   var el = document.getElementById(elId);
@@ -3381,6 +3618,196 @@ function saveVcfg(key) {
   });
 }
 
+// ── 可视化配置 - 高级区块 ──────────────────────
+function loadVcfgSections(cfg) {
+  // Sniffer
+  var snifferOn = /sniffer:/.test(cfg) && /enable:\s*true/.test(cfg);
+  var snifferEl = document.getElementById('vcfgSniffer');
+  if (snifferEl) { snifferEl.checked = snifferOn; }
+  var sg = document.getElementById('vcfgSnifferGroup');
+  if (sg) sg.style.display = snifferOn ? 'flex' : 'none';
+  var sniffTls = document.getElementById('vcfgSniffTlsCk');
+  if (sniffTls) { sniffTls.classList.toggle('on', /sniffing:/.test(cfg) && /tls/.test(cfg)); sniffTls.querySelector('input').checked = /sniffing:/.test(cfg) && /tls/.test(cfg); }
+  var sniffHttp = document.getElementById('vcfgSniffHttpCk');
+  if (sniffHttp) { sniffHttp.classList.toggle('on', /sniffing:/.test(cfg) && /http/.test(cfg)); sniffHttp.querySelector('input').checked = /sniffing:/.test(cfg) && /http/.test(cfg); }
+  var sniffSkip = document.getElementById('vcfgSniffSkip');
+  if (sniffSkip) { var m = cfg.match(/skip-domain:\s*\n([\s\S]*?)(?=\n\S|(?![\s\S]))/); sniffSkip.value = m ? m[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
+
+  // DNS 高级
+  var dnsSection = cfg.match(/^dns:\s*\n([\s\S]*?)(?=^\S|(?![\s\S]))/m);
+  var dnsText = dnsSection ? dnsSection[0] : '';
+  var ns = document.getElementById('vcfgDnsNs');
+  if (ns) { var nm = dnsText.match(/nameserver:\s*\n([\s\S]*?)(?=\n  \S|\n\S|(?![\s\S]))/); ns.value = nm ? nm[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
+  var fb = document.getElementById('vcfgDnsFb');
+  if (fb) { var fm = dnsText.match(/fallback:\s*\n([\s\S]*?)(?=\n  \S|\n\S|(?![\s\S]))/); fb.value = fm ? fm[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
+  var fbg = document.getElementById('vcfgFbGeoip');
+  if (fbg) { fbg.checked = /fallback-filter:/.test(dnsText) && /geoip:\s*true/.test(dnsText); }
+  var fbd = document.getElementById('vcfgFbDomain');
+  if (fbd) { var fdm = dnsText.match(/fallback-filter:[\s\S]*?domain:\s*\n([\s\S]*?)(?=\n  \S|\n\S|(?![\s\S]))/); fbd.value = fdm ? fdm[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
+
+  // Geo
+  var geoSection = cfg.match(/^geox-url:\s*\n([\s\S]*?)(?=^\S|(?![\s\S]))/m);
+  var geoT = geoSection ? geoSection[0] : '';
+  function geoVal(k) { var m = geoT.match(new RegExp(k+':\\s*"?(.+?)"?\\s*$','m')); return m ? m[1].trim() : ''; }
+  var gip = document.getElementById('vcfgGeoIp'); if (gip) gip.value = geoVal('geoip');
+  var gs = document.getElementById('vcfgGeoSite'); if (gs) gs.value = geoVal('geosite');
+  var gm = document.getElementById('vcfgMmdb'); if (gm) gm.value = geoVal('mmdb');
+  var ga = document.getElementById('vcfgAsn'); if (ga) ga.value = geoVal('asn');
+}
+
+function saveSection(section, yamlText) {
+  fetch('api/config-section', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({section: section, yaml: yamlText}) })
+    .then(r => r.json()).then(d => {
+      if (d.success) showToast(d.message, 'success');
+      else showToast('保存失败: ' + (d.error || ''), 'error');
+    }).catch(e => showToast('保存出错: ' + e, 'error'));
+}
+
+function buildSnifferYaml() {
+  var en = document.getElementById('vcfgSniffer');
+  var tls = document.getElementById('vcfgSniffTlsCk');
+  var http = document.getElementById('vcfgSniffHttpCk');
+  var skip = document.getElementById('vcfgSniffSkip');
+  var y = 'sniffer:\n  enable: ' + (en && en.checked ? 'true' : 'false') + '\n';
+  if (en && en.checked) {
+    y += '  sniffing:\n';
+    if (tls && tls.classList.contains('on')) y += '    - tls\n';
+    if (http && http.classList.contains('on')) y += '    - http\n';
+    var sk = (skip && skip.value.trim()) ? skip.value.trim().split('\n').filter(Boolean) : [];
+    if (sk.length) {
+      y += '  skip-domain:\n';
+      sk.forEach(function(s){ y += '    - "' + s.trim() + '"\n'; });
+    }
+  }
+  return y;
+}
+function saveSnifferSection() { saveSection('sniffer', buildSnifferYaml()); }
+
+function saveDnsAdvSection() {
+  fetch('api/config').then(r => r.json()).then(d => {
+    var cfg = d.config || '';
+    var dnsSection = cfg.match(/^dns:\s*\n([\s\S]*?)(?=^\S|(?![\s\S]))/m);
+    var dnsText = dnsSection ? dnsSection[0] : 'dns:\n';
+    // Update nameserver
+    var ns = document.getElementById('vcfgDnsNs');
+    if (ns) {
+      var nsv = ns.value.trim().split('\n').filter(Boolean).map(function(s){return '    - '+s.trim()}).join('\n');
+      if (nsv) {
+        dnsText = dnsText.replace(/  nameserver:[\s\S]*?(?=\n  \S|\n\S|(?![\s\S]))/, '  nameserver:\n'+nsv);
+      } else {
+        dnsText = dnsText.replace(/  nameserver:[\s\S]*?(?=\n  \S|\n\S|(?![\s\S]))/, '');
+      }
+    }
+    // Update fallback
+    var fb = document.getElementById('vcfgDnsFb');
+    if (fb) {
+      var fbv = fb.value.trim().split('\n').filter(Boolean).map(function(s){return '    - '+s.trim()}).join('\n');
+      if (fbv) {
+        var fbRe = /  fallback:[\s\S]*?(?=\n  \S|\n\S|(?![\s\S]))/;
+        if (fbRe.test(dnsText)) {
+          dnsText = dnsText.replace(fbRe, '  fallback:\n'+fbv);
+        } else {
+          dnsText = dnsText.replace(/\n(?![\s\S])/, '\n  fallback:\n'+fbv+'\n');
+        }
+      }
+    }
+    // Update fallback-filter
+    dnsText = dnsText.replace(/  fallback-filter:[\s\S]*?(?=\n  \S|\n\S|(?![\s\S]))/, '');
+    var fbg = document.getElementById('vcfgFbGeoip');
+    var fbd = document.getElementById('vcfgFbDomain');
+    var fft = '  fallback-filter:\n    geoip: ' + (fbg && fbg.checked ? 'true' : 'false') + '\n';
+    if (fbd && fbd.value.trim()) {
+      fft += '    domain:\n';
+      fbd.value.trim().split('\n').filter(Boolean).forEach(function(s){ fft += '      - "' + s.trim() + '"\n'; });
+    }
+    dnsText = dnsText.trimEnd() + '\n' + fft;
+    saveSection('dns', dnsText);
+  });
+}
+
+function buildGeoYaml() {
+  var y = 'geox-url:\n';
+  var gip = document.getElementById('vcfgGeoIp');
+  var gs = document.getElementById('vcfgGeoSite');
+  var gm = document.getElementById('vcfgMmdb');
+  var ga = document.getElementById('vcfgAsn');
+  if (gip && gip.value.trim()) y += '  geoip: "' + gip.value.trim() + '"\n';
+  if (gs && gs.value.trim()) y += '  geosite: "' + gs.value.trim() + '"\n';
+  if (gm && gm.value.trim()) y += '  mmdb: "' + gm.value.trim() + '"\n';
+  if (ga && ga.value.trim()) y += '  asn: "' + ga.value.trim() + '"\n';
+  return y;
+}
+function saveGeoSection() { saveSection('geox-url', buildGeoYaml()); }
+
+// ── 可视化配置 - 重置 ──────────────────────────
+function resetConfigSection(section) {
+  showConfirm('vcfg.resetConfirm', function() {
+  // Sections with simple key-value pairs (not a config section)
+  var simpleDefaults = {
+    'basic': {'mode':'rule','log-level':'info','ipv6':'true','unified-delay':'true','tcp-concurrent':'true','find-process-mode':'off'},
+    'inbound': {'mixed-port':'7890','socks-port':'7891','redir-port':'7892','tproxy-port':'7893','allow-lan':'true','authentication':'[]'},
+    'external': {'external-controller':'0.0.0.0:9090','secret':'','external-ui':'dashboard'},
+    'advanced': {'profile':'','geodata-mode':'true','geodata-loader':'memconservative','global-ua':'clash.meta','keep-alive-interval':'30'}
+  };
+  if (simpleDefaults[section]) {
+    fetch('api/config').then(r => r.json()).then(d => {
+      var cfg = d.config || '';
+      var lines = cfg.split('\n');
+      var defaults = simpleDefaults[section];
+      var changed = false;
+      for (var keyName in defaults) {
+        if (!defaults.hasOwnProperty(keyName)) continue;
+        var val = defaults[keyName];
+        var escKey = keyName.replace(/-/g,'\\-');
+        var found = false;
+        for (var i = 0; i < lines.length; i++) {
+          var re = new RegExp('^' + escKey + ':\\s*');
+          if (re.test(lines[i]) || new RegExp('^\\s{2}' + escKey + ':\\s*').test(lines[i])) {
+            lines[i] = lines[i].replace(/:.*/, ': ' + val);
+            found = true; changed = true; break;
+          }
+        }
+        if (!found) { lines.push(keyName + ': ' + val); changed = true; }
+      }
+      if (changed) {
+        fetch('api/config', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:lines.join('\n')})})
+          .then(r => r.json()).then(d2 => {
+            showToast(d2.success ? '已重置' : '重置失败', d2.success ? 'success' : 'error');
+            if (d2.success) loadVcfg();
+          });
+      }
+    });
+    return;
+  }
+  // For section-based cards, use the API
+  fetch('api/config-section-reset', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({section:section})})
+    .then(r => r.json()).then(d => {
+      showToast(d.success ? '已重置' : (d.error||'重置失败'), d.success ? 'success' : 'error');
+      if (d.success) loadVcfg();
+    }).catch(function(e){ showToast('重置出错: '+e, 'error'); });
+  });
+}
+
+function resetAllConfigSections() {
+  showConfirm('vcfg.resetAllConfirm', function() {
+  var sections = ['basic','inbound','tun','dns','external','advanced','sniffer','dns','geox-url'];
+  var i = 0;
+  function next() {
+    if (i >= sections.length) { showToast('全部已重置', 'success'); loadVcfg(); return; }
+    var s = sections[i++];
+    // For simple-key sections, recurse
+    if (['basic','inbound','external','advanced'].indexOf(s) >= 0) {
+      resetConfigSection(s); setTimeout(next, 500);
+    } else {
+      fetch('api/config-section-reset', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({section:s})})
+        .then(function(){ setTimeout(next, 300); })
+        .catch(function(){ setTimeout(next, 300); });
+    }
+  }
+  next();
+  });
+}
+
 // ── 设置 ─────────────────────────────────────
 function loadSettings() {
   fetch('api/config').then(r => r.json()).then(d => {
@@ -3402,6 +3829,7 @@ function loadSettings() {
         if (vs.theme_mode) document.getElementById('setThemeMode').value = vs.theme_mode;
         if (vs.start_page) document.getElementById('setStartPage').value = vs.start_page;
         if (vs.startup_script) document.getElementById('setStartupScript').value = vs.startup_script;
+        if (vs.show_icons !== undefined) document.getElementById('setShowIcons').checked = vs.show_icons;
       } catch(e) {}
     }
     // 加载外部控制器
@@ -3418,6 +3846,58 @@ function loadSettings() {
       fetchVersionInfo();
     }
   });
+  loadDashboardStatus();
+}
+
+// ── 面板升级（zashboard / metacubexd 一键升级） ─────────────
+function loadDashboardStatus() {
+  fetch('api/dashboards').then(r => r.json()).then(d => {
+    var st = document.getElementById('dashUpdateStatus');
+    if (st) st.textContent = '';
+    (d.dashboards || []).forEach(function(item) {
+      var verEl = document.getElementById(item.name === 'zashboard' ? 'dashZasVer' : 'dashMetaVer');
+      var btn = document.getElementById(item.name === 'zashboard' ? 'dashZasBtn' : 'dashMetaBtn');
+      if (verEl) verEl.textContent = item.current ? ('v' + item.current) : '未安装';
+      if (btn) {
+        if (item.has_update) {
+          btn.style.display = 'inline-flex';
+          btn.textContent = '升级到 v' + item.latest;
+        } else if (item.latest) {
+          btn.style.display = 'none';
+          btn.dataset.latest = item.latest;
+        } else if (item.error) {
+          btn.style.display = 'inline-flex';
+          btn.textContent = '重试';
+        }
+      }
+    });
+  }).catch(function() {
+    var st = document.getElementById('dashUpdateStatus');
+    if (st) st.textContent = '检查失败';
+  });
+}
+
+function updateDashboard(name) {
+  var btn = document.getElementById(name === 'zashboard' ? 'dashZasBtn' : 'dashMetaBtn');
+  var st = document.getElementById('dashUpdateStatus');
+  if (btn) { btn.style.pointerEvents = 'none'; btn.textContent = '升级中…'; }
+  if (st) st.textContent = '正在下载并更新 ' + name + '…';
+  fetch('api/dashboard-update', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: name }) })
+    .then(r => r.json()).then(function(d) {
+      if (d.success) {
+        showToast(name + ' 已升级到 v' + d.version, 'success');
+        if (st) st.textContent = '升级成功，当前 v' + d.version;
+      } else {
+        showToast(name + ' 升级失败: ' + (d.error || '未知错误'), 'error');
+        if (st) st.textContent = '升级失败';
+      }
+    }).catch(function() {
+      showToast(name + ' 升级请求失败', 'error');
+      if (st) st.textContent = '升级失败';
+    }).finally(function() {
+      if (btn) { btn.style.pointerEvents = ''; btn.textContent = '升级'; }
+      loadDashboardStatus();
+    });
 }
 
 function toggleSetting(key) {
@@ -3466,6 +3946,7 @@ function saveBasicSetting(key) {
   else if (key === 'theme_mode') val = document.getElementById('setThemeMode').value;
   else if (key === 'start_page') val = document.getElementById('setStartPage').value;
   else if (key === 'startup_script') val = document.getElementById('setStartupScript').value;
+  else if (key === 'show_icons') val = document.getElementById('setShowIcons').checked;
   else return;
   var ls = localStorage.getItem('vergeSettings');
   var vs = {};
@@ -3513,8 +3994,33 @@ var I18N = {
     'rules.title':'规则','rules.search':'搜索规则…','rules.loading':'加载中…',
     'logs.title':'日志','logs.search':'搜索日志…','logs.loading':'加载中…',
     'logs.all':'全部','logs.empty':'暂无日志',
-    'config.title':'配置','config.reload':'重新加载','config.save':'保存并重启',
+    'config.title':'配置','config.editRaw':'编辑源文件','config.editRawTitle':'编辑原始配置',
+    'config.visual':'可视化配置','config.visualTitle':'返回可视化配置',
+    'config.reload':'重新加载','config.save':'保存并重启',
     'config.desc':'直接编辑 config.yaml。保存后服务将自动重启。',
+    'vcfg.basic':'基础设置','vcfg.inbound':'入站设置','vcfg.tun':'TUN 设置','vcfg.dns':'DNS 设置',
+    'vcfg.external':'外部控制','vcfg.advanced':'高级设置',
+    'vcfg.mode':'运行模式','vcfg.modeRule':'规则','vcfg.modeGlobal':'全局','vcfg.modeDirect':'直连',
+    'vcfg.logLevel':'日志级别','vcfg.tcpConcurrent':'TCP 并发',
+    'vcfg.findProcess':'查找进程','vcfg.httpPort':'HTTP 端口','vcfg.socksPort':'Socks 端口',
+    'vcfg.redirPort':'Redir 端口','vcfg.tproxyPort':'TProxy 端口',
+    'vcfg.auth':'认证','vcfg.tunEnable':'TUN 启用','vcfg.tunDevice':'设备名称',
+    'vcfg.tunStack':'协议栈','vcfg.tunDnsHijack':'DNS 劫持',
+    'vcfg.tunAutoRoute':'自动路由','vcfg.tunAutoDetect':'自动检测接口',
+    'vcfg.dnsEnable':'DNS 启用','vcfg.dnsEnhanced':'增强模式',
+    'vcfg.fakeIpRange':'Fake-IP 范围','vcfg.dnsIpv6':'IPv6 DNS',
+    'vcfg.dnsUseHosts':'使用 hosts','vcfg.dnsUseSysHosts':'系统 hosts',
+    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI',
+    'vcfg.optional':'(留空不设置)','vcfg.default':'(默认)',
+    'vcfg.profile':'性能模式','vcfg.geoMode':'GEO 加载','vcfg.geoLoader':'GEO 更新间隔',
+    'vcfg.globalUa':'全局 UA','vcfg.keepAlive':'保活间隔',
+    'vcfg.sniffer':'Sniffer','vcfg.snifferEnable':'Sniffer 启用','vcfg.sniffing':'协议',
+    'vcfg.sniffSkip':'跳过域名','vcfg.dnsAdv':'DNS 高级',
+    'vcfg.dnsNameserver':'nameserver','vcfg.dnsFallback':'fallback',
+    'vcfg.fbGeoip':'fallback-filter geoip','vcfg.fbDomain':'fallback-filter domain',
+    'vcfg.geo':'Geo 数据',
+    'vcfg.reset':'重置','vcfg.resetSection':'重置此模块','vcfg.resetAll':'重置全部',
+    'vcfg.resetConfirm':'重置此模块为默认配置？','vcfg.resetAllConfirm':'重置所有可视化模块为默认配置？',
     'test.title':'测试','test.all':'测试全部',
     'test.addTest':'添加测试','test.name':'名称','test.namePlaceholder':'如: 百度','test.icon':'图标','test.save':'保存','test.saved':'已保存',
     'test.url':'URL','test.urlPlaceholder':'https://www.baidu.com',
@@ -3529,7 +4035,13 @@ var I18N = {
     'settings.startupScript':'启动脚本','settings.runtimeConfig':'运行时配置',
     'settings.openConfDir':'打开配置目录','settings.openCoreDir':'打开核心目录',
     'settings.openLogs':'打开日志','settings.checkUpdate':'检查更新',
-    'settings.exportDiag':'导出诊断信息','settings.version':'应用版本',
+    'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.dashboard':'面板升级','settings.dashStatus':'状态',
+    'settings.service':'系统服务','settings.langZh':'简体中文','settings.langEn':'English',
+    'settings.themeDark':'深色','settings.themeLight':'浅色','settings.themeSystem':'系统',
+    'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标',
+    'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
+    'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
+    'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
     'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'已停止','svc.start':'启动',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
@@ -3610,8 +4122,33 @@ var I18N = {
     'rules.title':'Rules','rules.search':'Search rules…','rules.loading':'Loading…',
     'logs.title':'Logs','logs.search':'Search logs…','logs.loading':'Loading…',
     'logs.all':'All','logs.empty':'No logs',
-    'config.title':'Config','config.reload':'Reload','config.save':'Save & Restart',
+    'config.title':'Config','config.editRaw':'Edit Raw','config.editRawTitle':'Edit Raw Config',
+    'config.visual':'Visual Config','config.visualTitle':'Back to Visual Config',
+    'config.reload':'Reload','config.save':'Save & Restart',
     'config.desc':'Edit config.yaml directly. Service will restart after saving.',
+    'vcfg.basic':'Basic','vcfg.inbound':'Inbound','vcfg.tun':'TUN','vcfg.dns':'DNS',
+    'vcfg.external':'External','vcfg.advanced':'Advanced',
+    'vcfg.mode':'Mode','vcfg.modeRule':'Rule','vcfg.modeGlobal':'Global','vcfg.modeDirect':'Direct',
+    'vcfg.logLevel':'Log Level','vcfg.tcpConcurrent':'TCP Concurrent',
+    'vcfg.findProcess':'Find Process','vcfg.httpPort':'HTTP Port','vcfg.socksPort':'Socks Port',
+    'vcfg.redirPort':'Redir Port','vcfg.tproxyPort':'TProxy Port',
+    'vcfg.auth':'Authentication','vcfg.tunEnable':'TUN Enable','vcfg.tunDevice':'Device',
+    'vcfg.tunStack':'Stack','vcfg.tunDnsHijack':'DNS Hijack',
+    'vcfg.tunAutoRoute':'Auto Route','vcfg.tunAutoDetect':'Auto Detect Interface',
+    'vcfg.dnsEnable':'DNS Enable','vcfg.dnsEnhanced':'Enhanced Mode',
+    'vcfg.fakeIpRange':'Fake-IP Range','vcfg.dnsIpv6':'IPv6 DNS',
+    'vcfg.dnsUseHosts':'Use Hosts','vcfg.dnsUseSysHosts':'System Hosts',
+    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI',
+    'vcfg.optional':'(Optional)','vcfg.default':'(Default)',
+    'vcfg.profile':'Profile','vcfg.geoMode':'GEO Mode','vcfg.geoLoader':'GEO Loader',
+    'vcfg.globalUa':'Global UA','vcfg.keepAlive':'Keep Alive Interval',
+    'vcfg.sniffer':'Sniffer','vcfg.snifferEnable':'Sniffer Enable','vcfg.sniffing':'Protocols',
+    'vcfg.sniffSkip':'Skip Domain','vcfg.dnsAdv':'DNS Advanced',
+    'vcfg.dnsNameserver':'nameserver','vcfg.dnsFallback':'fallback',
+    'vcfg.fbGeoip':'fallback-filter geoip','vcfg.fbDomain':'fallback-filter domain',
+    'vcfg.geo':'Geo Data',
+    'vcfg.reset':'Reset','vcfg.resetSection':'Reset Section','vcfg.resetAll':'Reset All',
+    'vcfg.resetConfirm':'Reset this section to defaults?','vcfg.resetAllConfirm':'Reset all visual sections to defaults?',
     'test.title':'Test','test.all':'Test All',
     'test.addTest':'Add Test','test.name':'Name','test.namePlaceholder':'e.g. Google','test.icon':'Icon','test.save':'Save','test.saved':'Saved',
     'test.url':'URL','test.urlPlaceholder':'https://www.google.com',
@@ -3626,7 +4163,13 @@ var I18N = {
     'settings.startupScript':'Startup Script','settings.runtimeConfig':'Runtime Config',
     'settings.openConfDir':'Open Config Dir','settings.openCoreDir':'Open Core Dir',
     'settings.openLogs':'Open Logs','settings.checkUpdate':'Check Updates',
-    'settings.exportDiag':'Export Diagnostics','settings.version':'Version',
+    'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status',
+    'settings.service':'System Service','settings.langZh':'简体中文','settings.langEn':'English',
+    'settings.themeDark':'Dark','settings.themeLight':'Light','settings.themeSystem':'System',
+    'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons',
+    'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
+    'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
+    'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
     'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Stopped','svc.start':'Start',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
@@ -3803,26 +4346,28 @@ function fetchVersionInfo() {
     if (cd) cd.textContent = v.config_dir || '-';
     var kd = document.getElementById('setCoreDir');
     if (kd) kd.textContent = v.core_dir || '-';
-    var uv = document.getElementById('setUpdateStatus');
-    if (uv) uv.textContent = v.app || '-';
   });
 }
 
 function checkUpdates() {
   var uv = document.getElementById('setUpdateStatus');
-  if (uv) uv.textContent = '...';
+  if (uv) { uv.textContent = '...'; uv.style.color = ''; }
   fetch('api/check-update').then(function(r) { return r.json(); }).then(function(d) {
     if (d.has_update) {
       var uv = document.getElementById('setUpdateStatus');
-      if (uv) uv.textContent = 'New: ' + d.latest;
+      if (uv) { uv.textContent = '新: v' + d.latest; uv.style.color = 'var(--red)'; }
       showToast('发现新版本: ' + d.latest, 'info');
       if (d.url) window.open(d.url, '_blank');
     } else {
       var uv = document.getElementById('setUpdateStatus');
-      if (uv) uv.textContent = 'v' + d.current + ' (已是最新)';
+      if (uv) { uv.textContent = ''; uv.style.color = ''; }
       showToast('toast.latestVersion', 'success');
     }
-  }).catch(function() { showToast('toast.diagFailed', 'error'); });
+  }).catch(function() {
+    var uv = document.getElementById('setUpdateStatus');
+    if (uv) { uv.textContent = ''; uv.style.color = ''; }
+    showToast('toast.diagFailed', 'error');
+  });
 }
 
 function copyPath(type) {
@@ -4463,6 +5008,8 @@ setInterval(() => {
     loadClashInfo();
   }
 }, 10000);
+
+function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 </script>
 </body>
 </html>

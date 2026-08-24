@@ -1,9 +1,9 @@
 {
   "name": "fnnas.fnsoar",
-  "title": "FnSoar",
-  "version": "1.0.48",
+  "title": "fnSoar",
+  "version": "1.0.52",
   "description": "Mihomo 代理引擎 · fnOS",
-  "author": "FnSoar",
+  "author": "fnSoar",
   "icon": "favicon.png",
   "admin_port": 9099,
   "entry": "app/admin/admin_server.py",

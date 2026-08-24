@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-FnSoar Admin Server
+fnSoar Admin Server
 - HTTP admin panel on port 9099 (for direct access)
 - Unix socket gateway for fnOS iframe integration
 - Manages config.yaml, service start/stop, proxy providers, logs
@@ -19,10 +19,13 @@ import threading
 import subprocess
 import shutil
 import urllib.request
+import tempfile
+import zipfile
+import tarfile
 import yaml
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn, UnixStreamServer
-from urllib.parse import urlparse, parse_qs, quote
+from urllib.parse import urlparse, parse_qs, quote, unquote_to_bytes
 from pathlib import Path
 
 # ── Paths (set by service-setup or fallback) ──────────────────────────────
@@ -34,7 +37,23 @@ SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
                                 f"/vol1/@appcenter/{TRIM_APPNAME}/fnsoar.sock")
 
 CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
+ICONS_FILE    = f"{TRIM_PKGVAR}/icons.yaml"
 ICON_DIR      = f"{TRIM_PKGVAR}/icons"
+
+# ── 图标名称映射：从 icons.yaml 加载短名→data URI ─────────────────────
+_ICONS_MAP = None
+def _get_icons_map():
+    global _ICONS_MAP
+    if _ICONS_MAP is None:
+        try:
+            if os.path.exists(ICONS_FILE):
+                with open(ICONS_FILE, "r", encoding="utf-8") as f:
+                    _ICONS_MAP = yaml.safe_load(f.read()) or {}
+            else:
+                _ICONS_MAP = {}
+        except Exception:
+            _ICONS_MAP = {}
+    return _ICONS_MAP
 LOG_FILE      = f"{TRIM_PKGVAR}/{TRIM_APPNAME}.log"
 PID_FILE      = f"{TRIM_PKGVAR}/{TRIM_APPNAME}.pid"
 PROFILES_DIR  = f"{TRIM_PKGVAR}/profiles"
@@ -84,8 +103,8 @@ def localize_icon(url):
                 ct = _ICON_EXT_MIME.get("." + f.rsplit(".", 1)[-1].lower(), "image/png")
                 return os.path.join(ICON_DIR, f), ct
         # 下载
-        req = urllib.request.Request(url, headers={"User-Agent": "FnSoar/1.0"})
-        with urllib.request.urlopen(req, timeout=15, context=_SSL_CTX) as resp:
+        req = urllib.request.Request(url, headers={"User-Agent": "fnSoar/1.0"})
+        with urllib.request.urlopen(req, timeout=3, context=_SSL_CTX) as resp:
             data = resp.read()
             ctype = (resp.headers.get("Content-Type") or "image/png").split(";")[0].strip().lower()
         ext = _ICON_MIME_EXT.get(ctype, ".png")
@@ -97,13 +116,29 @@ def localize_icon(url):
         log(f"icon localize failed: {url}: {e}")
         return None, None
 
+def cached_icon_path(url):
+    """只查缓存不下载，命中返回(本地路径, content_type)，否则 (None,None)。"""
+    try:
+        key = hashlib.sha1(url.encode("utf-8")).hexdigest()
+        for f in os.listdir(ICON_DIR) if os.path.isdir(ICON_DIR) else []:
+            if f.startswith(key + "."):
+                ct = _ICON_EXT_MIME.get("." + f.rsplit(".", 1)[-1].lower(), "image/png")
+                return os.path.join(ICON_DIR, f), ct
+    except Exception:
+        pass
+    return None, None
+
 def embedded_icon(url_or_data):
-    """把图标转成可内嵌的 data: URI（已缓存则读本地 base64），否则原样返回 URL。"""
+    """把图标转成可内嵌的 data: URI（短名→icons.yaml 解析，data: 直接返回，URL 下载本地化，3s超时）。"""
     if not isinstance(url_or_data, str) or not url_or_data:
         return url_or_data
     low = url_or_data.strip().lower()
     if low.startswith("data:"):
         return url_or_data
+    # 短名解析：从 icons.yaml 查找
+    imap = _get_icons_map()
+    if imap and url_or_data in imap:
+        return imap[url_or_data]
     if not (low.startswith("http://") or low.startswith("https://")):
         return url_or_data
     path, ctype = localize_icon(url_or_data)
@@ -115,6 +150,206 @@ def embedded_icon(url_or_data):
         except Exception:
             return url_or_data
     return url_or_data
+
+
+def expand_api_icons(value, icon_base=""):
+    """Convert icons.yaml names to stable HTTP URLs for dashboards.
+
+    ``icon_base`` preserves the fnOS gateway prefix when the dashboard is
+    accessed through the Unix-socket gateway instead of the TCP port.
+    """
+    if isinstance(value, dict):
+        result = {}
+        for key, item in value.items():
+            if key == "icon" and isinstance(item, str):
+                icon_map = _get_icons_map()
+                if item in icon_map:
+                    # Return data directly. Dashboards may use mihomo's
+                    # controller (9090) as API base, so /api/icon would be
+                    # requested from mihomo instead of this admin server.
+                    result[key] = embedded_icon(item)
+                else:
+                    result[key] = embedded_icon(item)
+            else:
+                result[key] = expand_api_icons(item, icon_base)
+        return result
+    if isinstance(value, list):
+        return [expand_api_icons(item, icon_base) for item in value]
+    return value
+
+
+# ── 应用版本读取：依次回退 VERSION 文件 / app.json 的 version 字段 ──────
+def _get_app_version():
+    """Return the app version string. Checks several candidates for robustness:
+    1. $TRIM_APPDEST/VERSION            (plain text file)
+    2. $TRIM_APPDEST/app.json           (JSON "version")
+    3. <admin dir>/../app.json          (source-tree fallback)
+    Returns "unknown" if none is found."""
+    candidates = [
+        os.path.join(TRIM_APPDEST, "VERSION"),
+        os.path.join(TRIM_APPDEST, "app.json"),
+        os.path.join(os.path.dirname(ADMIN_DIR), "app.json"),
+    ]
+    for c in candidates:
+        try:
+            if not os.path.exists(c):
+                continue
+            if c.endswith(".json"):
+                with open(c, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                ver = (data.get("version") or "").strip()
+                if ver:
+                    return ver
+            else:
+                with open(c, "r", encoding="utf-8") as f:
+                    ver = f.read().strip()
+                if ver:
+                    return ver
+        except Exception:
+            continue
+    return "unknown"
+
+
+# ── 面板升级（zashboard / metacubexd 一键升级） ─────────────────────────
+# 每个面板从 GitHub Release 下载官方打包产物，解压后原子替换 dashboard/<name>，
+# 失败时回滚到备份，避免损坏现有面板。
+_DASHBOARD_RELEASES = {
+    # 面板名 -> (GitHub repo, 该面板发布资产匹配器, 是否需跨层解压+子目录探测)
+    "zashboard": {
+        "repo": "Zephyruso/zashboard",
+        "asset_match": lambda n: n.endswith(".zip") and n.startswith("dist"),
+        "archive": "zip",
+        "subdir": "zashboard",
+    },
+    "metacubexd": {
+        "repo": "MetaCubeX/metacubexd",
+        "asset_match": lambda n: n.endswith(".tgz"),
+        "archive": "tgz",
+        "subdir": "metacubexd",
+    },
+}
+
+def _read_dashboard_version(name):
+    """Try to read a small version marker inside a dashboard directory."""
+    probe = os.path.join(DASHBOARD_DIR, name, "VERSION")
+    if os.path.exists(probe):
+        try:
+            with open(probe, "r", encoding="utf-8") as f:
+                return f.read().strip()
+        except Exception:
+            pass
+    return None
+
+def _github_latest(repo):
+    import urllib.request as _ureq
+    url = f"https://api.github.com/repos/{repo}/releases/latest"
+    req = _ureq.Request(url, headers={"User-Agent": "ClashMini/1.0",
+                                      "Accept": "application/vnd.github+json"})
+    with _ureq.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read())
+
+def dashboard_latest_info(name):
+    """Return (latest_version, download_url, current_version) for a dashboard.
+    Raises on network/API errors."""
+    meta = _DASHBOARD_RELEASES.get(name)
+    if not meta:
+        raise ValueError(f"unknown dashboard: {name}")
+    d = _github_latest(meta["repo"])
+    latest = (d.get("tag_name", "") or "").lstrip("v")
+    url = ""
+    for a in d.get("assets", []):
+        if meta["asset_match"](a.get("name", "")):
+            url = a.get("browser_download_url", ""); break
+    if not url:
+        raise ValueError("no downloadable asset found for " + meta["repo"])
+    current = _read_dashboard_version(name)
+    return latest, url, current
+
+def _safe_extract(archive_path, name, dest_dir):
+    """Extract a zip/tgz archive into dest_dir. Guard against path traversal."""
+    meta = _DASHBOARD_RELEASES.get(name, {})
+    import re as _re
+    if meta.get("archive") == "tgz":
+        with tarfile.open(archive_path, "r:gz") as tf:
+            for m in tf.getmembers():
+                if m.name.startswith("/") or ".." in m.name.split("/"):
+                    raise ValueError("unsafe path in archive: " + m.name)
+            tf.extractall(dest_dir)
+    else:
+        with zipfile.ZipFile(archive_path) as zf:
+            for n in zf.namelist():
+                if n.startswith("/") or ".." in n.split("/"):
+                    raise ValueError("unsafe path in archive: " + n)
+            zf.extractall(dest_dir)
+
+def _find_extracted_root(dest_dir):
+    """After extraction, locate the real web-root subdirectory. Prefer a dir
+    that contains index.html; otherwise use dest_dir itself."""
+    for entry in ("index.html",):
+        if os.path.exists(os.path.join(dest_dir, entry)):
+            return dest_dir
+    # look one level deep
+    for sub in sorted(os.listdir(dest_dir)):
+        full = os.path.join(dest_dir, sub)
+        if os.path.isdir(full) and os.path.exists(os.path.join(full, "index.html")):
+            return full
+    return dest_dir
+
+def install_dashboard(name):
+    """Download latest release for `name` and atomically replace its directory."""
+    latest, url, current = dashboard_latest_info(name)
+    meta = _DASHBOARD_RELEASES[name]
+    target = os.path.join(DASHBOARD_DIR, name)
+    os.makedirs(DASHBOARD_DIR, exist_ok=True)
+
+    tmpdir = tempfile.mkdtemp(prefix=f"{name}-upd-")
+    archive_path = os.path.join(tmpdir, "pkg")
+    try:
+        # 下载
+        import urllib.request as _ureq
+        req = _ureq.Request(url, headers={"User-Agent": "ClashMini/1.0"})
+        with _ureq.urlopen(req, timeout=180) as resp:
+            with open(archive_path, "wb") as f:
+                shutil.copyfileobj(resp, f)
+
+        # 解压到独立目录
+        stage_root = os.path.join(tmpdir, "stage")
+        os.makedirs(stage_root, exist_ok=True)
+        _safe_extract(archive_path, name, stage_root)
+        web_root = _find_extracted_root(stage_root)
+
+        # 写入版本标记
+        vfile = os.path.join(web_root, "VERSION")
+        with open(vfile, "w", encoding="utf-8") as f:
+            f.write(latest)
+
+        # 备份旧目录
+        backup = None
+        if os.path.exists(target):
+            backup = target + ".bak"
+            if os.path.exists(backup):
+                shutil.rmtree(backup)
+            os.rename(target, backup)
+
+        # 原子移动
+        try:
+            shutil.move(web_root, target)
+        except Exception:
+            # 回滚旧目录
+            if backup and os.path.exists(backup) and not os.path.exists(target):
+                os.rename(backup, target)
+            raise
+
+        # 清理备份与临时目录
+        if backup and os.path.exists(backup):
+            shutil.rmtree(backup, ignore_errors=True)
+        shutil.rmtree(tmpdir, ignore_errors=True)
+        return {"success": True, "version": latest, "previous": current}
+    except Exception as e:
+        if os.path.exists(tmpdir):
+            shutil.rmtree(tmpdir, ignore_errors=True)
+        return {"success": False, "error": str(e), "version": latest, "previous": current}
+
 
 def write_config(content):
     """Save config safely via /var/apps/<app>/etc path (writable)."""
@@ -448,7 +683,7 @@ def edit_provider_delete(name):
 def _http_get(url, timeout=20):
     import urllib.request as _ureq
     req = _ureq.Request(url, headers={
-        "User-Agent": "FnSoar/1.0 (fnOS)",
+        "User-Agent": "fnSoar/1.0 (fnOS)",
         "Accept": "application/yaml,application/x-yaml,text/yaml,text/plain,*/*",
     })
     with _ureq.urlopen(req, timeout=timeout) as r:
@@ -677,10 +912,7 @@ def get_system_info_cached():
         pass
     # App version
     try:
-        vf = os.path.join(TRIM_APPDEST, "VERSION")
-        if os.path.exists(vf):
-            with open(vf, "r") as f:
-                info["app_version"] = f.read().strip()
+        info["app_version"] = _get_app_version()
     except Exception:
         pass
     return info
@@ -739,7 +971,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         except FileNotFoundError:
             self.send_error(404)
 
-    # ── FnSoar Clash API reverse proxy ─────────────────────────────────
+    # ── fnSoar Clash API reverse proxy ─────────────────────────────────
     _CLASH_API_PREFIXES = (
         "/version", "/proxies", "/group", "/rules", "/configs", "/traffic",
         "/connections", "/logs", "/providers/proxies", "/providers/rules",
@@ -791,6 +1023,21 @@ class AdminHandler(BaseHTTPRequestHandler):
             try:
                 with _ureq.urlopen(req, timeout=10) as resp:
                     data = resp.read()
+                    if (resp.headers.get("Content-Type", "")
+                            .split(";", 1)[0].strip().lower()
+                            == "application/json"):
+                        try:
+                            icon_base = ""
+                            if hasattr(self, "path"):
+                                prefix = os.environ.get("MIHOMO_GATEWAY_PREFIX", "/app/fnnas.fnsoar")
+                                if self.path == prefix or self.path.startswith(prefix + "/"):
+                                    icon_base = prefix
+                            data = json.dumps(
+                                expand_api_icons(json.loads(data), icon_base),
+                                ensure_ascii=False,
+                            ).encode("utf-8")
+                        except (TypeError, ValueError):
+                            pass
                     self.send_response(resp.getcode())
                     self.send_header("Content-Type",
                                      resp.headers.get("Content-Type",
@@ -916,6 +1163,34 @@ class AdminHandler(BaseHTTPRequestHandler):
                         ".ttf": "font/ttf",
                     }.get(ext, "application/octet-stream")
                     return self._send_file(target, mime)
+                # Dashboard builds may emit icon names as relative image URLs
+                # (for example /zashboard/ChatGPT). Resolve those names from
+                # icons.yaml before falling back to the SPA entry point.
+                icon_name = unquote_to_bytes(rel).decode("utf-8", "replace")
+                icon_map = _get_icons_map()
+                if "/" not in icon_name and icon_name in icon_map:
+                    value = icon_map[icon_name]
+                    if isinstance(value, str) and value.lower().startswith("data:"):
+                        try:
+                            header, encoded = value.split(",", 1)
+                            ctype = header[5:].split(";", 1)[0] or "image/png"
+                            data = (base64.b64decode(encoded)
+                                    if "base64" in header.lower()
+                                    else unquote_to_bytes(encoded))
+                            self.send_response(200)
+                            self.send_header("Content-Type", ctype)
+                            self.send_header("Cache-Control", "public, max-age=86400")
+                            self.send_header("Access-Control-Allow-Origin", "*")
+                            self.end_headers()
+                            self.wfile.write(data)
+                            return True
+                        except Exception:
+                            return self.send_error(500, "invalid named icon")
+                    if isinstance(value, str) and value.lower().startswith(("http://", "https://")):
+                        local, ctype = localize_icon(value)
+                        if local:
+                            return self._send_icon(local, ctype or "image/png")
+                        return self.send_error(502, "icon fetch failed")
                 # SPA fallback: serve index.html for unknown sub-paths
                 idx = f"{DASHBOARD_DIR}/{sub}/index.html"
                 if os.path.exists(idx):
@@ -963,6 +1238,38 @@ class AdminHandler(BaseHTTPRequestHandler):
         if path == "/api/icon":
             # 图标本地化：接受 config 里填写的 http(s) 图标 URL，下载到本地缓存后读取
             qs = parse_qs(urlparse(self.path).query)
+
+            # Serve named icons from icons.yaml as normal HTTP images.
+            name = (qs.get("name") or [""])[0]
+            icon_map = _get_icons_map()
+            if name in icon_map:
+                value = icon_map[name]
+                if isinstance(value, str) and value.lower().startswith("data:"):
+                    try:
+                        header, encoded = value.split(",", 1)
+                        ctype = header[5:].split(";", 1)[0] or "image/png"
+                        if "base64" in header.lower():
+                            data = base64.b64decode(encoded)
+                        else:
+                            from urllib.parse import unquote_to_bytes
+                            data = unquote_to_bytes(encoded)
+                        self.send_response(200)
+                        self.send_header("Content-Type", ctype)
+                        self.send_header("Cache-Control", "no-cache")
+                        self.send_header("Access-Control-Allow-Origin", "*")
+                        self.end_headers()
+                        self.wfile.write(data)
+                        return
+                    except Exception:
+                        return self.send_error(500, "invalid named icon")
+                if isinstance(value, str) and value.lower().startswith(("http://", "https://")):
+                    local, ctype = localize_icon(value)
+                    if local:
+                        if not ctype:
+                            ctype = _ICON_EXT_MIME.get("." + local.rsplit(".", 1)[-1].lower(), "image/png")
+                        return self._send_icon(local, ctype)
+                    return self.send_error(502, "icon fetch failed")
+
             url = (qs.get("url") or [""])[0].strip()
             if not url or not url.lower().startswith(("http://", "https://")):
                 return self.send_error(400, "invalid icon url")
@@ -1039,13 +1346,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                         core_ver = d.get("version", "unknown")
                 except Exception:
                     pass
-                app_ver = "unknown"
-                try:
-                    vf = os.path.join(TRIM_APPDEST, "VERSION")
-                    if os.path.exists(vf):
-                        with open(vf, "r") as f: app_ver = f.read().strip()
-                except Exception:
-                    pass
+                app_ver = _get_app_version()
                 return self._send_json({"core": core_ver, "app": app_ver, "config_dir": TRIM_PKGVAR, "core_dir": TRIM_APPDEST})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
@@ -1088,6 +1389,27 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json({"success": True, "version": ver, "url": dl})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/dashboards":
+            # 查询面板升级状态：已安装版本 / 最新版本 / 是否有更新
+            try:
+                result = []
+                for name in ("zashboard", "metacubexd"):
+                    try:
+                        latest, url, current = dashboard_latest_info(name)
+                        has = bool(latest) and (not current or latest != current)
+                        result.append({
+                            "name": name,
+                            "current": current or "",
+                            "latest": latest,
+                            "url": url,
+                            "has_update": has,
+                        })
+                    except Exception as e:
+                        result.append({"name": name, "error": str(e),
+                                       "current": _read_dashboard_version(name) or ""})
+                return self._send_json({"dashboards": result})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         # Clash API proxy: dashboards under /zashboard or /metacubexd that try to hit
         # absolute paths like /version, /proxies, etc. should be forwarded to mihomo.
         if self._maybe_proxy_websocket(path):
@@ -1121,6 +1443,16 @@ class AdminHandler(BaseHTTPRequestHandler):
         """POST 端点：服务开关 / TUN / GEO 更新 / 内核更新 / 订阅管理 / 模式 / 配置保存等。"""
         path = self._strip_gateway_prefix(urlparse(self.path).path)
         body = self._read_body()
+        if path == "/api/dashboard-update":
+            try:
+                data = json.loads(body) if body else {}
+                name = (data.get("name") or "").strip()
+                if name not in _DASHBOARD_RELEASES:
+                    return self._send_json({"success": False, "error": "不支持的面板: " + name}, 400)
+                result = install_dashboard(name)
+                return self._send_json(result, 200 if result.get("success") else 500)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/service":
             try:
                 data = json.loads(body) if body else {}
@@ -1282,6 +1614,49 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json({"success": False, "error": "保存失败"}, 500)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/config-section":
+            try:
+                data = json.loads(body) if body else {}
+                section = data.get("section", "")
+                yaml_text = data.get("yaml", "")
+                if not section:
+                    return self._send_json({"success": False, "error": "缺少 section"}, 400)
+                text = read_config()
+                import re as _re
+                pattern = r'^' + _re.escape(section) + r':.*?(?=^\S|\Z)'
+                replacement = yaml_text if yaml_text.endswith('\n') else yaml_text + '\n'
+                new_text = _re.sub(pattern, replacement, text, count=1, flags=_re.MULTILINE|_re.DOTALL)
+                if new_text == text:
+                    return self._send_json({"success": False, "error": f"未找到 section: {section}"}, 400)
+                if write_config(new_text):
+                    return self._send_json({"success": True, "message": f"{section} 已保存"})
+                return self._send_json({"success": False, "error": "保存失败"}, 500)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/config-section-reset":
+            try:
+                data = json.loads(body) if body else {}
+                section = data.get("section", "")
+                if not section:
+                    return self._send_json({"success": False, "error": "缺少 section"}, 400)
+                default_cfg = f"{TRIM_APPDEST}/default-config/config.yaml"
+                if not os.path.exists(default_cfg):
+                    return self._send_json({"success": False, "error": "默认模板不存在"}, 500)
+                with open(default_cfg, "r") as f:
+                    default_text = f.read()
+                import re as _re
+                pattern = r'^' + _re.escape(section) + r':.*?(?=^\S|\Z)'
+                m = _re.search(pattern, default_text, _re.MULTILINE|_re.DOTALL)
+                if not m:
+                    return self._send_json({"success": False, "error": f"默认模板中未找到 section: {section}"}, 400)
+                default_section = m.group(0)
+                text = read_config()
+                new_text = _re.sub(pattern, default_section if default_section.endswith('\n') else default_section + '\n', text, count=1, flags=_re.MULTILINE|_re.DOTALL)
+                if write_config(new_text):
+                    return self._send_json({"success": True, "message": f"{section} 已重置为默认"})
+                return self._send_json({"success": False, "error": "保存失败"}, 500)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         self.send_error(404)
 
     def _read_body(self):
@@ -1356,7 +1731,7 @@ def start_unix_socket_server():
         return None
 
 def main():
-    log(f"Starting FnSoar Admin Server")
+    log(f"Starting fnSoar Admin Server")
     log(f"  HTTP port : {ADMIN_PORT}")
     log(f"  Unix sock : {SOCKET_PATH}")
     log(f"  Config    : {CONFIG_FILE}")

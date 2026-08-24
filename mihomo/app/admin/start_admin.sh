@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# FnSoar admin server launcher (persisted copy under $TRIM_APPDEST/admin/)
+# fnSoar admin server launcher (persisted copy under $TRIM_APPDEST/admin/)
 #
 # fnOS registers the SERVICE_COMMAND at install time from cmd/service-setup;
 # the cmd/ directory does NOT persist into $TRIM_APPDEST, so the admin line

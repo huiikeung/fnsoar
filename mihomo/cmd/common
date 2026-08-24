@@ -1,7 +1,7 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# Common functions for FnSoar fnOS package
-# Based on MSF pattern (scoltzero/msf) with adjustments for FnSoar
+# Common functions for fnSoar fnOS package
+# Based on MSF pattern (scoltzero/msf) with adjustments for fnSoar
 # ---------------------------------------------------------------------------
 
 # fnOS lifecycle scripts run with no PATH. Export a sane default.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# FnSoar App Build Script
+# fnSoar App Build Script
 # Copies app files to deployment directory and restarts the service
 
 set -e
@@ -9,7 +9,7 @@ SOURCE_DIR="$(cd "$(dirname "$0")" && pwd)"
 DEST_DIR="/vol1/@appcenter/${APP_NAME}"
 DATA_DIR="/vol1/@appdata/${APP_NAME}"
 
-echo "=== FnSoar App Build ==="
+echo "=== fnSoar App Build ==="
 echo "Source: ${SOURCE_DIR}"
 echo "Dest:   ${DEST_DIR}"
 

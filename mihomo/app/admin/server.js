@@ -144,7 +144,7 @@ const server = http.createServer((req, res) => {
 });
 
 server.listen(PORT, '0.0.0.0', () => {
-    console.log(`FnSoar Admin Server running on port ${PORT}`);
+    console.log(`fnSoar Admin Server running on port ${PORT}`);
 });
 
 module.exports = {parseProxyProviders, writeConfig, getConfig, startService, stopService, getStatus};

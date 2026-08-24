@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# FnSoar fnOS main lifecycle script
+# fnSoar fnOS main lifecycle script
 # Handles: start / stop / status / log
 # ---------------------------------------------------------------------------
 

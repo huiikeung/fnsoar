@@ -1,10 +1,10 @@
 [
     {
-        "stepTitle": "欢迎安装 FnSoar",
+        "stepTitle": "欢迎安装 fnSoar",
         "items": [
             {
                 "type": "tips",
-                "helpText": "FnSoar 是一个基于 Mihomo(Clash Meta)内核的代理工具，内置Mihomo引擎+metacubexd/zashboard 双管理面板，支持TUN 模式、规则引擎、DNS分流等功能。安装完成后，通过 http://&lt;NAS IP&gt;:9098访问Zashboard(默认板)或 http://&lt;NAS IP&gt;:9097访问MetaCubeX。"
+                "helpText": "fnSoar 是一个基于 Mihomo(Clash Meta)内核的代理工具，内置Mihomo引擎+metacubexd/zashboard 双管理面板，支持TUN 模式、规则引擎、DNS分流等功能。安装完成后，通过 http://&lt;NAS IP&gt;:9098访问Zashboard(默认板)或 http://&lt;NAS IP&gt;:9097访问MetaCubeX。"
             }
         ]
     },
@@ -119,7 +119,7 @@
                 "type": "text",
                 "field": "dns_server",
                 "label": "DNS 服务器 (IPv4, 换行分隔)",
-                "initValue": "https://120.53.53.53/dns-query",
+                "initValue": "",
                 "placeholder": "输入 DNS 服务器地址，每行一个"
             },
             {

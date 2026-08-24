@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# FnSoar amd64 wrapper
+# fnSoar amd64 wrapper
 # fnOS launches this binary directly (it never calls cmd/main), so this
 # wrapper is the ONLY guaranteed hook to also bring up the admin panel
 # server. It starts admin_server.py in the background, then execs the

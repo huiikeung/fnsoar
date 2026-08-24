@@ -1,6 +1,6 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# FnSoar architecture-aware launcher
+# fnSoar architecture-aware launcher
 # Detects system architecture and runs the correct mihomo binary
 # ---------------------------------------------------------------------------
 
@@ -24,7 +24,7 @@ case "${ARCH}" in
 esac
 
 if [ ! -x "${MIHOMO_BIN}" ]; then
-    echo "FnSoar binary not found or not executable: ${MIHOMO_BIN}" >&2
+    echo "fnSoar binary not found or not executable: ${MIHOMO_BIN}" >&2
     exit 1
 fi
 
