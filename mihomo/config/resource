@@ -8,12 +8,12 @@
         "shares":
         [
             {
-                "name": "mihomo",
+                "name": "fnsoar",
                 "permission":
                 {
                     "rw":
                     [
-                        "mihomo"
+                        "fnsoar"
                     ]
                 }
             }

@@ -80,14 +80,14 @@ service_postinst()
         cp "${TRIM_APPDEST}/default-config/cache.db" "${TRIM_PKGVAR}/cache.db"
     fi
 
-    # If no config.yaml exists, create a default one from the template
-    if [ ! -f "${MIHOMO_CONFIG}" ]; then
-        if [ -f "${TRIM_APPDEST}/default-config/config.yaml" ]; then
-            cp "${TRIM_APPDEST}/default-config/config.yaml" "${MIHOMO_CONFIG}"
-            echo "Created default config.yaml from template" >> "${LOG_FILE}"
-        else
-            echo "WARNING: No default config template found" >> "${LOG_FILE}"
-        fi
+    # Always copy the default template as base, then apply wizard settings on top.
+    # (The wizard creates a minimal config before postinst runs, so a simple
+    # "does not exist" check would always skip the template.)
+    if [ -f "${TRIM_APPDEST}/default-config/config.yaml" ]; then
+        cp "${TRIM_APPDEST}/default-config/config.yaml" "${MIHOMO_CONFIG}"
+        echo "Copied default config.yaml template" >> "${LOG_FILE}"
+    else
+        echo "WARNING: No default config template found" >> "${LOG_FILE}"
     fi
 
     # Apply wizard settings to config.yaml
@@ -135,10 +135,12 @@ service_postinst()
 
     # Apply DNS settings
     if [ "${wizard_dns_enable:-true}" = "false" ]; then
-        sed -i "s/  enable: true/  enable: false/" "${MIHOMO_CONFIG}" 2>/dev/null || true
+        sed -i "s/^  enable: true/  enable: false/" "${MIHOMO_CONFIG}" 2>/dev/null || true
+    fi
+    if [ "${wizard_fakeip_enable:-true}" = "false" ]; then
+        sed -i "s/^  enhanced-mode: fake-ip/  enhanced-mode: normal/" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
     if [ "${wizard_tun_enable:-true}" = "false" ]; then
-        # Comment out tun enable
         sed -i "/^tun:/,/^  [a-z]/{s/  enable: true/  enable: false/}" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
 
