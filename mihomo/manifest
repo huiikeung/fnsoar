@@ -1,5 +1,5 @@
 appname               = fnnas.fnsoar
-version               = 1.0.52
+version               = 1.0.53
 display_name          = fnSoar
 desc                  = fnSoar (Mihomo) 原生代理引擎 — 集成 Zashboard / Metacubexd 双面板、规则引擎、TUN 模式、DNS 分流。一站式 fnOS 代理管理应用。
 arch                  = x86_64 arm64

@@ -241,10 +241,22 @@ def _read_dashboard_version(name):
     return None
 
 def _github_latest(repo):
+    """Query GitHub release 'latest'. Uses the gh-proxy mirror (same as the
+    config.yaml geo URLs) so unauthenticated GitHub API rate limits are less
+    likely to break the dashboard version check. An optional MIHOMO_GITHUB_TOKEN
+    is attached when available (raises limit and enables private-repo access)."""
     import urllib.request as _ureq
-    url = f"https://api.github.com/repos/{repo}/releases/latest"
-    req = _ureq.Request(url, headers={"User-Agent": "ClashMini/1.0",
-                                      "Accept": "application/vnd.github+json"})
+    gh_api = os.environ.get("MIHOMO_GITHUB_API", "https://api.github.com")
+    token = os.environ.get("MIHOMO_GITHUB_TOKEN", "")
+    # Prefer the api.github.com endpoint but route through gh-proxy when
+    # unauthenticated; if a token is set, query api.github.com directly.
+    if not token and gh_api == "https://api.github.com":
+        gh_api = "https://gh-proxy.com/https://api.github.com"
+    url = f"{gh_api}/repos/{repo}/releases/latest"
+    headers = {"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    req = _ureq.Request(url, headers=headers)
     with _ureq.urlopen(req, timeout=15) as resp:
         return json.loads(resp.read())
 

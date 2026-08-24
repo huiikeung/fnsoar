@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="dark">
+<html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -65,6 +65,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar{width:232px;background:var(--bg);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;transition:width .2s ease}
 .sidebar.collapsed{width:56px}
 .sidebar.hidden{display:none}
+@media(min-width:861px){.sidebar.hidden{display:flex}}
 @media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:232px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
 .sidebar-hidden-toggle{display:none;position:fixed;z-index:200;width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);align-items:center;justify-content:center;cursor:grab;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);user-select:none;touch-action:none}
 @media(max-width:860px){.sidebar-hidden-toggle{display:flex}}
@@ -1388,7 +1389,7 @@ tbody tr:hover{background:var(--card2)}
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.dashStatus">状态</span></div>
-              <span class="set-val" id="dashUpdateStatus" style="font-size:12px;color:var(--dim)">-</span>
+              <span class="set-val" id="dashUpdateStatus" style="font-size:12px;color:var(--dim)"></span>
             </div>
           </div>
         </div>
@@ -1828,6 +1829,14 @@ function csInitAll() {
   document.querySelectorAll('select:not([data-cs-skip])').forEach(function(sel) {
     if (!sel._csInited && sel.id !== 'curGroupSel' && sel.id !== 'curNodeSel') { sel._csInited = true; csBuild(sel); }
   });
+  // 页面切换后重新读取基础设置，确保自定义下拉的显示文本与真实 value 同步。
+  var themeSelect = document.getElementById('setThemeMode');
+  if (themeSelect && themeSelect._csRefresh) {
+    var stored = {};
+    try { stored = JSON.parse(localStorage.getItem('vergeSettings') || '{}') || {}; } catch(e) {}
+    if (stored.theme_mode) themeSelect.value = stored.theme_mode;
+    themeSelect._csRefresh();
+  }
   // Always init the two dynamic selects
   ['curGroupSel','curNodeSel'].forEach(function(id) {
     var s = document.getElementById(id);
@@ -3810,6 +3819,23 @@ function resetAllConfigSections() {
 
 // ── 设置 ─────────────────────────────────────
 function loadSettings() {
+  normalizeThemeSetting();
+  // 基础设置与引擎配置请求解耦，避免 API 请求较慢/失败时下拉框回到默认深色。
+  var ls = localStorage.getItem('vergeSettings');
+  if (ls) {
+    try {
+      var vs = JSON.parse(ls) || {};
+      if (vs.language) document.getElementById('setLanguage').value = vs.language;
+      if (vs.theme_mode) {
+        var themeSelect = document.getElementById('setThemeMode');
+        themeSelect.value = vs.theme_mode;
+        if (themeSelect._csRefresh) themeSelect._csRefresh();
+      }
+      if (vs.start_page) document.getElementById('setStartPage').value = vs.start_page;
+      if (vs.startup_script) document.getElementById('setStartupScript').value = vs.startup_script;
+      if (vs.show_icons !== undefined) document.getElementById('setShowIcons').checked = vs.show_icons;
+    } catch(e) {}
+  }
   fetch('api/config').then(r => r.json()).then(d => {
     var cfg = d.config || '';
     document.getElementById('setTun').checked = /enable:\s*true/.test(cfg);
@@ -3820,18 +3846,6 @@ function loadSettings() {
     if (mp) document.getElementById('setMixedPort').value = mp[1];
     var ll = cfg.match(/^log-level:\s*(\w+)/m);
     if (ll) document.getElementById('setLogLevel').value = ll[1];
-    // 加载基础设置
-    var ls = localStorage.getItem('vergeSettings');
-    if (ls) {
-      try {
-        var vs = JSON.parse(ls);
-        if (vs.language) document.getElementById('setLanguage').value = vs.language;
-        if (vs.theme_mode) document.getElementById('setThemeMode').value = vs.theme_mode;
-        if (vs.start_page) document.getElementById('setStartPage').value = vs.start_page;
-        if (vs.startup_script) document.getElementById('setStartupScript').value = vs.startup_script;
-        if (vs.show_icons !== undefined) document.getElementById('setShowIcons').checked = vs.show_icons;
-      } catch(e) {}
-    }
     // 加载外部控制器
     fetch('api/config').then(r => r.json()).then(function(d) {
       var cfg = d.config || '';
@@ -3854,6 +3868,7 @@ function loadDashboardStatus() {
   fetch('api/dashboards').then(r => r.json()).then(d => {
     var st = document.getElementById('dashUpdateStatus');
     if (st) st.textContent = '';
+    var anyUpdate = false;
     (d.dashboards || []).forEach(function(item) {
       var verEl = document.getElementById(item.name === 'zashboard' ? 'dashZasVer' : 'dashMetaVer');
       var btn = document.getElementById(item.name === 'zashboard' ? 'dashZasBtn' : 'dashMetaBtn');
@@ -3861,19 +3876,23 @@ function loadDashboardStatus() {
       if (btn) {
         if (item.has_update) {
           btn.style.display = 'inline-flex';
-          btn.textContent = '升级到 v' + item.latest;
-        } else if (item.latest) {
+          btn.style.pointerEvents = '';
+          btn.textContent = '升级';
+          anyUpdate = true;
+        } else {
+          // 无新版（含查询失败）时不显示按钮
           btn.style.display = 'none';
-          btn.dataset.latest = item.latest;
-        } else if (item.error) {
-          btn.style.display = 'inline-flex';
-          btn.textContent = '重试';
         }
       }
     });
+    // 状态行：有更新则提示，否则显示已最新
+    if (st) {
+      st.style.color = anyUpdate ? 'var(--red)' : 'var(--dim)';
+      st.textContent = anyUpdate ? t('settings.dashUpdateAvail') : t('settings.dashUpToDate');
+    }
   }).catch(function() {
     var st = document.getElementById('dashUpdateStatus');
-    if (st) st.textContent = '检查失败';
+    if (st) { st.style.color = 'var(--dim)'; st.textContent = '检查失败'; }
   });
 }
 
@@ -3960,11 +3979,25 @@ function saveBasicSetting(key) {
 }
 
 function applyTheme(mode) {
+  // system 模式必须清除 data-theme；否则 HTML 初始属性会把下拉值和实际状态分离。
   if (mode === 'light' || mode === 'dark') {
     document.documentElement.setAttribute('data-theme', mode);
   } else {
     document.documentElement.removeAttribute('data-theme');
   }
+}
+
+function normalizeThemeSetting() {
+  var ls = localStorage.getItem('vergeSettings');
+  if (!ls) return;
+  try {
+    var vs = JSON.parse(ls) || {};
+    var select = document.getElementById('setThemeMode');
+    if (select && (vs.theme_mode === 'system' || vs.theme_mode === 'light' || vs.theme_mode === 'dark')) {
+      select.value = vs.theme_mode;
+      if (select._csRefresh) select._csRefresh();
+    }
+  } catch(e) {}
 }
 
 // ── 多语言 ───────────────────────────────────
@@ -4035,7 +4068,7 @@ var I18N = {
     'settings.startupScript':'启动脚本','settings.runtimeConfig':'运行时配置',
     'settings.openConfDir':'打开配置目录','settings.openCoreDir':'打开核心目录',
     'settings.openLogs':'打开日志','settings.checkUpdate':'检查更新',
-    'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.dashboard':'面板升级','settings.dashStatus':'状态',
+    'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.dashboard':'面板升级','settings.dashStatus':'状态','settings.dashUpToDate':'已最新','settings.dashUpdateAvail':'有可用更新',
     'settings.service':'系统服务','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'深色','settings.themeLight':'浅色','settings.themeSystem':'系统',
     'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标',
@@ -4163,7 +4196,7 @@ var I18N = {
     'settings.startupScript':'Startup Script','settings.runtimeConfig':'Runtime Config',
     'settings.openConfDir':'Open Config Dir','settings.openCoreDir':'Open Core Dir',
     'settings.openLogs':'Open Logs','settings.checkUpdate':'Check Updates',
-    'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status',
+    'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status','settings.dashUpToDate':'Up to date','settings.dashUpdateAvail':'Update available',
     'settings.service':'System Service','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'Dark','settings.themeLight':'Light','settings.themeSystem':'System',
     'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons',

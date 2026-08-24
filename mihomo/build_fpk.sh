@@ -6,7 +6,7 @@
 # ============================================================================
 set -e
 
-VERSION="${1:-1.0.52}"
+VERSION="${1:-1.0.53}"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 BUILD_DIR="${SCRIPT_DIR}/tmp_build"
 STAGE_DIR="${BUILD_DIR}/stage"
