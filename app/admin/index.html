@@ -1669,29 +1669,46 @@ function renderSubInfo(name, info, provApi) {
 }
 
 async function loadDashboard() {
-  // 各数据源互不依赖，并发请求（原串行 await 会让慢接口阻塞后续模块渲染）
-  const [s, cfg, prov, provApi, p] = await Promise.all([
-    fetchJSON('api/status'),
-    fetchJSON('api/mode'),
+  // 各数据源互不依赖且各自独立渲染：谁先回来谁先显示，不互相等待。
+  renderServiceStatusAsync();
+  renderModeCfgAsync();
+  renderSubCardAsync();
+  renderGroupsSelAsync();
+  loadServiceStatus();
+  refreshTun();
+  loadIpInfo();
+  renderTestItems();
+  loadClashInfo();
+  loadSystemInfo();
+}
+
+// api/status —— 顶部服务状态(最快，独立先画)
+async function renderServiceStatusAsync() {
+  const s = await fetchJSON('api/status');
+  if (!s) return;
+  const dot = document.getElementById('serviceDot');
+  if (dot) dot.className = 'pdot ' + (s.running ? 'on' : 'off');
+  const st = document.getElementById('statusText');
+  if (st) st.textContent = s.running ? t('svc.on') : t('svc.off');
+  document.getElementById('svcPid').textContent = 'PID ' + (s.pid || '-');
+}
+
+// api/mode —— 模式按钮(独立先画)
+async function renderModeCfgAsync() {
+  const cfg = await fetchJSON('api/mode');
+  if (!cfg || !cfg.mode) return;
+  document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
+  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
+  updateModeDesc(cfg.mode);
+}
+
+// 订阅卡 + nodeProvider 映射（proxy-providers 与 providers/proxies 并发，就绪即画）
+async function renderSubCardAsync() {
+  const [prov, provApi] = await Promise.all([
     fetchJSON('api/proxy-providers'),
     fetchJSON('providers/proxies'),
-    fetchJSON('proxies'),
   ]);
-  if (s) {
-    const dot = document.getElementById('serviceDot');
-    if (dot) dot.className = 'pdot ' + (s.running ? 'on' : 'off');
-    const st = document.getElementById('statusText');
-    if (st) st.textContent = s.running ? t('svc.on') : t('svc.off');
-    document.getElementById('svcPid').textContent = 'PID ' + (s.pid || '-');
-  }
-  if (cfg && cfg.mode) {
-    document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
-    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
-    updateModeDesc(cfg.mode);
-  }
-  // 订阅信息
   if (provApi && provApi.providers) {
-    // 建立 真实节点名 -> provider 映射（供首页测速使用）
     Object.entries(provApi.providers).forEach(([pname, pv]) => {
       if (pv.vehicleType !== 'HTTP' && pv.vehicleType !== 'File') return;
       (pv.proxies || []).forEach(n => { if (n && n.name) nodeProvider[n.name] = pname; });
@@ -1699,7 +1716,6 @@ async function loadDashboard() {
   }
   if (prov && prov.providers) {
     const entries = Object.entries(prov.providers);
-    // 清理旧切换定时器
     if (_subTimer) { clearInterval(_subTimer); _subTimer = null; }
     var dotsEl = document.getElementById('subDots'); if (dotsEl) dotsEl.remove();
     if (entries.length) {
@@ -1737,29 +1753,24 @@ async function loadDashboard() {
     if (_subTimer) { clearInterval(_subTimer); _subTimer = null; }
     var dotsEl2 = document.getElementById('subDots'); if (dotsEl2) dotsEl2.remove();
   }
-  // 当前节点 + 策略组下拉
-  if (p && p.proxies) {
-    proxiesData = p.proxies;
-    const groups = Object.entries(p.proxies).filter(([k,v]) => ['Selector','URLTest','Fallback','LoadBalance'].includes(v.type));
-    if (groups.length) {
-      const sel = document.getElementById('curGroupSel');
-      const prev = sel.value || '';
-      sel.innerHTML = groups.map(([name, info]) => `<option value="${name.replace(/"/g,'&quot;')}">${name}</option>`).join('');
-      // 默认选中第一个非 GLOBAL 组（如国外/所有-手动），否则 GLOBAL
-      let target = groups.find(([n]) => n !== 'GLOBAL') || groups[0];
-      if (prev && groups.some(([n]) => n === prev)) target = groups.find(([n]) => n === prev);
-      curGroup = target[0];
-      sel.value = curGroup;
-      if (sel._csRefresh) sel._csRefresh();
-      renderCurNode();
-    }
-  }
-  loadServiceStatus();
-  refreshTun();
-  loadIpInfo();
-  renderTestItems();
-  loadClashInfo();
-  loadSystemInfo();
+}
+
+// proxies —— 策略组下拉 + 当前节点(独立先画)
+async function renderGroupsSelAsync() {
+  const p = await fetchJSON('proxies');
+  if (!p || !p.proxies) return;
+  proxiesData = p.proxies;
+  const groups = Object.entries(p.proxies).filter(([k,v]) => ['Selector','URLTest','Fallback','LoadBalance'].includes(v.type));
+  if (!groups.length) return;
+  const sel = document.getElementById('curGroupSel');
+  const prev = sel.value || '';
+  sel.innerHTML = groups.map(([name, info]) => `<option value="${name.replace(/"/g,'&quot;')}">${name}</option>`).join('');
+  let target = groups.find(([n]) => n !== 'GLOBAL') || groups[0];
+  if (prev && groups.some(([n]) => n === prev)) target = groups.find(([n]) => n === prev);
+  curGroup = target[0];
+  sel.value = curGroup;
+  if (sel._csRefresh) sel._csRefresh();
+  renderCurNode();
 }
 
 function renderCurNode() {
@@ -2514,36 +2525,42 @@ async function runWebTest() {
    const grid = document.getElementById('provGrid');
    if (!grid) return;
    if (!silent) grid.innerHTML = '<div class="prov-empty">' + t('conn.loading') + '</div>';
-   const [p] = await Promise.all([fetchJSON('api/proxy-providers'), fetchProvLive()]);
+   // 静态订阅信息先渲染（api/proxy-providers 快），节点数/更新时间随后由
+   // providers/proxies 异步补齐 —— 两者独立，不必等慢的一个都好了才显示
+   const p = await fetchJSON('api/proxy-providers');
    provStatic = (p && p.providers) ? p.providers : {};
    const entries = Object.entries(provStatic);
    if (!entries.length) {
      grid.innerHTML = '<div class="prov-empty"><div style="font-size:34px;opacity:.5">' + svgIcon(IC.cloud) + '</div><p>' + t('logs.empty') + '</p><button class="btn btn-primary" onclick="openProvModal()">' + t('providers.add') + '</button></div>';
      return;
    }
-   grid.innerHTML = entries.map(([name, info]) => {
-     const lv = provLive[name] || {};
-     const nodeCount = (lv.proxies && lv.proxies.length) || 0;
-     const updated = lv.updatedAt || info.updatedAt || '';
-     const url = info.url || '';
-     const interval = info.interval || 3600;
-     const urlLower = (url || '').toLowerCase();
-      const badge = urlLower.startsWith('https://') ? 'HTTPS' : urlLower.startsWith('http://') ? 'HTTP' : ((lv.vehicleType || info.type || 'http').toLowerCase() === 'compatible' ? t('config.title') : 'HTTP');
-      return `<div class="prov-card" id="provcard-${esc(name)}">
-          <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
-         <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
-         <div class="prov-stats">
-           <span class="prov-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b> ${t('home.node')}</span>
-           <span class="prov-stat">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
-           <span class="prov-stat">${interval}s ${t('providers.update')}</span>
-         </div>
-         <div class="prov-actions">
-           <button class="prov-act-btn prov-update" onclick="updateProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.refresh)}${t('providers.update')}</button>
+   const render = () => {
+     grid.innerHTML = entries.map(([name, info]) => {
+       const lv = provLive[name] || {};
+       const nodeCount = (lv.proxies && lv.proxies.length) || 0;
+       const updated = lv.updatedAt || info.updatedAt || '';
+       const url = info.url || '';
+       const interval = info.interval || 3600;
+       const urlLower = (url || '').toLowerCase();
+       const badge = urlLower.startsWith('https://') ? 'HTTPS' : urlLower.startsWith('http://') ? 'HTTP' : ((lv.vehicleType || info.type || 'http').toLowerCase() === 'compatible' ? t('config.title') : 'HTTP');
+       return `<div class="prov-card" id="provcard-${esc(name)}">
+           <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
+          <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
+          <div class="prov-stats">
+            <span class="prov-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b> ${t('home.node')}</span>
+            <span class="prov-stat">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
+            <span class="prov-stat">${interval}s ${t('providers.update')}</span>
+          </div>
+          <div class="prov-actions">
+            <button class="prov-act-btn prov-update" onclick="updateProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.refresh)}${t('providers.update')}</button>
            <button class="prov-act-btn prov-edit" onclick="openProvModal('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.edit)}${t('providers.edit')}</button>
            <button class="prov-act-btn prov-del" onclick="deleteProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.trash)}${t('providers.delete')}</button>
          </div>
        </div>`;
    }).join('');
+   };
+   render();
+   fetchProvLive().then(() => { render(); });
  }
  let provEditing = null;
  function openProvModal(name) {
