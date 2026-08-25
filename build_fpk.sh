@@ -5,9 +5,9 @@
 # 示例: ./build_fpk.sh 1.0.54
 #
 # 产出三个安装包：
-#   mihomo<版本>.fpk          通用包   —— 内置 amd64 + arm64 双内核（默认推荐）
-#   mihomo<版本>-amd64.fpk    仅 x86_64 —— 只含 amd64 内核，体积更小
-#   mihomo<版本>-arm64.fpk    仅 arm64  —— 只含 arm64 内核，体积更小
+#   fnSoar<版本>.fpk          通用包   —— 内置 amd64 + arm64 双内核（默认推荐）
+#   fnSoar<版本>-amd64.fpk    仅 x86_64 —— 只含 amd64 内核，体积更小
+#   fnSoar<版本>-arm64.fpk    仅 arm64  —— 只含 arm64 内核，体积更小
 #
 # manifest 的 arch 行会按包类型分别写：x86_64 arm64 / x86_64 / arm64。
 # 安装时由 app/bin/mihomo 按 uname -m 自动选择内核。
@@ -46,7 +46,7 @@ build_variant() {
 
     local STAGE="${BUILD_DIR}/stage"
     local APP_DIR="${BUILD_DIR}/app${suffix}"
-    local OUTPUT="${SCRIPT_DIR}/mihomo${VERSION}${suffix}.fpk"
+    local OUTPUT="${SCRIPT_DIR}/fnSoar${VERSION}${suffix}.fpk"
 
     echo ""
     echo "── 构建 ${OUTPUT} (arch: ${arch}) ──"
@@ -107,4 +107,4 @@ build_variant "-arm64"   "arm64"        0 1   # 仅 arm64
 
 echo ""
 echo "=== 打包完成 ==="
-ls -lh "${SCRIPT_DIR}"/mihomo${VERSION}*.fpk | sed 's/^/  /'
+ls -lh "${SCRIPT_DIR}"/fnSoar${VERSION}*.fpk | sed 's/^/  /'

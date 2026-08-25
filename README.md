@@ -53,7 +53,7 @@ cd fnsoar
 # 构建 fpk 安装包（默认版本号取 build_fpk.sh 内 VERSION）
 ./build_fpk.sh 1.0.53
 
-# 产物位于 ./mihomo1.0.53.fpk
+# 产物位于 ./fnSoar1.0.53.fpk（含 -amd64 / -arm64 单独包）
 ```
 
 ### 目录结构
