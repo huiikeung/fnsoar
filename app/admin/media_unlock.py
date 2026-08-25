@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Media streaming unlock checker (ports clash-verge-rev's `clash-verge-media-unlock`).
+Media streaming unlock checker.
 
 Checks whether the current exit IP can access each streaming service, mirroring
-the exact logic / status strings of the Rust crate:
+the exact logic / status strings of the media unlock test:
 
   Netflix, Disney+, Prime Video, Spotify, TikTok, YouTube Premium, Bahamut Anime,
   Bilibili CN, Bilibili HK/MC/TW, ChatGPT iOS/Web, Claude, Gemini

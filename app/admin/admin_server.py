@@ -703,7 +703,7 @@ def _http_get(url, timeout=20):
     return data
 
 # 本地偏好键：下载/上传订阅配置时，把本地 config.yaml 的这些设置合并进订阅配置
-# （对齐 clash-verge-rev 的 merge 增强——用户本地偏好覆盖订阅，节点/规则保留）
+# （merge 增强——用户本地偏好覆盖订阅，节点/规则保留）
 
 
 def _test_config(path):
@@ -734,9 +734,9 @@ def get_ip_info():
     return data
 
 def _get_ipinfo_uncached():
-    """Query the public exit IP via external APIs (best effort, clash-verge-rev style).
+    """Query the public exit IP via external APIs (best effort).
     Tries multiple services in order; returns the first success.
-    Field set matches Clash Verge Rev's IP-info card:
+    Field set matches the IP-info card:
     ip / asn(自治域) / isp(服务商) / organization(组织) / location(位置) / timezone(时区)."""
     import urllib.request as _ureq
     import ssl
@@ -1318,7 +1318,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         if path == "/api/systeminfo":
             return self._send_json(get_system_info())
         if path == "/api/unlock/items":
-            # 解锁测试：默认测试项列表（Pending），内容对齐 Clash Verge Rev
+            # 解锁测试：默认测试项列表（Pending）
             from media_unlock import default_unlock_items
             return self._send_json(default_unlock_items())
         if path == "/api/tun":

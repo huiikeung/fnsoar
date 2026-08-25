@@ -19,7 +19,7 @@
   --text:#e8e8ec;
   --dim:#9a9aa3;
   --faint:#6b6b74;
-  --accent:#4e6ef2;      /* verge 蓝 */
+  --accent:#4e6ef2;      /* 主题蓝 */
   --accent2:#6d8aff;
   --green:#3fb950;
   --red:#f85149;
@@ -143,7 +143,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .btn-success:hover{background:rgba(63,185,80,.24)}
 .notice{background:rgba(210,153,34,.1);border:1px solid rgba(210,153,34,.35);color:#e0b341;border-radius:10px;padding:10px 14px;font-size:12.5px;margin-bottom:16px;line-height:1.7}
 
-/* ── 首页（参考 Clash Verge Rev） ───────────────── */
+/* ── 首页 ─────────────────────────── */
 .home-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
 .home-head h2{font-size:20px;font-weight:700;color:var(--text)}
 .home-head-right{display:flex;align-items:center;gap:10px}
@@ -229,7 +229,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .mbig-ic svg{width:24px;height:24px;fill:currentColor;stroke:none;display:block;margin:auto}
 .mode-desc{border:1px solid rgba(78,110,242,.4);background:rgba(78,110,242,.08);border-radius:10px;padding:9px 12px;font-size:12px;color:var(--accent2);line-height:1.5}
 
-/* ── 网站测试 (clash-verge-rev 风格) ────────── */
+/* ── 网站测试风格 ────────────────── */
 .test-scroll{max-height:200px;overflow-y:auto;overflow-x:hidden}
 .test-scroll::-webkit-scrollbar{width:5px}
 .test-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
@@ -310,14 +310,14 @@ tbody tr:hover{background:var(--card2)}
 .tag.blue{background:rgba(78,110,242,.16);color:var(--accent2)}
 .tag.gray{background:var(--card2);color:var(--dim)}
 
-/* ── 模式切换（verge 分段按钮） ─────────────── */
+/* ── 模式切换（分段按钮） ────────── */
 .mode-seg{display:inline-flex;align-items:center;background:var(--card2);border-radius:9px;padding:3px;gap:0;margin-bottom:16px}
 .mode-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 18px;border-radius:7px;border:none;background:transparent;color:var(--dim);font-size:13.5px;font-weight:500;cursor:pointer;transition:all .15s;line-height:1}
 .mode-btn:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .mode-btn.active{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .mode-btn svg{width:15px;height:15px;flex-shrink:0}
 
-/* ── 策略组（参考 Clash Verge Rev 代理页） ──── */
+/* ── 策略组页 ────────────────────── */
 .groups-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap}
 .groups-title{font-size:20px;font-weight:700;letter-spacing:-.2px;color:var(--text);line-height:1;white-space:nowrap}
 @media(max-width:880px){.groups-title{display:none}.groups-toolbar{justify-content:center}}
@@ -325,7 +325,7 @@ tbody tr:hover{background:var(--card2)}
 .groups-tools .mini-btn{display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
 .groups-tools .mode-seg{margin-bottom:0}
 .gwrap{display:flex;flex-direction:column;gap:14px;width:100%}
-/* 一行一个卡片（clash-verge-rev 代理页：每个策略组占满一行） */
+/* 一行一个卡片（策略组占满一行） */
 .gcard{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;width:100%}
 .gcard-head{padding:8px 10px 8px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;transition:background .1s;min-height:52px}
 .gcard-head:hover{background:var(--card2)}
@@ -339,7 +339,7 @@ tbody tr:hover{background:var(--card2)}
 .gcard-info .gcard-now{font-size:11px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:26ch}
 .gcard-head-spacer{flex:1;min-width:0}
 .gcard-count-right{font-size:11px;color:var(--dim);font-weight:500;flex-shrink:0;margin-right:4px;display:flex;align-items:center;min-width:2ch;justify-content:flex-end}
-/* 右侧按钮组（参考 clash-verge-rev ProxyHead：定位/测速/排序/测速URL/详情/筛选） */
+/* 右侧按钮组（定位/测速/排序/测速URL/详情/筛选） */
 .ghead-tools{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .ghead-tool{width:28px;height:28px;border-radius:7px;border:none;background:transparent;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;flex-shrink:0;padding:0}
 .ghead-tool:hover{color:var(--accent2);background:rgba(78,110,242,.14)}
@@ -353,8 +353,8 @@ tbody tr:hover{background:var(--card2)}
 .gcard-toolsbar input{width:100%;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);padding:7px 12px;font-size:12.5px;outline:none;font-family:inherit;box-sizing:border-box}
 .gcard-toolsbar input:focus{border-color:var(--accent)}
 .gcard.collapsed .gcard-toolsbar{display:none}
-/* 展开后的节点子卡片（参考 clash-verge-rev ProxyItem） */
-/* 展开后的节点子卡片（参考 clash-verge-rev ProxyItem）：优先两列，窄屏一列 */
+/* 展开后的节点子卡片 */
+/* 展开后的节点子卡片：优先两列，窄屏一列 */
 .gcard-body{max-height:64vh;overflow-y:auto;padding:4px 9px 11px;display:grid;grid-template-columns:repeat(2,1fr);gap:8px;align-content:start}
 .gcard.collapsed .gcard-body{display:none}
 @media(max-width:880px){.gcard-body{grid-template-columns:1fr}}
@@ -614,7 +614,7 @@ tbody tr:hover{background:var(--card2)}
 .con-raw-btn:hover{background:var(--card);color:var(--text);border-color:var(--accent)}
 @media(max-width:760px){.vcfg-grid{grid-template-columns:1fr}}
 
-/* ── 节点订阅（Clash Verge Rev 风格） ───────── */
+/* ── 节点订阅风格 ────────────────── */
 .prov-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .prov-head h3{margin:0;font-size:20px;font-weight:700;letter-spacing:-.2px}
 .prov-import-row{display:flex;gap:10px;margin-bottom:18px}
@@ -668,7 +668,7 @@ tbody tr:hover{background:var(--card2)}
 .section-webui{position:fixed;top:0;right:0;bottom:0;left:232px;background:var(--bg);z-index:10}
 .section-webui iframe{width:100%;height:100%;border:none;background:var(--bg)}
 
-/* ── 测试页（解锁检测，参考 Clash Verge Rev） ────────── */
+/* ── 测试页（解锁检测） ──────────── */
 .unlock-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .unlock-head h2{font-size:20px;font-weight:700;color:var(--text)}
 #section-test{flex-direction:column;flex:1;min-height:0}
@@ -816,7 +816,7 @@ tbody tr:hover{background:var(--card2)}
   <!-- 右侧内容区 -->
   <main class="main">
 
-    <!-- 首页（参考 Clash Verge Rev 样式） -->
+    <!-- 首页 -->
     <section id="section-home">
       <div class="home-head">
         <h2>首页</h2>
@@ -971,7 +971,7 @@ tbody tr:hover{background:var(--card2)}
           </div>
         </div>
 
-        <!-- 流量统计（参考 Clash Verge Dev） -->
+        <!-- 流量统计 -->
         <div class="hcard full" id="home-traffic">
           <div class="hcard-title">
             <span class="hcard-ic traffic"><svg viewBox="0 0 24 24"><path d="M17.45,15.18L22,7.31V19L22,21H2V3H4V15.54L9.5,6L16,9.78L20.24,2.45L21.97,3.45L16.74,12.5L10.23,8.75L4.31,19H6.57L10.96,11.44L17.45,15.18Z"/></svg></span>
@@ -1019,7 +1019,7 @@ tbody tr:hover{background:var(--card2)}
       <div class="gwrap" id="groupsWrap"></div>
     </section>
 
-    <!-- 节点订阅（Clash Verge Rev 风格） -->
+    <!-- 节点订阅 -->
     <section id="section-providers" style="display:none">
       <div class="prov-head">
         <h3>订阅</h3>
@@ -1654,7 +1654,7 @@ async function fetchJSON(url, timeoutMs) {
   } catch (e) { return null; }
 }
 
-// ── 首页（参考 Clash Verge Rev） ─────────────
+// ── 首页 ───────────────────────────
 let proxiesData = null;
 let nodeProvider = {};   // 真实节点名 -> 所属订阅 provider 名（测速走 provider healthcheck）
 let nodeDelay = {};      // 节点名 -> 最近一次测速延时(ms)，-1 表示超时
@@ -2084,7 +2084,7 @@ function toggleTun() {
     .finally(() => { if (btn) btn.classList.remove('busy'); });
 }
 
-// ── 流量统计（/traffic WebSocket + 实时曲线图，参考 Clash Verge Rev） ──
+// ── 流量统计（/traffic WebSocket + 实时曲线图） ──
 const TRAFFIC_POINTS = 90;          // 曲线保留点数（约 90 秒）
 let trafficHistory = [];            // {up, down}
 
@@ -2502,7 +2502,7 @@ async function runWebTest() {
   }
 }
 
- // ── 节点订阅（Clash Verge Rev 风格） ────────
+ // ── 节点订阅 ──────────────────────
  let provLive = {};   // name -> 运行时信息（节点数/更新时间），来自 /providers/proxies
  let provStatic = {};
  async function fetchProvLive() {
@@ -2679,7 +2679,7 @@ async function updateAllProviders() {
   if (okCount === entries.length) showToast("全部 " + okCount + " 个订阅更新完成", "success");
   else if (okCount > 0) showToast(okCount + "/" + entries.length + " 个订阅更新完成", "success");
 }
-// ── 策略组（verge 风格） ────────────────────
+// ── 策略组 ─────────────────────────
 let currentMode = 'rule';
 let globalSort = 0;            // 全局模式排序：0 默认 / 1 延迟 / 2 名称
 let globalFilterOpen = false;  // 全局模式筛选框是否展开
@@ -2746,7 +2746,7 @@ async function testOneNode(name, timeout, url) {
 }
 
 function latencyOf(name) {
-  // 成员若是策略组，其延迟取其当前节点的延迟（参考 clash-verge-rev）
+  // 成员若是策略组，其延迟取其当前节点的延迟
   const grp = (proxiesData && proxiesData[name]) || null;
   if (grp && ['Selector','URLTest','Fallback','LoadBalance'].includes(grp.type) && grp.now) {
     return latencyOf(grp.now);
@@ -2786,7 +2786,7 @@ function renderGroups() {
     wrap.innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">无法获取策略组数据（引擎可能未运行）</div>';
     return;
   }
-  // 模式联动（参考 Clash Verge Rev）：规则隐藏 GLOBAL；全局平铺所有节点；直连不显示
+  // 模式联动：规则隐藏 GLOBAL；全局平铺所有节点；直连不显示
   let groups = Object.entries(proxiesData).filter(([k,v]) => ['Selector','URLTest','Fallback','LoadBalance'].includes(v.type));
   // 按 config.yaml proxy-groups 的配置顺序显式重建数组（比 sort 更可靠，不受竞态影响）
   if (groupOrder.length) {
@@ -2896,7 +2896,7 @@ function renderGroups() {
     return;
   }
   groups = groups.filter(([k]) => k !== 'GLOBAL');
-  // 排序（参考 Clash Verge Rev）：分类策略组（谷歌/苹果/流媒体等）排前，
+  // 排序：分类策略组（谷歌/苹果/流媒体等）排前，
   // 带"手动/自动"的订阅地域组（香港-手动、台湾-自动等）始终排后面
   groups.sort((a, b) => {
     const aAuto = /手动|自动/.test(a[0]);
@@ -2910,7 +2910,7 @@ function renderGroups() {
   const cards = groups.map(([name, info]) => {
     const all = info.all || [];
     const h = (groupHead[name] = groupHead[name] || defaultGroupHead());
-    // 组内节点排序（参考 clash-verge-rev ProxyHead sortType：0 默认 / 1 延迟 / 2 名称）
+    // 组内节点排序（sortType：0 默认 / 1 延迟 / 2 名称）
     let nodes = all.slice();
     if (h.sortType === 2) nodes.sort((a, b) => String(a).localeCompare(String(b), 'zh'));
     else if (h.sortType === 1) nodes.sort((x, y) => {
@@ -2982,7 +2982,7 @@ function renderGroups() {
   wrap.innerHTML = cards;
   restoreGroupInputFocus();
 }
-// ── 策略组头部状态（每组的排序/详情/筛选/测速URL，参考 clash-verge-rev HeadState） ──
+// ── 策略组头部状态（排序/详情/筛选/测速URL） ──
 let groupHead = {};                 // 组名 -> {sortType, showType, filterText, filterOpen, urlOpen, testUrl}
 let groupIcons = {};                // 组名 -> 图标 URL（config.yaml proxy-groups 的 icon 字段，支持 http(s) 与 data:）
 function showIconsEnabled() {
@@ -3040,7 +3040,7 @@ function nodeLatency(n) {
   if (hs && hs.delay > 0) return hs.delay;
   return -1;
 }
-// 节点的协议/特性标签（provider 类型、UDP、XUDP 等），参考 clash-verge-rev ProxyItem 的 TypeBox
+// 节点的协议/特性标签（provider 类型、UDP、XUDP 等）
 function nodeTypeTags(n) {
   const meta = nodeMeta[n] || {};
   const info = proxiesData[n] || {};
@@ -3284,7 +3284,7 @@ async function testGroup(groupName) {
   if (testBtn) testBtn.classList.add('testing');
   const total = nodes.length;
   let done = 0;
-  // 若该组设置了自定义测速 URL 则使用它（参考 clash-verge-rev testUrl）
+  // 若该组设置了自定义测速 URL 则使用它
   const testUrl = (groupHead[groupName] && groupHead[groupName].testUrl.trim()) || 'https://www.gstatic.com/generate_204';
   // 并发 6
   let idx = 0;
@@ -3377,7 +3377,7 @@ function locateCurrentNode() {
   setTimeout(() => target.classList.remove('locate-flash'), 2000);
 }
 
-// ── 测试（解锁检测，参考 Clash Verge Rev） ─────────
+// ── 测试（解锁检测） ───────────────
 const UNLOCK_STORAGE_KEY = 'clash_mini_unlock_results';
 const UNLOCK_TIME_KEY = 'clash_mini_unlock_time';
 let unlockItems = [];
