@@ -56,4 +56,15 @@ if [ -n "${DATA_DIR}" ] && [ -d "${DATA_DIR}" ]; then
     echo $$ > "${DATA_DIR}/${MIHOMO_APP_NAME:-fnnas.fnsoar}.pid"
 fi
 
+# Host REDIRECT mode uses a dedicated UID so iptables can exclude Mihomo's
+# own upstream connections without excluding every root process on the NAS.
+if [ -f "${DATA_DIR}/config.yaml" ] && (grep -q '^host-transparent:[[:space:]]*true' "${DATA_DIR}/config.yaml" || ! grep -q '^host-transparent:' "${DATA_DIR}/config.yaml") \
+   && grep -A3 '^tun:' "${DATA_DIR}/config.yaml" | grep -q 'enable:[[:space:]]*false' \
+   && id fnsoar >/dev/null 2>&1; then
+    grep -q '^redir-port:' "${DATA_DIR}/config.yaml" || sed -i '/^mixed-port:/a redir-port: 7892' "${DATA_DIR}/config.yaml"
+    [ -x "${APP_ROOT}/admin/host_transparent.sh" ] && FNSOAR_REDIR_PORT=7892 "${APP_ROOT}/admin/host_transparent.sh" apply || exit 1
+    # TUN and TProxy need CAP_NET_ADMIN; preserve only this capability while
+    # running the engine as the dedicated UID for firewall loop prevention.
+    exec setpriv --reuid=fnsoar --regid=fnsoar --init-groups --inh-caps=+net_admin --ambient-caps=+net_admin -- "${SCRIPT_DIR}/mihomo-amd64.real" "$@"
+fi
 exec "${SCRIPT_DIR}/mihomo-amd64.real" "$@"

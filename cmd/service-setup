@@ -80,14 +80,16 @@ service_postinst()
         cp "${TRIM_APPDEST}/default-config/cache.db" "${TRIM_PKGVAR}/cache.db"
     fi
 
-    # Always copy the default template as base, then apply wizard settings on top.
-    # (The wizard creates a minimal config before postinst runs, so a simple
-    # "does not exist" check would always skip the template.)
-    if [ -f "${TRIM_APPDEST}/default-config/config.yaml" ]; then
+    # Preserve the user's live config on upgrade. The old behavior always
+    # copied the bundled template and erased proxy-providers/subscriptions.
+    # Only initialize config.yaml when it does not exist (or is empty).
+    if [ ! -s "${MIHOMO_CONFIG}" ] && [ -f "${TRIM_APPDEST}/default-config/config.yaml" ]; then
         cp "${TRIM_APPDEST}/default-config/config.yaml" "${MIHOMO_CONFIG}"
-        echo "Copied default config.yaml template" >> "${LOG_FILE}"
-    else
+        echo "Initialized default config.yaml template" >> "${LOG_FILE}"
+    elif [ ! -s "${MIHOMO_CONFIG}" ]; then
         echo "WARNING: No default config template found" >> "${LOG_FILE}"
+    else
+        echo "Preserved existing config.yaml" >> "${LOG_FILE}"
     fi
 
     # Copy icons.yaml template (ensure readable permissions)
@@ -147,21 +149,33 @@ service_postinst()
     if [ "${wizard_fakeip_enable:-true}" = "false" ]; then
         sed -i "s/^  enhanced-mode: fake-ip/  enhanced-mode: normal/" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
-    if [ "${wizard_tun_enable:-true}" = "false" ]; then
+    if [ "${wizard_tun_enable:-false}" = "false" ]; then
         sed -i "/^tun:/,/^  [a-z]/{s/  enable: true/  enable: false/}" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
 
+    # Host TProxy requires NET_ADMIN/NET_RAW after the engine drops to fnsoar.
+    # Apply capabilities to the architecture-specific real binaries; this is
+    # harmless in TUN mode and avoids running all host programs as root.
+    if command -v setcap >/dev/null 2>&1; then
+        setcap cap_net_admin,cap_net_raw+ep "${TRIM_APPDEST}/bin/mihomo-amd64.real" 2>/dev/null || true
+        setcap cap_net_admin,cap_net_raw+ep "${TRIM_APPDEST}/bin/mihomo-arm64.real" 2>/dev/null || true
+    fi
     # Fix ownership for non-root installation
     fix_data_ownership 2>/dev/null || true
 }
 
 service_postupgrade()
 {
+    # service_postinst now preserves the live config and subscriptions.
     service_postinst
 }
 
 service_preuninst()
 {
+    # Remove only fnSoar's host-transparent chain before uninstall.
+    if [ -x "${TRIM_APPDEST}/admin/host_transparent.sh" ]; then
+        "${TRIM_APPDEST}/admin/host_transparent.sh" cleanup 2>/dev/null || true
+    fi
     # Kill all mihomo processes (note: the engine runs as mihomo-amd64.real /
     # mihomo-arm64.real after the wrapper execs it, so pkill -f is required —
     # killall can't match the truncated 15-char comm name).
@@ -186,6 +200,10 @@ service_preuninst()
 
 service_poststop()
 {
+    # Ensure host-transparent rules are removed even after an abnormal stop.
+    if [ -x "${TRIM_APPDEST}/admin/host_transparent.sh" ]; then
+        "${TRIM_APPDEST}/admin/host_transparent.sh" cleanup 2>/dev/null || true
+    fi
     # Clean up any remaining mihomo processes AND the admin panel server
     # (the admin server PID is recorded in the PID file; this is a backstop
     # for processes that escaped tracking, e.g. during a hard crash).

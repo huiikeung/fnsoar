@@ -29,6 +29,8 @@ mkdir -p "${DATA_DIR}"
 echo "Copying admin files..."
 cp -f "${SOURCE_DIR}/app/admin/index.html" "${DEST_DIR}/app/admin/"
 cp -f "${SOURCE_DIR}/app/admin/admin_server.py" "${DEST_DIR}/app/admin/"
+cp -f "${SOURCE_DIR}/app/admin/host_transparent.sh" "${DEST_DIR}/app/admin/"
+chmod +x "${DEST_DIR}/app/admin/host_transparent.sh"
 cp -f "${SOURCE_DIR}/app.json" "${DEST_DIR}/"
 cp -f "${SOURCE_DIR}/favicon.png" "${DEST_DIR}/" 2>/dev/null || true
 

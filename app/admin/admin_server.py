@@ -61,6 +61,10 @@ ACTIVE_FILE   = f"{TRIM_PKGVAR}/active"
 MIHOMO_BIN    = f"{TRIM_APPDEST}/bin/mihomo"
 ADMIN_DIR     = os.path.dirname(os.path.abspath(__file__))
 DASHBOARD_DIR = f"{TRIM_PKGVAR}/dashboard"
+HOST_TRANSPARENT_SCRIPT = os.path.join(ADMIN_DIR, "host_transparent.sh")
+HOST_TRANSPARENT_PORT = int(os.environ.get("MIHOMO_REDIR_PORT", "7892"))
+_PROVIDER_RESTART_LOCK = threading.Lock()
+_PROVIDER_RESTARTING = False
 MIHOMO_CTRL_PORT = int(os.environ.get("MIHOMO_CTRL_PORT", "9090"))
 MIHOMO_CTRL_HOST = os.environ.get("MIHOMO_CTRL_HOST", "127.0.0.1")
 
@@ -128,17 +132,23 @@ def cached_icon_path(url):
         pass
     return None, None
 
+_icon_memo = {}   # url/shortname -> 已内嵌的 data: URI，避免每次请求重复读文件+base64
 def embedded_icon(url_or_data):
-    """把图标转成可内嵌的 data: URI（短名→icons.yaml 解析，data: 直接返回，URL 下载本地化，3s超时）。"""
+    """把图标转成可内嵌的 data: URI（短名→icons.yaml 解析，data: 直接返回，URL 下载本地化，3s超时）。
+    结果按图标键缓存，重复请求直接命中，避免磁盘读取与 base64 编码拖慢页面。"""
     if not isinstance(url_or_data, str) or not url_or_data:
         return url_or_data
     low = url_or_data.strip().lower()
     if low.startswith("data:"):
         return url_or_data
-    # 短名解析：从 icons.yaml 查找
+    # 缓存命中（短名 / 已本地化的 http(s) URL 均可安全缓存）
+    memo_key = url_or_data.strip()
+    if memo_key in _icon_memo:
+        return _icon_memo[memo_key]
     imap = _get_icons_map()
     if imap and url_or_data in imap:
-        return imap[url_or_data]
+        _icon_memo[memo_key] = imap[url_or_data]
+        return _icon_memo[memo_key]
     if not (low.startswith("http://") or low.startswith("https://")):
         return url_or_data
     path, ctype = localize_icon(url_or_data)
@@ -146,7 +156,8 @@ def embedded_icon(url_or_data):
         try:
             with open(path, "rb") as f:
                 b64 = base64.b64encode(f.read()).decode("ascii")
-            return f"data:{ctype};base64,{b64}"
+            _icon_memo[memo_key] = f"data:{ctype};base64,{b64}"
+            return _icon_memo[memo_key]
         except Exception:
             return url_or_data
     return url_or_data
@@ -183,12 +194,18 @@ def _get_app_version():
     """Return the app version string. Checks several candidates for robustness:
     1. $TRIM_APPDEST/VERSION            (plain text file)
     2. $TRIM_APPDEST/app.json           (JSON "version")
-    3. <admin dir>/../app.json          (source-tree fallback)
+    3. $TRIM_APPDEST/manifest          (fnOS package metadata)
+    4. <admin dir>/../app.json          (source-tree fallback)
     Returns "unknown" if none is found."""
+    env_ver = os.environ.get("TRIM_APPVER", "").strip()
+    if env_ver:
+        return env_ver
     candidates = [
         os.path.join(TRIM_APPDEST, "VERSION"),
         os.path.join(TRIM_APPDEST, "app.json"),
+        os.path.join(TRIM_APPDEST, "manifest"),
         os.path.join(os.path.dirname(ADMIN_DIR), "app.json"),
+        os.path.join(os.path.dirname(ADMIN_DIR), "manifest"),
     ]
     for c in candidates:
         try:
@@ -202,7 +219,12 @@ def _get_app_version():
                     return ver
             else:
                 with open(c, "r", encoding="utf-8") as f:
-                    ver = f.read().strip()
+                    raw = f.read().strip()
+                if c.endswith("manifest"):
+                    match = re.search(r"(?m)^version\s*=\s*([^\s#]+)", raw)
+                    ver = match.group(1).strip() if match else ""
+                else:
+                    ver = raw
                 if ver:
                     return ver
         except Exception:
@@ -230,28 +252,37 @@ _DASHBOARD_RELEASES = {
 }
 
 def _read_dashboard_version(name):
-    """Try to read a small version marker inside a dashboard directory."""
+    """Try to read a small version marker inside a dashboard directory.
+    1. VERSION file (written by install_dashboard)
+    2. metacubexd: appVersion embedded in index.html (e.g. appVersion:"1.273.0")"""
     probe = os.path.join(DASHBOARD_DIR, name, "VERSION")
     if os.path.exists(probe):
         try:
             with open(probe, "r", encoding="utf-8") as f:
-                return f.read().strip()
+                ver = f.read().strip()
+            if ver:
+                return ver
+        except Exception:
+            pass
+    index_path = os.path.join(DASHBOARD_DIR, name, "index.html")
+    if os.path.exists(index_path):
+        try:
+            with open(index_path, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read(2 * 1024 * 1024)
+            m = re.search(r'appVersion["\s:=]+"?([0-9][0-9.]*)', content)
+            if m and m.group(1).strip():
+                return m.group(1).strip()
         except Exception:
             pass
     return None
 
 def _github_latest(repo):
-    """Query GitHub release 'latest'. Uses the gh-proxy mirror (same as the
-    config.yaml geo URLs) so unauthenticated GitHub API rate limits are less
-    likely to break the dashboard version check. An optional MIHOMO_GITHUB_TOKEN
-    is attached when available (raises limit and enables private-repo access)."""
+    """Query GitHub release 'latest' using the default GitHub API address
+    (https://api.github.com). An optional MIHOMO_GITHUB_TOKEN is attached when
+    available (raises the rate limit and enables private-repo access)."""
     import urllib.request as _ureq
-    gh_api = os.environ.get("MIHOMO_GITHUB_API", "https://api.github.com")
+    gh_api = os.environ.get("MIHOMO_GITHUB_API", "https://api.github.com").rstrip("/")
     token = os.environ.get("MIHOMO_GITHUB_TOKEN", "")
-    # Prefer the api.github.com endpoint but route through gh-proxy when
-    # unauthenticated; if a token is set, query api.github.com directly.
-    if not token and gh_api == "https://api.github.com":
-        gh_api = "https://gh-proxy.com/https://api.github.com"
     url = f"{gh_api}/repos/{repo}/releases/latest"
     headers = {"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"}
     if token:
@@ -372,6 +403,27 @@ def write_config(content):
         f.write(content)
     return True
 
+def ensure_config_initialized():
+    """首次安装/重装后：若 config.yaml 缺失或为空，自动从默认模板恢复，
+    保证引擎启动时配置被加载（策略组/订阅正常显示），无需用户手动加载。"""
+    try:
+        if os.path.exists(CONFIG_FILE) and os.path.getsize(CONFIG_FILE) > 0:
+            return True
+        template = os.path.join(TRIM_APPDEST, "default-config", "config.yaml")
+        if not os.path.exists(template):
+            log("WARNING: 默认配置模板不存在，跳过 config.yaml 初始化")
+            return False
+        try:
+            os.makedirs(TRIM_PKGVAR, exist_ok=True)
+        except Exception:
+            pass
+        shutil.copy2(template, CONFIG_FILE)
+        log("已从默认模板初始化 config.yaml")
+        return True
+    except Exception as e:
+        log(f"WARNING: config.yaml 初始化失败: {e}")
+        return False
+
 def live_patch_config(payload):
     """热切换 mihomo 运行配置（不改文件、不重启引擎）。
     通过 PATCH /configs 立即生效。返回 (ok, status_or_error)。"""
@@ -455,14 +507,35 @@ def _replace_tun_enable(txt, enable):
     return "".join(lines)
 
 def is_running():
-    if not os.path.exists(PID_FILE):
-        return False, None
+    """Return the real engine state, not only the wrapper PID file.
+    fnOS can briefly leave a stale/missing PID during reinstall or wrapper
+    handoff while mihomo is already listening; the UI must still show ON. """
+    # 9090 是引擎控制端口；端口在监听时服务就是运行中。优先使用它，
+    # 避免每次点击左栏都扫描进程导致状态短暂误判。
+    if not _port_free(MIHOMO_CTRL_PORT):
+        pids = _find_engine_pids()
+        return True, (pids[0] if pids else None)
+    pid = None
     try:
-        pid = int(open(PID_FILE).read().strip())
-        os.kill(pid, 0)
-        return True, pid
+        if os.path.exists(PID_FILE):
+            pid = int(open(PID_FILE).read().strip())
+            os.kill(pid, 0)
+            return True, pid
     except (ValueError, OSError):
-        return False, None
+        pid = None
+    # Fallback to the actual mihomo process and controller port.
+    pids = _find_engine_pids()
+    if pids:
+        pid = pids[0]
+        try:
+            with open(PID_FILE, "w") as f:
+                f.write(str(pid))
+        except OSError:
+            pass
+        return True, pid
+    if not _port_free(MIHOMO_CTRL_PORT):
+        return True, pid
+    return False, None
 
 def _find_engine_pids():
     """Find mihomo engine process(es) by real binary name (comm is truncated
@@ -488,6 +561,115 @@ def _port_free(port, host="127.0.0.1"):
     except Exception:
         return True
 
+def _global_ipv6_available():
+    """Return whether the NAS currently has a usable global IPv6 route/address."""
+    try:
+        route = subprocess.run(["/usr/sbin/ip", "-6", "route", "show", "default"],
+                               capture_output=True, text=True, timeout=2)
+        if route.returncode != 0 or not route.stdout.strip():
+            return False
+        addr = subprocess.run(["/usr/sbin/ip", "-6", "addr", "show", "scope", "global"],
+                              capture_output=True, text=True, timeout=2)
+        return addr.returncode == 0 and "inet6 " in addr.stdout
+    except Exception:
+        return False
+
+
+def _tun_enabled_from_config():
+    try:
+        cfg = yaml.safe_load(read_config()) or {}
+        return bool((cfg.get("tun") or {}).get("enable", False))
+    except Exception:
+        return False
+
+def _host_transparent_enabled():
+    # Host REDIRECT is the non-TUN replacement for NAS-local programs.
+    # It is enabled by default when TUN is explicitly disabled.
+    try:
+        cfg = yaml.safe_load(read_config()) or {}
+        # Existing installations predate this key: when TUN is explicitly off,
+        # default to host interception to match the user's expected behavior.
+        return bool(cfg.get("host-transparent", True)) and not _tun_enabled_from_config()
+    except Exception:
+        return False
+
+def _ensure_host_transparent_config():
+    """Ensure an existing installation has host-transparent safe defaults."""
+    if not _host_transparent_enabled():
+        return True
+    txt = read_config()
+    changed = False
+    if not re.search(r"(?m)^redir-port:\s*", txt):
+        marker = "mixed-port: 7890\n"
+        if marker not in txt:
+            return False
+        txt = txt.replace(marker, marker + "redir-port: 7892\n", 1)
+        changed = True
+    if not re.search(r"(?m)^tproxy-port:\s*", txt):
+        marker = "redir-port: 7892\n"
+        txt = txt.replace(marker, marker + "tproxy-port: 7893\n", 1)
+        changed = True
+    if _tun_enabled_from_config():
+        return True
+    # Preserve the user's IPv6 preference. Host-transparent mode does not
+    # silently change dns.ipv6; users who need leak prevention can disable it.
+    txt2 = txt
+    # The host mode uses local DNS redirection; fake-ip depends on TUN DNS
+    # hijacking and cannot be used safely here.
+    txt2 = re.sub(r"(?m)^(\s+enhanced-mode:)\s*fake-ip\s*$", r"\1 redir-host", txt2, count=1)
+    if not re.search(r"(?m)^\s+listen:\s*127\.0\.0\.1:1053\s*$", txt2):
+        txt2 = re.sub(r"(?m)^(\s+fake-ip-range:.*)$", r"\1\n  listen: 127.0.0.1:1053", txt2, count=1)
+    changed = changed or txt2 != txt
+    if changed:
+        write_config(txt2)
+    return True
+
+def _apply_host_transparent():
+    if not _ensure_host_transparent_config():
+        return {"success": False, "error": "无法写入 redir-port: 7892"}
+    if not _host_transparent_enabled():
+        return {"success": True, "enabled": False}
+    if os.geteuid() != 0:
+        return {"success": False, "error": "主机透明代理需要 root 权限"}
+    try:
+        r = subprocess.run([HOST_TRANSPARENT_SCRIPT, "apply"], capture_output=True, text=True, timeout=10)
+        if r.returncode:
+            return {"success": False, "error": r.stderr.strip() or "iptables 规则应用失败"}
+        return {"success": True, "enabled": True}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+def _cleanup_host_transparent():
+    try:
+        subprocess.run([HOST_TRANSPARENT_SCRIPT, "cleanup"], capture_output=True, text=True, timeout=10)
+    except Exception:
+        pass
+
+def _restart_service_background():
+    """Restart Mihomo without holding the subscription HTTP request open."""
+    global _PROVIDER_RESTARTING
+    try:
+        stopped = stop_service()
+        if not stopped.get("success"):
+            log("provider restart stop failed: " + str(stopped))
+            return
+        time.sleep(1)
+        started = start_service()
+        if not started.get("success"):
+            log("provider restart start failed: " + str(started))
+    finally:
+        with _PROVIDER_RESTART_LOCK:
+            _PROVIDER_RESTARTING = False
+
+def request_provider_restart():
+    global _PROVIDER_RESTARTING
+    with _PROVIDER_RESTART_LOCK:
+        if _PROVIDER_RESTARTING:
+            return False
+        _PROVIDER_RESTARTING = True
+    threading.Thread(target=_restart_service_background, daemon=True).start()
+    return True
+
 def start_service():
     running, pid = is_running()
     if running:
@@ -498,8 +680,11 @@ def start_service():
     if not os.path.exists(MIHOMO_BIN):
         return {"success": False, "error": f"找不到 mihomo: {MIHOMO_BIN}"}
     try:
-        # 启动服务时默认开启 TUN
-        set_tun_in_config(True)
+        # TUN 是独立开关：启动服务时尊重 config.yaml 中用户保存的状态。
+        # 不要在这里强制开启，否则“服务”和“TUN”无法独立控制。
+        # REDIRECT 入口必须在启动 Mihomo 前写入，不能等进程启动后再改。
+        if _host_transparent_enabled() and not _ensure_host_transparent_config():
+            return {"success": False, "error": "无法准备主机透明代理 redir-port"}
         for _ in range(10):
             if _port_free(MIHOMO_CTRL_PORT):
                 break
@@ -518,13 +703,25 @@ def start_service():
             time.sleep(0.5)
             running, pid = is_running()
             if running and _find_engine_pids():
-                return {"success": True, "pid": pid}
+                transparent = _apply_host_transparent()
+                if not transparent.get("success"):
+                    stop_service()
+                    return {"success": False, "error": "主机透明代理启用失败: " + transparent.get("error", "未知错误")}
+                return {"success": True, "pid": pid, "host_transparent": transparent.get("enabled", False)}
         running, pid = is_running()
-        return {"success": running, "pid": pid}
+        if running:
+            transparent = _apply_host_transparent()
+            if not transparent.get("success"):
+                stop_service()
+                return {"success": False, "error": "主机透明代理启用失败: " + transparent.get("error", "未知错误")}
+        return {"success": running}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
 def stop_service():
+    # Remove host interception before stopping the listener, otherwise a failed
+    # connection can be redirected to a dead redir-port.
+    _cleanup_host_transparent()
     running, pid = is_running()
     if not running and not _find_engine_pids():
         return {"success": True, "message": "服务未运行"}
@@ -565,8 +762,8 @@ def stop_service():
                 os.remove(PID_FILE)
         except OSError:
             pass
-        # 关闭服务时默认关闭 TUN
-        set_tun_in_config(False)
+        # 停止 Mihomo 后由内核负责释放 TUN；不要改写用户保存的 TUN 开关。
+        # 这样下次启动时可以按用户最后保存的状态恢复。
         return {"success": True}
     except Exception as e:
         return {"success": False, "error": str(e)}
@@ -1063,15 +1260,20 @@ class AdminHandler(BaseHTTPRequestHandler):
                             .split(";", 1)[0].strip().lower()
                             == "application/json"):
                         try:
-                            icon_base = ""
-                            if hasattr(self, "path"):
-                                prefix = os.environ.get("MIHOMO_GATEWAY_PREFIX", "/app/fnnas.fnsoar")
-                                if self.path == prefix or self.path.startswith(prefix + "/"):
-                                    icon_base = prefix
-                            data = json.dumps(
-                                expand_api_icons(json.loads(data), icon_base),
-                                ensure_ascii=False,
-                            ).encode("utf-8")
+                            # 节点列表（/proxies、/group）展开图标耗时且前端用
+                            # /api/group-icons 单独取组图标，故此二端点不再做图标展开，
+                            # 避免每次请求重复 base64（曾导致策略组页加载 >10s）。
+                            base_path = sub_path.split("?", 1)[0].rstrip("/")
+                            if base_path not in ("proxies", "group"):
+                                icon_base = ""
+                                if hasattr(self, "path"):
+                                    prefix = os.environ.get("MIHOMO_GATEWAY_PREFIX", "/app/fnnas.fnsoar")
+                                    if self.path == prefix or self.path.startswith(prefix + "/"):
+                                        icon_base = prefix
+                                data = json.dumps(
+                                    expand_api_icons(json.loads(data), icon_base),
+                                    ensure_ascii=False,
+                                ).encode("utf-8")
                         except (TypeError, ValueError):
                             pass
                     self.send_response(resp.getcode())
@@ -1250,14 +1452,38 @@ class AdminHandler(BaseHTTPRequestHandler):
         # API endpoints
         if path == "/api/status":
             running, pid = is_running()
+            tun_enabled = _tun_enabled_from_config()
+            ipv6_available = _global_ipv6_available()
             return self._send_json({"running": running, "pid": pid,
-                                    "control_port": MIHOMO_CTRL_PORT})
+                                    "control_port": MIHOMO_CTRL_PORT,
+                                    "tun_enabled": tun_enabled,
+                                    "ipv6_available": ipv6_available,
+                                    "ipv6_udp_blocked": bool(running and ipv6_available and not tun_enabled)})
         if path == "/api/config":
             return self._send_json({"config": read_config()})
         if path == "/api/proxy-providers":
             yaml_text = read_config()
             providers = extract_proxy_providers(yaml_text)
             return self._send_json({"providers": providers})
+        if path == "/api/providers-live":
+            # 订阅页只需要节点数/更新时间/类型，不要把完整 8MB 节点列表发给浏览器。
+            try:
+                import urllib.request as _ureq
+                req = _ureq.Request(
+                    f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/providers/proxies",
+                    headers={"Accept": "application/json"})
+                with _ureq.urlopen(req, timeout=10) as resp:
+                    raw = json.loads(resp.read())
+                compact = {}
+                for name, item in (raw.get("providers") or {}).items():
+                    compact[name] = {
+                        "count": len(item.get("proxies") or []),
+                        "updatedAt": item.get("updatedAt", ""),
+                        "vehicleType": item.get("vehicleType", "")
+                    }
+                return self._send_json({"providers": compact})
+            except Exception as e:
+                return self._send_json({"providers": {}, "error": str(e)}, 502)
         if path == "/api/group-icons":
             # 策略组图标 + 配置顺序：读 config.yaml 中 proxy-groups 各组的 icon 与排列顺序；
             # http(s) 图标已本地化的用 base64 data:URI 内嵌，前端一次拿到即可秒渲染（无需逐张请求）
@@ -1392,22 +1618,16 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/check-update":
             try:
-                import urllib.request as _ureq
-                url = "https://api.github.com/repos/huiikeung/fnclash/releases/latest"
-                req = _ureq.Request(url, headers={"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"})
-                with _ureq.urlopen(req, timeout=10) as resp:
-                    d = json.loads(resp.read())
-                    latest = d.get("tag_name", "").lstrip("v")
-                    cur = "unknown"
-                    try:
-                        vf = os.path.join(TRIM_APPDEST, "VERSION")
-                        if os.path.exists(vf):
-                            with open(vf, "r") as f: cur = f.read().strip()
-                    except Exception:
-                        pass
-                    return self._send_json({"latest": latest, "current": cur, "url": d.get("html_url", ""), "has_update": latest != cur and latest != ""})
+                d = _github_latest("huiikeung/fnsoar")
+                latest = d.get("tag_name", "").lstrip("v")
+                cur = _get_app_version()
+                has = bool(latest) and cur not in ("", "unknown") and latest != cur
+                return self._send_json({"success": True, "latest": latest, "current": cur, "url": d.get("html_url", ""), "has_update": has})
             except Exception as e:
-                return self._send_json({"success": False, "error": str(e)}, 500)
+                msg = str(e)
+                if "404" in msg:
+                    msg = "GitHub 仓库 huiikeung/fnsoar 不存在或为私有仓库，无法公开检测更新。请将仓库设为公开，或配置 MIHOMO_GITHUB_TOKEN 后重试。"
+                return self._send_json({"success": False, "error": msg}, 500)
         if path == "/api/core-latest":
             try:
                 import urllib.request as _ureq
@@ -1516,8 +1736,23 @@ class AdminHandler(BaseHTTPRequestHandler):
                 ok, msg = set_tun_in_config(enable)
                 if not ok:
                     return self._send_json({"success": False, "error": "修改 TUN 配置失败: " + msg}, 500)
+
+                # TUN 不是普通热配置：它会创建/删除虚拟网卡并修改系统路由。
+                # 服务运行中时立即重启 Mihomo，使配置和实际内核状态保持一致。
+                running, _ = is_running()
+                if running:
+                    stopped = stop_service()
+                    if not stopped.get("success"):
+                        return self._send_json({"success": False,
+                                                "error": "TUN 配置已保存，但停止旧服务失败: " + str(stopped.get("error", ""))}, 500)
+                    started = start_service()
+                    if not started.get("success"):
+                        return self._send_json({"success": False,
+                                                "error": "TUN 配置已保存，但重启服务失败: " + str(started.get("error", ""))}, 500)
+                    return self._send_json({"success": True,
+                                            "message": "TUN 已" + ("开启" if enable else "关闭") + "，服务已重启"})
                 return self._send_json({"success": True,
-                                        "message": "TUN 已" + ("开启" if enable else "关闭") + "（重启服务后生效）"})
+                                        "message": "TUN 已" + ("开启" if enable else "关闭") + "，下次启动服务时生效"})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/update-geo":
@@ -1624,9 +1859,9 @@ class AdminHandler(BaseHTTPRequestHandler):
                 result = edit_provider_add(name, url, interval, ptype)
                 if not result.get("success"):
                     return self._send_json(result, 400)
-                stop_service()
-                time.sleep(1)
-                start_service()
+                queued = request_provider_restart()
+                result["restarting"] = queued
+                result["message"] = result.get("message", "订阅已保存") + ("，内核正在后台重启" if queued else "，内核已在重启队列中")
                 return self._send_json(result)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
@@ -1636,9 +1871,9 @@ class AdminHandler(BaseHTTPRequestHandler):
                 result = edit_provider_delete(data.get("name", ""))
                 if not result.get("success"):
                     return self._send_json(result, 400)
-                stop_service()
-                time.sleep(1)
-                start_service()
+                queued = request_provider_restart()
+                result["restarting"] = queued
+                result["message"] = result.get("message", "订阅已删除") + ("，内核正在后台重启" if queued else "，内核已在重启队列中")
                 return self._send_json(result)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
@@ -1775,6 +2010,9 @@ def main():
     log(f"  HTTP port : {ADMIN_PORT}")
     log(f"  Unix sock : {SOCKET_PATH}")
     log(f"  Config    : {CONFIG_FILE}")
+
+    # 确保 config.yaml 存在（重装/首装后自动初始化），否则引擎无法加载配置
+    ensure_config_initialized()
 
     # Start Unix socket server (for fnOS iframe integration) — non-fatal if it fails
     start_unix_socket_server()

@@ -126,7 +126,7 @@
                 "type": "switch",
                 "field": "tun_enable",
                 "label": "启用 TUN 模式",
-                "initValue": "true"
+                "initValue": "false"
             }
         ]
     }

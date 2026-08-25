@@ -94,8 +94,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar-bottom .nav-item{background:transparent;color:var(--dim);margin-bottom:0}
 .sidebar-bottom .nav-item:hover{background:var(--card2);color:var(--text)}
 .sidebar-bottom .nav-item.active{background:transparent;color:var(--accent);font-weight:600}
-.sidebar-window-item{border-top:1px solid var(--border-soft);margin-top:6px;padding-top:12px!important}
-@media(max-width:860px){.sidebar-window-item{display:none!important}}
 #svcToggleBtn.active,#svcToggleBtn.active .ic{color:var(--green)}
 .sidebar.collapsed .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}
 .switch-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;gap:8px}
@@ -752,7 +750,7 @@ tbody tr:hover{background:var(--card2)}
     <div class="sidebar-bottom">
       <a class="nav-item" id="svcToggleBtn" onclick="toggleService()" title="启动/停止代理服务">
         <span class="ic" id="svcIcon"><svg viewBox="0 0 24 24"><g transform="translate(12,12) scale(1.2) translate(-12,-12)"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13"/></g></svg></span>
-        <span id="svcSwitchLabel">服务</span>
+        <span id="svcSwitchLabel">服务关</span>
       </a>
       <a class="nav-item" id="tunToggleBtn" onclick="toggleTun()" title="虚拟网卡（TUN 模式）">
         <span class="ic" id="tunIcon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
@@ -760,19 +758,6 @@ tbody tr:hover{background:var(--card2)}
        </a>
     </div>
   </aside>
-
-  <!-- 桌面最小化状态窗口 -->
-  <div class="desktop-mini-window" id="desktopMiniWindow" onmouseenter="refreshDesktopMiniStatus()">
-    <div class="desktop-mini-head"><span class="mini-status-dot"></span><span>fnSoar</span><button class="desktop-mini-restore" onclick="restoreDesktopWindow()">恢复窗口</button></div>
-    <div class="desktop-mini-grid">
-      <div class="desktop-mini-item"><span class="desktop-mini-label">↓</span><span class="desktop-mini-value" id="miniDownSpeed">0 B/s</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">↑</span><span class="desktop-mini-value" id="miniUpSpeed">0 B/s</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">下载量</span><span class="desktop-mini-value" id="miniDownTotal">0 B</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">上传量</span><span class="desktop-mini-value" id="miniUpTotal">0 B</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">节点</span><span class="desktop-mini-value" id="miniCurrentNode">-</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">IP</span><span class="desktop-mini-value" id="miniIp">-</span></div>
-    </div>
-  </div>
 
   <!-- 窄屏侧边栏隐藏时显示的汉堡按钮 -->
   <button class="sidebar-hidden-toggle" onclick="hamburgerClick()" title="菜单" aria-label="菜单">
@@ -1356,6 +1341,10 @@ tbody tr:hover{background:var(--card2)}
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.showIcons">显示图标</span></div>
               <label class="toggle"><input type="checkbox" id="setShowIcons" checked onchange="saveBasicSetting('show_icons')"><span class="toggle-track"></span></label>
             </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.autoLoad">打开应用时自动加载配置</span></div>
+              <label class="toggle"><input type="checkbox" id="setAutoLoad" checked onchange="saveBasicSetting('auto_load')"><span class="toggle-track"></span></label>
+            </div>
           </div>
           <div class="set-card">
             <div class="set-title" data-i18n="settings.advanced">高级设置</div>
@@ -1573,7 +1562,8 @@ function initHamburgerDrag() {
 // ── 页面切换 ────────────────────────────────
 function showSection(name) {
   document.querySelectorAll('.section-webui, .main > section').forEach(s => s.style.display = 'none');
-  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  // 底部服务/TUN按钮有独立运行态，页面切换不能清掉它们的 active/绿色状态。
+  document.querySelectorAll('.nav .nav-item').forEach(n => n.classList.remove('active'));
   const sec = document.getElementById('section-' + name);
   if (sec) sec.style.display = (name === 'connections' || name === 'rules' || name === 'config' || name === 'logs' || name === 'test' || name === 'settings') ? 'flex' : 'block';
   const nav = document.getElementById('nav-' + name);
@@ -1581,7 +1571,8 @@ function showSection(name) {
   autoHideSidebar();
   if (name === 'home') { loadDashboard(); refreshTun(); }
   if (name === 'groups') { document.getElementById('groupsWrap').innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">加载中…</div>'; loadGroups(); }
-  if (name === 'providers') loadProviders();
+  // 已有订阅卡片时立即展示，仅后台静默刷新；不再每次切换都闪“加载中”。
+  if (name === 'providers') loadProviders(!!document.querySelector('#provGrid .prov-card'));
   if (name === 'connections') { loadConnections(); startConnPolling(); }
   if (name === 'rules') loadRules();
   if (name === 'logs') { loadLogs(); startLogPolling(); }
@@ -1670,11 +1661,11 @@ function renderSubInfo(name, info, provApi) {
 
 async function loadDashboard() {
   // 各数据源互不依赖且各自独立渲染：谁先回来谁先显示，不互相等待。
-  renderServiceStatusAsync();
+  // 一次请求同时更新首页和左下角，避免两个状态请求返回时间不同。
+  loadServiceStatus();
   renderModeCfgAsync();
   renderSubCardAsync();
   renderGroupsSelAsync();
-  loadServiceStatus();
   refreshTun();
   loadIpInfo();
   renderTestItems();
@@ -2000,10 +1991,17 @@ const SVC_ICON_ON = '<svg viewBox="0 0 24 24"><g transform="translate(12,12) sca
 const SVC_ICON_OFF = '<svg viewBox="0 0 24 24"><g transform="translate(12,12) scale(1.2) translate(-12,-12)"><path d="M16.56,5.44L15.11,6.89C16.84,7.94 18,9.83 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6,12C6,9.83 7.16,7.94 8.88,6.88L7.44,5.44C5.36,6.88 4,9.28 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12C20,9.28 18.64,6.88 16.56,5.44M13,3H11V13H13"/></g></svg>';
 const TUN_ICON_ON = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="currentColor"/></svg>';
 const TUN_ICON_OFF = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+let serviceStatusRequestSeq = 0;
+let serviceStatusLastPaint = 0;
 async function loadServiceStatus() {
+  const seq = ++serviceStatusRequestSeq;
   const s = await fetchJSON('api/status');
+  // 页面切换时可能同时发起多次状态请求；旧响应不能覆盖新状态，
+  // 否则服务按钮会出现“关闭→打开”的假闪烁。
+  if (seq !== serviceStatusRequestSeq) return;
   const btn = document.getElementById('svcToggleBtn');
   if (!s) return;
+  maybeWarnIpv6NeedsTun(s);
   btn.classList.toggle('active', s.running);
   btn.classList.remove('busy');
   document.getElementById('svcSwitchLabel').textContent = s.running ? t('svc.on') : t('svc.off');
@@ -2032,6 +2030,41 @@ function toggleService() {
       loadServiceStatus();
       if (turnOn && document.getElementById('section-home').style.display !== 'none') loadDashboard();
     }).catch(() => { loadServiceStatus(); showToast('请求失败', 'error'); });
+}
+
+// ── 打开应用时自动加载配置 ───────────────────
+// 若引擎未运行则自动启动（可在 设置-基础设置 中关闭），
+// 保证重装/重启后 策略组 打开即可见，无需手动去配置页点击加载。
+var ipv6TunNoticeShown = false;
+function maybeWarnIpv6NeedsTun(s) {
+  if (!s || !s.ipv6_available || s.tun_enabled) {
+    ipv6TunNoticeShown = false;
+    return;
+  }
+  if (ipv6TunNoticeShown) return;
+  ipv6TunNoticeShown = true;
+  showToast(s.running
+    ? '检测到 IPv6 网络，当前 TUN 已关闭。IPv6 UDP/QUIC 已阻断以防泄露；如需完整 IPv6 UDP，请开启 TUN。'
+    : '检测到 IPv6 网络，当前 TUN 已关闭。启动服务后 IPv6 UDP/QUIC 将被阻断；如需完整 IPv6 UDP，请开启 TUN。', 'warning');
+}
+function ensureAutoLoadConfig() {
+  fetchJSON('api/status').then(function(s) {
+    if (!s) return;
+    maybeWarnIpv6NeedsTun(s);
+    if (s.running) return;
+    var vs = {};
+    try { vs = JSON.parse(localStorage.getItem('vergeSettings') || '{}'); } catch(e) {}
+    if (vs.auto_load === false) return;
+    fetch('api/service', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({enable: true}) })
+      .then(r => r.json()).then(function(d) {
+        loadServiceStatus();
+        if (d.success) {
+          if (document.getElementById('section-groups').style.display !== 'none') renderGroups();
+          if (document.getElementById('section-home').style.display !== 'none') loadDashboard();
+          showToast('配置已自动加载', 'success');
+        }
+      }).catch(function() { loadServiceStatus(); });
+  });
 }
 
 // ── TUN 开关（侧边栏按钮） ────────────────────
@@ -2123,27 +2156,6 @@ function drawTrafficChart() {
   };
   drawLine(p => p.up, '#e0a341');    // 上传 - 黄色
   drawLine(p => p.down, '#3fb950');  // 下载 - 绿色
-}
-
-function minimizeDesktopWindow() {
-  if (window.innerWidth <= 860) return;
-  document.querySelector('.layout').classList.add('desktop-minimized');
-  document.getElementById('desktopMiniWindow').classList.add('visible');
-  refreshDesktopMiniStatus();
-}
-function restoreDesktopWindow() {
-  document.querySelector('.layout').classList.remove('desktop-minimized');
-  document.getElementById('desktopMiniWindow').classList.remove('visible');
-}
-function refreshDesktopMiniStatus() {
-  if (window.innerWidth <= 860) return;
-  var copy = function(from, to) { var a=document.getElementById(from), b=document.getElementById(to); if(a&&b)b.textContent=a.textContent; };
-  copy('trafficDown','miniDownSpeed'); copy('trafficUp','miniUpSpeed');
-  copy('trafficDownTotal','miniDownTotal'); copy('trafficUpTotal','miniUpTotal');
-  copy('ipAddr','miniIp'); copy('curStrategy','miniCurrentNode');
-  if (document.getElementById('desktopMiniWindow').classList.contains('visible')) {
-    setTimeout(refreshDesktopMiniStatus, 1000);
-  }
 }
 
 function startTraffic() {
@@ -2488,7 +2500,7 @@ async function runWebTest() {
  let provLive = {};   // name -> 运行时信息（节点数/更新时间），来自 /providers/proxies
  let provStatic = {};
  async function fetchProvLive() {
-   try { const d = await fetchJSON('providers/proxies', 5000); provLive = (d && d.providers) ? d.providers : {}; }
+   try { const d = await fetchJSON('api/providers-live', 5000); provLive = (d && d.providers) ? d.providers : {}; }
    catch (e) { provLive = {}; }
  }
  function svgIcon(path) {
@@ -2521,10 +2533,11 @@ async function runWebTest() {
  }
  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
-  async function loadProviders(silent) {
+   async function loadProviders(silent) {
    const grid = document.getElementById('provGrid');
    if (!grid) return;
-   if (!silent) grid.innerHTML = '<div class="prov-empty">' + t('conn.loading') + '</div>';
+   if (!silent && grid.querySelector('.prov-card')) silent = true;
+    if (!silent) grid.innerHTML = '<div class="prov-empty">' + t('conn.loading') + '</div>';
    // 静态订阅信息先渲染（api/proxy-providers 快），节点数/更新时间随后由
    // providers/proxies 异步补齐 —— 两者独立，不必等慢的一个都好了才显示
    const p = await fetchJSON('api/proxy-providers');
@@ -2537,7 +2550,7 @@ async function runWebTest() {
    const render = () => {
      grid.innerHTML = entries.map(([name, info]) => {
        const lv = provLive[name] || {};
-       const nodeCount = (lv.proxies && lv.proxies.length) || 0;
+       const nodeCount = lv.count || 0;
        const updated = lv.updatedAt || info.updatedAt || '';
        const url = info.url || '';
        const interval = info.interval || 3600;
@@ -2674,13 +2687,17 @@ let globalFilterOpen = false;  // 全局模式筛选框是否展开
 let globalFilterText = '';     // 全局模式筛选关键字
 let nodeMeta = {};  // 订阅节点协议元数据 {name: {type, udp, xudp}}
 async function loadGroups() {
-  // 模式切换/重启后引擎需要几秒就绪，等待并重试，避免显示"无策略组"
-  let p = null;
-  for (let i = 0; i < 20; i++) {
-    p = await fetchJSON('proxies', 5000);
-    const cnt = (p && p.proxies) ? Object.keys(p.proxies).length : 0;
-    if (cnt >= 5) break;  // 引擎就绪且数据完整
-    await new Promise(r => setTimeout(r, 1000));
+  // 模式切换/重启后引擎需要几秒就绪，等待并重试，避免显示"无策略组"。
+  // 但首帧尽量快：先等一次短返回，凑不满再小步重试（引擎已启动时 /proxies 约几十 ms）。
+  let p = await fetchJSON('proxies', 5000);
+  let cnt = (p && p.proxies) ? Object.keys(p.proxies).length : 0;
+  if (cnt < 5) {
+    for (let i = 0; i < 20; i++) {
+      await new Promise(r => setTimeout(r, 400));
+      p = await fetchJSON('proxies', 5000);
+      cnt = (p && p.proxies) ? Object.keys(p.proxies).length : 0;
+      if (cnt >= 5) break;
+    }
   }
   proxiesData = (p && p.proxies) ? p.proxies : null;
   // 策略组图标 + 模式并发加载（互相独立，避免串行等待）
@@ -3901,6 +3918,7 @@ function loadSettings() {
       if (vs.start_page) document.getElementById('setStartPage').value = vs.start_page;
       if (vs.startup_script) document.getElementById('setStartupScript').value = vs.startup_script;
       if (vs.show_icons !== undefined) document.getElementById('setShowIcons').checked = vs.show_icons;
+      if (vs.auto_load !== undefined) document.getElementById('setAutoLoad').checked = vs.auto_load;
     } catch(e) {}
   }
   fetch('api/config').then(r => r.json()).then(d => {
@@ -3952,10 +3970,13 @@ function loadDashboardStatus() {
         }
       }
     });
-    // 状态行：有更新则提示，否则显示已最新
+    // 状态行明确指出可更新的面板名称，避免只显示笼统的“有可用更新”。
     if (st) {
+      var updateNames = (d.dashboards || []).filter(function(item) { return item.has_update; }).map(function(item) {
+        return item.name === 'zashboard' ? 'Zashboard' : 'Metacubexd';
+      });
       st.style.color = anyUpdate ? 'var(--red)' : 'var(--dim)';
-      st.textContent = anyUpdate ? t('settings.dashUpdateAvail') : t('settings.dashUpToDate');
+      st.textContent = anyUpdate ? (updateNames.join('、') + ' 可更新') : t('settings.dashUpToDate');
     }
   }).catch(function() {
     var st = document.getElementById('dashUpdateStatus');
@@ -4033,6 +4054,7 @@ function saveBasicSetting(key) {
   else if (key === 'start_page') val = document.getElementById('setStartPage').value;
   else if (key === 'startup_script') val = document.getElementById('setStartupScript').value;
   else if (key === 'show_icons') val = document.getElementById('setShowIcons').checked;
+  else if (key === 'auto_load') val = document.getElementById('setAutoLoad').checked;
   else return;
   var ls = localStorage.getItem('vergeSettings');
   var vs = {};
@@ -4138,11 +4160,11 @@ var I18N = {
     'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.dashboard':'面板升级','settings.dashStatus':'状态','settings.dashUpToDate':'已最新','settings.dashUpdateAvail':'有可用更新',
     'settings.service':'系统服务','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'深色','settings.themeLight':'浅色','settings.themeSystem':'系统',
-    'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标',
+    'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标','settings.autoLoad':'打开应用时自动加载配置',
     'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
-    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'已停止','svc.start':'启动',
+    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
     'toast.tunSwitched':'TUN 已切换','toast.latestVersion':'已是最新版本',
@@ -4266,11 +4288,11 @@ var I18N = {
     'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status','settings.dashUpToDate':'Up to date','settings.dashUpdateAvail':'Update available',
     'settings.service':'System Service','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'Dark','settings.themeLight':'Light','settings.themeSystem':'System',
-    'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons',
+    'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons','settings.autoLoad':'Auto load config on app open',
     'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
-    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Stopped','svc.start':'Start',
+    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
     'toast.tunSwitched':'TUN toggled','toast.latestVersion':'Already up to date',
@@ -4451,22 +4473,23 @@ function fetchVersionInfo() {
 
 function checkUpdates() {
   var uv = document.getElementById('setUpdateStatus');
-  if (uv) { uv.textContent = '...'; uv.style.color = ''; }
+  if (uv) { uv.textContent = '检查中…'; uv.style.color = ''; }
   fetch('api/check-update').then(function(r) { return r.json(); }).then(function(d) {
+    if (d && d.success === false) throw new Error(d.error || '检查失败');
     if (d.has_update) {
       var uv = document.getElementById('setUpdateStatus');
-      if (uv) { uv.textContent = '新: v' + d.latest; uv.style.color = 'var(--red)'; }
-      showToast('发现新版本: ' + d.latest, 'info');
+      if (uv) { uv.textContent = '应用可更新至 v' + d.latest; uv.style.color = 'var(--red)'; }
+      showToast('发现应用新版本: ' + d.latest, 'info');
       if (d.url) window.open(d.url, '_blank');
     } else {
       var uv = document.getElementById('setUpdateStatus');
-      if (uv) { uv.textContent = ''; uv.style.color = ''; }
+      if (uv) { uv.textContent = '应用已是最新版本'; uv.style.color = 'var(--dim)'; }
       showToast('toast.latestVersion', 'success');
     }
-  }).catch(function() {
+  }).catch(function(e) {
     var uv = document.getElementById('setUpdateStatus');
-    if (uv) { uv.textContent = ''; uv.style.color = ''; }
-    showToast('toast.diagFailed', 'error');
+    if (uv) { uv.textContent = '检查失败'; uv.style.color = 'var(--red)'; }
+    showToast('检查更新失败' + (e && e.message ? ': ' + e.message : ''), 'error');
   });
 }
 
@@ -4685,6 +4708,68 @@ function renderLogs() {
 
 function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// ── fnOS 宿主探测（仅诊断） ─────────────────────────────────
+/*
+  var host = window.parent;
+  if (!host || host === window) {
+    console.warn('fnOS 宿主窗口不可用：当前页面不是 fnOS 应用窗口。');
+    return false;
+  }
+  try {
+    var frames = host.document.querySelectorAll('iframe');
+    for (var i = 0; i < frames.length; i++) {
+      if (frames[i].contentWindow !== window) continue;
+      // fnOS 的 iframe 内容区与标题栏是同一窗口容器的兄弟节点，
+      // 不能只在 iframe 的直接父节点中查找；向上遍历整个窗口容器。
+      var node = frames[i], button = null;
+      for (var depth = 0; node && depth < 14; depth++, node = node.parentElement) {
+        button = node.querySelector && node.querySelector('.app-layout-header-minimize');
+        if (button) break;
+      }
+      // 某些 fnOS 版本把窗口放在 Shadow DOM 中，补充递归查找。
+      if (!button && host.document.querySelectorAll) {
+        var roots = host.document.querySelectorAll('*');
+        for (var ri = 0; ri < roots.length && !button; ri++) {
+          var shadow = roots[ri].shadowRoot;
+          if (!shadow) continue;
+          var shadowFrames = shadow.querySelectorAll('iframe');
+          for (var si = 0; si < shadowFrames.length; si++) {
+            if (shadowFrames[si].contentWindow !== window) continue;
+            var cur = shadowFrames[si];
+            for (var sd = 0; cur && sd < 14; sd++, cur = cur.parentElement) {
+              button = cur.querySelector && cur.querySelector('.app-layout-header-minimize');
+              if (button) break;
+            }
+          }
+        }
+      }
+      if (button) {
+        button.click();
+        console.info('已调用 fnOS 宿主窗口最小化按钮。');
+        return true;
+      }
+    }
+  } catch (e) {
+    console.warn('无法访问 fnOS 宿主窗口 DOM，未执行页面模拟最小化。', e);
+  }
+  console.warn('未找到 fnOS 宿主窗口最小化按钮。');
+  return false;
+}
+*/
+window.fnSoarInspectHost = function() {
+  var keys = Object.keys(window).filter(function(k) { return /fnos|fnnas|desktop|shell|host|app|window/i.test(k); });
+  var result = {
+    inIframe: window.parent !== window,
+    origin: location.origin,
+    parentOrigin: (function(){ try { return window.parent.location.origin; } catch(e) { return 'cross-origin'; } })(),
+    matchingWindowKeys: keys,
+    parentWindowKeys: (function(){ try { return Object.keys(window.parent).filter(function(k) { return /fnos|fnnas|desktop|shell|host|app|window/i.test(k); }); } catch(e) { return ['cross-origin']; } })()
+  };
+  console.table(result);
+  console.log('fnSoar host diagnostic:', result);
+  return result;
+};
+
 // ── 初始化 ─────────────────────────────────
 // 恢复主题和语言
 (function initThemeLang() {
@@ -4709,6 +4794,7 @@ loadDelayCache();
   fetchVersionInfo();
   initHamburgerDrag();
   startTraffic();
+  ensureAutoLoadConfig();  // 打开应用时自动加载配置（引擎未运行则自启）
 // 策略组/节点卡片点击事件委托（避免内联 onclick 引号冲突）
 document.getElementById('groupsWrap').addEventListener('click', e => {
   // 先判断是否点击了节点子卡片右侧的延迟小部件（单节点测速）

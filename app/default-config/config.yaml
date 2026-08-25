@@ -5,6 +5,12 @@
 
 # ── 基础设置 ──────────────────────────────
 mixed-port: 7890
+# 关闭 TUN 时，由 fnSoar 使用宿主机透明转发接管 NAS 本机 TCP/DNS
+host-transparent: true
+redir-port: 7892
+# Optional IPv6/UDP transparent inlet for forwarded TProxy-capable traffic.
+# NAS-local IPv6 UDP is handled by TUN; host-transparent mode fail-closes it.
+tproxy-port: 7893
 allow-lan: true
 bind-address: '*'
 mode: rule
@@ -26,14 +32,19 @@ geox-url:
 # ── DNS 设置 ──────────────────────────────
 dns:
   enable: true
+  # IPv6 remains enabled by default; disable it explicitly if the upstream
+  # network or proxy does not provide IPv6 protection.
   ipv6: true
   respect-rules: true
   use-hosts: true
   default-nameserver:
     - 223.5.5.5
     - 119.29.29.29
-  enhanced-mode: fake-ip
+  # redir-host works both with TUN and host REDIRECT mode; fake-ip requires
+  # TUN interception and breaks no-TUN host transparent mode.
+  enhanced-mode: redir-host
   fake-ip-range: 198.18.0.1/16
+  listen: 127.0.0.1:1053
   fake-ip-filter:
     # 局域网 & 本地
     - "+.lan"
@@ -132,7 +143,8 @@ sniffer:
 
 # ── TUN 模式 ─────────────────────────────
 tun:
-  enable: true
+  # 默认关闭：服务启动不应改变用户选择；需要 NAS 本机 TUN 时手动开启。
+  enable: false
   stack: mixed
   device: tun
   mtu: 1500
@@ -542,9 +554,6 @@ rules:
   - RULE-SET,Proxy / Domain,国外
   - RULE-SET,Globe / Domain,国外
   - RULE-SET,GitHub / Domain,国外
-  - RULE-SET,Discord / Domain,其他
-  - RULE-SET,Notion / Domain,其他
-  - RULE-SET,Reddit / Domain,其他
   - RULE-SET,Twitter / Domain,国外
   - RULE-SET,Facebook / Domain,国外
   - RULE-SET,WhatsApp / Domain,国外
@@ -563,11 +572,16 @@ rules:
   # 测试
   - RULE-SET,Test / Domain,测试
 
+  # 其他
+  - RULE-SET,Discord / Domain,其他
+  - RULE-SET,Notion / Domain,其他
+  - RULE-SET,Reddit / Domain,其他
+
   # 成人内容
   - RULE-SET,Sex / Domain,拒绝
 
   # 漏网之鱼
-  - MATCH,其他
+  - MATCH,漏网之鱼
 
 
 rule-anchor:
