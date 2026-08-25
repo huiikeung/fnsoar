@@ -98,13 +98,15 @@ cd fnsoar
 | [MetaCubeX/mihomo](https://github.com/MetaCubeX/mihomo) | 代理内核 | MIT |
 | [Zephyruso/zashboard](https://github.com/Zephyruso/zashboard) | 面板 | MIT |
 | [MetaCubeX/metacubexd](https://github.com/MetaCubeX/metacubexd) | 面板 | MIT |
+| [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev) | UI 样式与功能实现参考 | GPL-3.0 |
 
 > ℹ️ Zashboard 内置 `THIRD_PARTY_NOTICES.md`（地球纹理、DB-IP City Lite 等依赖为 CC BY 4.0），分发面板时请随附保留。
 >
-> 如需更强的 copyleft 约束，可选择 **GPL-3.0** 替换 MIT；若改为 GPL，请确保随附源码与声明符合 GPL 要求。
+> ⚠️ **许可兼容性提示**：本仓库部分功能实现参考了 GPL-3.0 的 [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev)（解锁测试、IP 卡片、merge 增强等）。若这些实现确实构成对 GPL-3.0 代码的复制或衍生，则整个项目可能受 GPL-3.0 copyleft 约束，应以 **GPL-3.0** 进行许可并随附源码，而不能仅以 MIT 发布。若仅属独立重写的思路参考、未复制其代码，则 MIT 仍适用。请在发布前确认参考程度并选择相应协议。
 
 ## 🤝 致谢
 
 - [fnOS](https://www.fnnas.com) — 应用运行平台
 - [Mihomo (Clash Meta)](https://github.com/MetaCubeX/mihomo) — 内核
 - [Zashboard](https://github.com/Zephyruso/zashboard) 与 [Metacubexd](https://github.com/MetaCubeX/metacubexd) — 面板
+- [Clash Verge Rev](https://github.com/clash-verge-rev/clash-verge-rev) — 界面样式与部分功能实现参考（解锁测试、IP 信息卡片、merge 偏好合并、首页布局等），GPL-3.0

@@ -48,6 +48,21 @@ fnSoar 分发并集成了以下第三方软件。各组件按各自许可证条�
 
 ---
 
+## clash-verge-rev / clash-verge-rev
+
+**项目**: [https://github.com/clash-verge-rev/clash-verge-rev](https://github.com/clash-verge-rev/clash-verge-rev)
+**用途**: UI 样式与部分功能实现参考（解锁测试、IP 信息卡片、merge 偏好合并等）
+**许可证**: GPL-3.0 (GNU General Public License v3.0)
+
+> Copyright (c) clash-verge-rev contributors
+>
+> 本项目参考了 clash-verge-rev 的界面设计风格与部分功能接口设计。若相关实现被认定为对 GPL-3.0 程序的衍生作品，则本项目相应部分须以 GPL-3.0 授权并提供源码。
+>
+> 完整许可证文本见:
+> https://github.com/clash-verge-rev/clash-verge-rev/blob/main/LICENSE
+
+---
+
 ## MIT License（参考文本）
 
 ```
