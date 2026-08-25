@@ -1669,7 +1669,14 @@ function renderSubInfo(name, info, provApi) {
 }
 
 async function loadDashboard() {
-  const s = await fetchJSON('api/status');
+  // 各数据源互不依赖，并发请求（原串行 await 会让慢接口阻塞后续模块渲染）
+  const [s, cfg, prov, provApi, p] = await Promise.all([
+    fetchJSON('api/status'),
+    fetchJSON('api/mode'),
+    fetchJSON('api/proxy-providers'),
+    fetchJSON('providers/proxies'),
+    fetchJSON('proxies'),
+  ]);
   if (s) {
     const dot = document.getElementById('serviceDot');
     if (dot) dot.className = 'pdot ' + (s.running ? 'on' : 'off');
@@ -1677,15 +1684,12 @@ async function loadDashboard() {
     if (st) st.textContent = s.running ? t('svc.on') : t('svc.off');
     document.getElementById('svcPid').textContent = 'PID ' + (s.pid || '-');
   }
-  const cfg = await fetchJSON('api/mode');
   if (cfg && cfg.mode) {
     document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
     document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
     updateModeDesc(cfg.mode);
   }
   // 订阅信息
-  const prov = await fetchJSON('api/proxy-providers');
-  const provApi = await fetchJSON('providers/proxies');
   if (provApi && provApi.providers) {
     // 建立 真实节点名 -> provider 映射（供首页测速使用）
     Object.entries(provApi.providers).forEach(([pname, pv]) => {
@@ -1734,7 +1738,6 @@ async function loadDashboard() {
     var dotsEl2 = document.getElementById('subDots'); if (dotsEl2) dotsEl2.remove();
   }
   // 当前节点 + 策略组下拉
-  const p = await fetchJSON('proxies');
   if (p && p.proxies) {
     proxiesData = p.proxies;
     const groups = Object.entries(p.proxies).filter(([k,v]) => ['Selector','URLTest','Fallback','LoadBalance'].includes(v.type));
@@ -2235,10 +2238,12 @@ async function loadIpInfo() {
 
 // ── Clash 信息 ─────────────────────────────
 async function loadClashInfo() {
-  const v = await fetchJSON('version');
-  const c = await fetchJSON('configs');
-  const m = await fetchJSON('api/mode');
-  const t = await fetchJSON('api/tun');
+  const [v, c, m, t] = await Promise.all([
+    fetchJSON('version'),
+    fetchJSON('configs'),
+    fetchJSON('api/mode'),
+    fetchJSON('api/tun'),
+  ]);
   if (v) {
     document.getElementById('ciVersion').textContent = v.version || '-';
     document.getElementById('ciMeta').textContent = v.meta ? 'Meta' : 'Clash';
@@ -2661,8 +2666,11 @@ async function loadGroups() {
     await new Promise(r => setTimeout(r, 1000));
   }
   proxiesData = (p && p.proxies) ? p.proxies : null;
-  // 策略组图标 + 配置顺序（config.yaml proxy-groups 的 icon / 排列）—— 必须在 renderGroups 之前加载
-  const ic = await fetchJSON('api/group-icons');
+  // 策略组图标 + 模式并发加载（互相独立，避免串行等待）
+  const [ic, c] = await Promise.all([
+    fetchJSON('api/group-icons'),
+    fetchJSON('api/mode'),
+  ]);
   if (ic && ic.icons) groupIcons = ic.icons || {};
   if (ic && Array.isArray(ic.order)) groupOrder = ic.order;
   if (ic && ic.hidden) hiddenGroups = ic.hidden || {};
@@ -2686,7 +2694,6 @@ async function loadGroups() {
       }
     } catch (e) {}
   })();
-  const c = await fetchJSON('api/mode');
   if (c && c.mode) currentMode = c.mode;
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
   renderGroups();
