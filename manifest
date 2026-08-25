@@ -1,9 +1,10 @@
 appname               = fnnas.fnsoar
-version               = 1.0.54
+version               = 1.0.55
 display_name          = fnSoar
 desc                  = fnSoar (Mihomo) 原生代理引擎 — 集成 Zashboard / Metacubexd 双面板、规则引擎、TUN 模式、DNS 分流。一站式 fnOS 代理管理应用。
 arch                  = x86_64 arm64
 source                = thirdparty
+license               = MIT
 maintainer            = Huiikeung
 maintainer_url        = https://github.com/Huiikeung/fnsoar
 distributor           = Huiikeung

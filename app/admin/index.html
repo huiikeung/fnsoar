@@ -78,9 +78,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar.collapsed .nav .group-label{display:none}
 .sidebar.collapsed .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .sidebar-header{display:flex;align-items:center;gap:10px;padding:18px 18px 14px}
-.sidebar-header img{width:34px;height:34px;border-radius:8px}
-.sidebar-header .t1{font-size:16px;font-weight:700;line-height:1.2}
-.sidebar-header .t2{font-size:11px;color:var(--dim);margin-top:2px}
+.sidebar-header img{width:34px;height:34px;border-radius:8px;flex-shrink:0}
+.sidebar-header>div{min-width:0;white-space:nowrap}
+.sidebar-header .t1{font-size:16px;font-weight:700;line-height:1.2;white-space:nowrap}
+.sidebar-header .t2{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap}
 .nav{padding:6px 10px;flex-grow:1;overflow-y:auto}
 .nav .group-label{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.8px;padding:14px 10px 6px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--dim);font-size:13.5px;cursor:pointer;transition:all .12s;user-select:none;margin-bottom:2px}
@@ -93,6 +94,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar-bottom .nav-item{background:transparent;color:var(--dim);margin-bottom:0}
 .sidebar-bottom .nav-item:hover{background:var(--card2);color:var(--text)}
 .sidebar-bottom .nav-item.active{background:transparent;color:var(--accent);font-weight:600}
+.sidebar-minimize-item{border-top:1px solid var(--border-soft);margin-top:6px;padding-top:12px!important}
+.desktop-mini-window{display:none;position:fixed;z-index:300;top:14px;right:14px;width:300px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);color:var(--text)}
+.desktop-mini-window.visible{display:block}
+.layout.desktop-minimized>.sidebar,.layout.desktop-minimized>.main{display:none!important}
+.desktop-mini-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:13px;font-weight:700}
+.desktop-mini-head .mini-status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
+.desktop-mini-restore{display:none;margin-left:auto;border:0;border-radius:7px;background:var(--accent);color:#fff;padding:5px 9px;font:inherit;font-size:11px;cursor:pointer}
+.desktop-mini-window:hover .desktop-mini-restore{display:block}
+.desktop-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:11px}
+.desktop-mini-item{min-width:0;display:flex;align-items:center;gap:5px;white-space:nowrap}
+.desktop-mini-label{color:var(--dim);flex-shrink:0}
+.desktop-mini-value{min-width:0;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+@media(max-width:860px){.sidebar-minimize-item,.desktop-mini-window{display:none!important}}
 #svcToggleBtn.active,#svcToggleBtn.active .ic{color:var(--green)}
 .sidebar.collapsed .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}
 .switch-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;gap:8px}
@@ -754,9 +768,45 @@ tbody tr:hover{background:var(--card2)}
       <a class="nav-item" id="tunToggleBtn" onclick="toggleTun()" title="虚拟网卡（TUN 模式）">
         <span class="ic" id="tunIcon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
         <span id="tunSwitchLabel">TUN</span>
+       </a>
+       <a class="nav-item sidebar-minimize-item" id="sidebarMinimizeBtn" onclick="minimizeDesktopWindow()" title="最小化窗口">
+         <span class="ic"><svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></span>
+         <span>最小化</span>
+       </a>
+       </a>
+       <a class="nav-item sidebar-minimize-item" id="sidebarMinimizeBtn" onclick="minimizeDesktopWindow()" title="最小化窗口">
+         <span class="ic"><svg viewBox="0 0 24 24"><path d="M5 11h14v2H5z"/></svg></span>
+         <span>最小化</span>
+       </a>
       </a>
     </div>
   </aside>
+
+  <!-- 桌面最小化状态窗口 -->
+  <div class="desktop-mini-window" id="desktopMiniWindow" onmouseenter="refreshDesktopMiniStatus()">
+    <div class="desktop-mini-head"><span class="mini-status-dot"></span><span>fnSoar</span><button class="desktop-mini-restore" onclick="restoreDesktopWindow()">恢复窗口</button></div>
+    <div class="desktop-mini-grid">
+      <div class="desktop-mini-item"><span class="desktop-mini-label">↓</span><span class="desktop-mini-value" id="miniDownSpeed">0 B/s</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">↑</span><span class="desktop-mini-value" id="miniUpSpeed">0 B/s</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">下载量</span><span class="desktop-mini-value" id="miniDownTotal">0 B</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">上传量</span><span class="desktop-mini-value" id="miniUpTotal">0 B</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">节点</span><span class="desktop-mini-value" id="miniCurrentNode">-</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">IP</span><span class="desktop-mini-value" id="miniIp">-</span></div>
+    </div>
+  </div>
+
+  <!-- 桌面最小化状态窗口 -->
+  <div class="desktop-mini-window" id="desktopMiniWindow" onmouseenter="refreshDesktopMiniStatus()">
+    <div class="desktop-mini-head"><span class="mini-status-dot"></span><span>fnSoar</span><button class="desktop-mini-restore" onclick="restoreDesktopWindow()">恢复窗口</button></div>
+    <div class="desktop-mini-grid">
+      <div class="desktop-mini-item"><span class="desktop-mini-label">↓</span><span class="desktop-mini-value" id="miniDownSpeed">0 B/s</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">↑</span><span class="desktop-mini-value" id="miniUpSpeed">0 B/s</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">下载量</span><span class="desktop-mini-value" id="miniDownTotal">0 B</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">上传量</span><span class="desktop-mini-value" id="miniUpTotal">0 B</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">节点</span><span class="desktop-mini-value" id="miniCurrentNode">-</span></div>
+      <div class="desktop-mini-item"><span class="desktop-mini-label">IP</span><span class="desktop-mini-value" id="miniIp">-</span></div>
+    </div>
+  </div>
 
   <!-- 窄屏侧边栏隐藏时显示的汉堡按钮 -->
   <button class="sidebar-hidden-toggle" onclick="hamburgerClick()" title="菜单" aria-label="菜单">
@@ -2095,6 +2145,27 @@ function drawTrafficChart() {
   drawLine(p => p.down, '#3fb950');  // 下载 - 绿色
 }
 
+function minimizeDesktopWindow() {
+  if (window.innerWidth <= 860) return;
+  document.querySelector('.layout').classList.add('desktop-minimized');
+  document.getElementById('desktopMiniWindow').classList.add('visible');
+  refreshDesktopMiniStatus();
+}
+function restoreDesktopWindow() {
+  document.querySelector('.layout').classList.remove('desktop-minimized');
+  document.getElementById('desktopMiniWindow').classList.remove('visible');
+}
+function refreshDesktopMiniStatus() {
+  if (window.innerWidth <= 860) return;
+  var copy = function(from, to) { var a=document.getElementById(from), b=document.getElementById(to); if(a&&b)b.textContent=a.textContent; };
+  copy('trafficDown','miniDownSpeed'); copy('trafficUp','miniUpSpeed');
+  copy('trafficDownTotal','miniDownTotal'); copy('trafficUpTotal','miniUpTotal');
+  copy('ipAddr','miniIp'); copy('curStrategy','miniCurrentNode');
+  if (document.getElementById('desktopMiniWindow').classList.contains('visible')) {
+    setTimeout(refreshDesktopMiniStatus, 1000);
+  }
+}
+
 function startTraffic() {
   const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
   let base = location.pathname.replace(/\/[^/]*$/, '/');
@@ -2112,6 +2183,9 @@ function startTraffic() {
       const elDown = document.getElementById('trafficDown');
       if (elUp) elUp.textContent = fmtSpeed(up);
       if (elDown) elDown.textContent = fmtSpeed(down);
+       var miniUp = document.getElementById('miniUpSpeed'), miniDown = document.getElementById('miniDownSpeed');
+       if (miniUp) miniUp.textContent = fmtSpeed(up);
+       if (miniDown) miniDown.textContent = fmtSpeed(down);
       drawTrafficChart();
     } catch (e) {}
   };
@@ -2137,6 +2211,9 @@ async function updateTrafficTotals() {
     const elActive = document.getElementById('trafficActiveConns');
     if (elUpTotal) elUpTotal.textContent = fmtBytes(totalUp);
     if (elDownTotal) elDownTotal.textContent = fmtBytes(totalDown);
+     var miniUpTotal = document.getElementById('miniUpTotal'), miniDownTotal = document.getElementById('miniDownTotal');
+     if (miniUpTotal) miniUpTotal.textContent = fmtBytes(totalUp);
+     if (miniDownTotal) miniDownTotal.textContent = fmtBytes(totalDown);
     if (elActive) elActive.textContent = activeConns;
   } catch (e) {}
 }

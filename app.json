@@ -1,8 +1,9 @@
 {
   "name": "fnnas.fnsoar",
   "title": "fnSoar",
-  "version": "1.0.54",
+  "version": "1.0.55",
   "description": "Mihomo 代理引擎 · fnOS",
+  "license": "MIT",
   "author": "fnSoar",
   "icon": "favicon.png",
   "admin_port": 9099,
