@@ -94,19 +94,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar-bottom .nav-item{background:transparent;color:var(--dim);margin-bottom:0}
 .sidebar-bottom .nav-item:hover{background:var(--card2);color:var(--text)}
 .sidebar-bottom .nav-item.active{background:transparent;color:var(--accent);font-weight:600}
-.sidebar-minimize-item{border-top:1px solid var(--border-soft);margin-top:6px;padding-top:12px!important}
-.desktop-mini-window{display:none;position:fixed;z-index:300;top:14px;right:14px;width:300px;padding:12px 14px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 28px rgba(0,0,0,.25);color:var(--text)}
-.desktop-mini-window.visible{display:block}
-.layout.desktop-minimized>.sidebar,.layout.desktop-minimized>.main{display:none!important}
-.desktop-mini-head{display:flex;align-items:center;gap:8px;margin-bottom:9px;font-size:13px;font-weight:700}
-.desktop-mini-head .mini-status-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0}
-.desktop-mini-restore{display:none;margin-left:auto;border:0;border-radius:7px;background:var(--accent);color:#fff;padding:5px 9px;font:inherit;font-size:11px;cursor:pointer}
-.desktop-mini-window:hover .desktop-mini-restore{display:block}
-.desktop-mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;font-size:11px}
-.desktop-mini-item{min-width:0;display:flex;align-items:center;gap:5px;white-space:nowrap}
-.desktop-mini-label{color:var(--dim);flex-shrink:0}
-.desktop-mini-value{min-width:0;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
-@media(max-width:860px){.sidebar-minimize-item,.desktop-mini-window{display:none!important}}
+.sidebar-window-item{border-top:1px solid var(--border-soft);margin-top:6px;padding-top:12px!important}
+@media(max-width:860px){.sidebar-window-item{display:none!important}}
 #svcToggleBtn.active,#svcToggleBtn.active .ic{color:var(--green)}
 .sidebar.collapsed .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}
 .switch-row{display:flex;align-items:center;justify-content:space-between;padding:8px 4px;gap:8px}
@@ -769,23 +758,8 @@ tbody tr:hover{background:var(--card2)}
         <span class="ic" id="tunIcon"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" stroke-width="1.5"/></svg></span>
         <span id="tunSwitchLabel">TUN</span>
        </a>
-
-      </a>
     </div>
   </aside>
-
-  <!-- 桌面最小化状态窗口 -->
-  <div class="desktop-mini-window" id="desktopMiniWindow" onmouseenter="refreshDesktopMiniStatus()">
-    <div class="desktop-mini-head"><span class="mini-status-dot"></span><span>fnSoar</span><button class="desktop-mini-restore" onclick="restoreDesktopWindow()">恢复窗口</button></div>
-    <div class="desktop-mini-grid">
-      <div class="desktop-mini-item"><span class="desktop-mini-label">↓</span><span class="desktop-mini-value" id="miniDownSpeed">0 B/s</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">↑</span><span class="desktop-mini-value" id="miniUpSpeed">0 B/s</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">下载量</span><span class="desktop-mini-value" id="miniDownTotal">0 B</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">上传量</span><span class="desktop-mini-value" id="miniUpTotal">0 B</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">节点</span><span class="desktop-mini-value" id="miniCurrentNode">-</span></div>
-      <div class="desktop-mini-item"><span class="desktop-mini-label">IP</span><span class="desktop-mini-value" id="miniIp">-</span></div>
-    </div>
-  </div>
 
   <!-- 桌面最小化状态窗口 -->
   <div class="desktop-mini-window" id="desktopMiniWindow" onmouseenter="refreshDesktopMiniStatus()">
@@ -2498,7 +2472,7 @@ async function runWebTest() {
  let provLive = {};   // name -> 运行时信息（节点数/更新时间），来自 /providers/proxies
  let provStatic = {};
  async function fetchProvLive() {
-   try { const d = await fetchJSON('providers/proxies'); provLive = (d && d.providers) ? d.providers : {}; }
+   try { const d = await fetchJSON('providers/proxies', 5000); provLive = (d && d.providers) ? d.providers : {}; }
    catch (e) { provLive = {}; }
  }
  function svgIcon(path) {

@@ -720,11 +720,15 @@ def _test_config(path):
 
 _IPINFO_CACHE = {"t": 0, "data": None}
 _SYSINFO_CACHE = {"t": 0, "data": None}
+# Clash API 只读 GET 短缓存：key = "METHOD:path" -> (content_type, body_bytes, ts)
+_PROXY_GET_CACHE = {}  # 受锁保护
+_PROXY_GET_LOCK = threading.Lock()
 
 def get_ip_info():
-    """公网 IP 信息，带 60s 内存缓存（首页每次加载都调用，避免每次外网查询拖慢页面）。"""
+    """公网 IP 信息，带 300s 内存缓存（首页每次加载都调用，避免每次外网查询拖慢页面）。
+    多个服务并发请求、最快成功者胜出，单服务 3s 超时。"""
     now = int(time.time())
-    if _IPINFO_CACHE["data"] is not None and now - _IPINFO_CACHE["t"] < 60:
+    if _IPINFO_CACHE["data"] is not None and now - _IPINFO_CACHE["t"] < 300:
         return _IPINFO_CACHE["data"]
     data = _get_ipinfo_uncached()
     # 查询成功(拿到真实 ip)才缓存
@@ -735,16 +739,19 @@ def get_ip_info():
 
 def _get_ipinfo_uncached():
     """Query the public exit IP via external APIs (best effort).
-    Tries multiple services in order; returns the first success.
+    Requests all candidate services concurrently, first success wins; each
+    service is given a short 3s timeout so a slow/unreachable service cannot
+    stall the page for seconds.
     Field set matches the IP-info card:
     ip / asn(自治域) / isp(服务商) / organization(组织) / location(位置) / timezone(时区)."""
     import urllib.request as _ureq
     import ssl
+    import concurrent.futures as _cf
     _ctx = ssl.create_default_context()
     _ctx.check_hostname = False
     _ctx.verify_mode = ssl.CERT_NONE
 
-    def _fetch(url, timeout=6, use_ctx=False):
+    def _fetch(url, timeout=3, use_ctx=False):
         req = _ureq.Request(url, headers={"User-Agent": "curl/8"}, method="GET")
         kw = {"timeout": timeout}
         if url.startswith("https"):
@@ -752,8 +759,7 @@ def _get_ipinfo_uncached():
         with _ureq.urlopen(req, **kw) as resp:
             return json.loads(resp.read().decode("utf-8", "replace"))
 
-    # Service 1: api.ip.sb (most complete fields)
-    try:
+    def _service1():
         d = _fetch("https://api.ip.sb/geoip")
         return {
             "ip": d.get("ip") or "-",
@@ -769,10 +775,8 @@ def _get_ipinfo_uncached():
             "latitude": d.get("latitude"),
             "longitude": d.get("longitude"),
         }
-    except Exception:
-        pass
-    # Service 2: ipapi.co
-    try:
+
+    def _service2():
         d = _fetch("https://ipapi.co/json")
         return {
             "ip": d.get("ip") or "-",
@@ -788,68 +792,67 @@ def _get_ipinfo_uncached():
             "latitude": d.get("latitude"),
             "longitude": d.get("longitude"),
         }
-    except Exception:
-        pass
-    # Service 3: ip-api.com (HTTP only, supports Chinese)
-    try:
+
+    def _service3():
         d = _fetch(
             "http://ip-api.com/json/?lang=zh-CN&fields=status,query,country,countryCode,regionName,city,isp,as,org,timezone")
-        if d.get("status") == "success":
-            asn = ""
-            asn_org = ""
-            m = re.match(r"^(AS\d+)\s*(.*)$", d.get("as") or "")
-            if m:
-                asn = m.group(1).replace("AS", "")
-                asn_org = m.group(2)
-            return {
-                "ip": d.get("query") or "-",
-                "country": d.get("country") or "",
-                "countryCode": (d.get("countryCode") or "").upper(),
-                "region": d.get("regionName") or "",
-                "city": d.get("city") or "",
-                "isp": d.get("isp") or "",
-                "organization": d.get("org") or "",
-                "asn": asn,
-                "asn_organization": asn_org or d.get("org") or "",
-                "timezone": d.get("timezone") or "",
-                "latitude": d.get("lat"),
-                "longitude": d.get("lon"),
-            }
-    except Exception:
-        pass
-    # Service 4: ipinfo.io
-    try:
-        d = _fetch("https://ipinfo.io/json")
-        org = d.get("org") or ""
+        if d.get("status") != "success":
+            raise ValueError("ip-api failed")
         asn = ""
-        m = re.match(r"^AS(\d+)\s*(.*)$", org)
+        asn_org = ""
+        m = re.match(r"^(AS\d+)\s*(.*)$", d.get("as") or "")
         if m:
-            asn = m.group(1)
-            org = m.group(2)
-        loc = (d.get("loc") or "").split(",")
+            asn = m.group(1).replace("AS", "")
+            asn_org = m.group(2)
+        return {
+            "ip": d.get("query") or "-",
+            "country": d.get("country") or "",
+            "countryCode": (d.get("countryCode") or "").upper(),
+            "region": d.get("regionName") or "",
+            "city": d.get("city") or "",
+            "isp": d.get("isp") or "",
+            "organization": d.get("org") or "",
+            "asn": asn,
+            "asn_organization": asn_org or d.get("org") or "",
+            "timezone": d.get("timezone") or "",
+            "latitude": d.get("lat"),
+            "longitude": d.get("lon"),
+        }
+
+    def _service4():
+        d = _fetch("https://ipinfo.io/json")
         return {
             "ip": d.get("ip") or "-",
             "country": d.get("country") or "",
             "countryCode": (d.get("country") or "").upper(),
             "region": d.get("region") or "",
             "city": d.get("city") or "",
-            "isp": org,
-            "organization": org,
-            "asn": asn,
-            "asn_organization": org,
+            "isp": (d.get("org") or "").split(" ", 1)[-1],
+            "organization": d.get("org") or "",
+            "asn": (d.get("org") or "").split(" ", 1)[0].lstrip("AS"),
+            "asn_organization": d.get("org") or "",
             "timezone": d.get("timezone") or "",
-            "latitude": float(loc[0]) if len(loc) > 0 and loc[0] else None,
-            "longitude": float(loc[1]) if len(loc) > 1 and loc[1] else None,
+            "latitude": d.get("loc", "").split(",")[0] if d.get("loc") else None,
+            "longitude": d.get("loc", "").split(",")[1] if d.get("loc") else None,
         }
-    except Exception:
-        pass
+
+    services = [_service1, _service2, _service3, _service4]
+    with _cf.ThreadPoolExecutor(max_workers=len(services)) as ex:
+        futs = {ex.submit(s): i for i, s in enumerate(services)}
+        for fut in _cf.as_completed(futs):
+            try:
+                data = fut.result()
+                if data and data.get("ip") and data["ip"] != "-":
+                    return data
+            except Exception:
+                continue
     # All services failed - return error object so frontend can show message
     return {"ip": "-", "error": "无法获取 IP 信息，请检查网络连接"}
 
 def get_system_info():
-    """系统信息,带 2s 缓存避免每次 sleep(0.4) 采样 CPU。"""
+    """系统信息,带 10s 缓存避免每次 sleep(0.4) 采样 CPU。"""
     now = time.time()
-    if _SYSINFO_CACHE["data"] is not None and now - _SYSINFO_CACHE["t"] < 2:
+    if _SYSINFO_CACHE["data"] is not None and now - _SYSINFO_CACHE["t"] < 10:
         return _SYSINFO_CACHE["data"]
     info = get_system_info_cached()
     _SYSINFO_CACHE["t"] = now
@@ -1004,7 +1007,28 @@ class AdminHandler(BaseHTTPRequestHandler):
 
     def _proxy_mihomo(self, sub_path, headers, method="GET", body=b""):
         """Forward /api/mihomo/<rest> or catch-all → http://mihomo-ctrl:9090/<rest>.
-        Always sends a response; returns nothing meaningful."""
+        Always sends a response; returns nothing meaningful.
+        Read-only GET JSON endpoints (proxies / group / providers / rules / traffic…)
+        are cached for 3s so dashboard page loads don't re-hit mihomo each time."""
+        # 只读 GET 短缓存：命中直接回，避免订阅/首页反复请求拖慢
+        cache_ttl = 3.0
+        cacheable = (method == "GET" and
+                     sub_path.split("?", 1)[0].rstrip("/") in
+                     ("proxies", "group", "rules", "connections", "traffic",
+                      "configs", "providers/proxies", "providers/rules") or
+                     sub_path.startswith("providers/proxies/"))
+        ckey = method + ":" + sub_path
+        with _PROXY_GET_LOCK:
+            cached = _PROXY_GET_CACHE.get(ckey)
+            if cacheable and cached and time.time() - cached[2] < cache_ttl:
+                ct, body, ts = cached
+                self.send_response(200)
+                self.send_header("Content-Type", ct)
+                self.send_header("Access-Control-Allow-Origin", "*")
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                self.wfile.write(body)
+                return
         try:
             import urllib.request as _ureq
             import urllib.error as _uerror
@@ -1058,6 +1082,10 @@ class AdminHandler(BaseHTTPRequestHandler):
                     self.send_header("Cache-Control", "no-store")
                     self.end_headers()
                     self.wfile.write(data)
+                    if cacheable:
+                        ctype = resp.headers.get("Content-Type", "application/json")
+                        with _PROXY_GET_LOCK:
+                            _PROXY_GET_CACHE[ckey] = (ctype, data, time.time())
             except _uerror.HTTPError as e:
                 # 上游 mihomo 返回了明确的错误状态码（400/404/503 等），
                 # 原样透传给前端，而不是全部伪装成 502。
