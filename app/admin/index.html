@@ -679,9 +679,9 @@ tbody tr:hover{background:var(--card2)}
 }
 
 /* ── 面板 iframe（占满右侧，无顶部按钮条） ───── */
-/* left 跟随侧栏折叠状态：展开=232px（201px 侧栏右缘 + 31px 呼吸空隙），折叠=88px（57px 右缘 + 同样的 31px），由 syncWebuiLeft() 切换 */
-.section-webui{position:fixed;top:0;right:0;bottom:0;left:232px;background:var(--bg);z-index:10;transition:left .2s ease}
-.section-webui.webui-narrow{left:88px}
+/* left 紧贴侧栏右缘（无空隙）：展开=201px（200px 栏宽+1px 边框），折叠=57px（56px+1px），由 syncWebuiLeft() 切换 */
+.section-webui{position:fixed;top:0;right:0;bottom:0;left:201px;background:var(--bg);z-index:10;transition:left .2s ease}
+.section-webui.webui-narrow{left:57px}
 .section-webui iframe{width:100%;height:100%;border:none;background:var(--bg)}
 
 /* ── 测试页（解锁检测） ──────────── */
@@ -4711,11 +4711,33 @@ function checkUpdates() {
   });
 }
 
-function copyPath(type) {
+async function copyPath(type) {
   if (!_versionData) return;
   var path = type === 'config' ? _versionData.config_dir : _versionData.core_dir;
   if (!path) return;
-  navigator.clipboard.writeText(path).then(function() { showToast('已复制: ' + path, 'success'); });
+  // 在 fnOS 微应用 iframe 内：用宿主桥(new TrimApp + ready)打开文件管理器并定位到该目录。
+  // SDK 自身依据 window.parent===window 判断是否是独立页面(isStandaloneWeb)，
+  // 宿主桥通过 postMessage(Penpal) 连接，无需 __POWERED_BY_FNAPP__。
+  if (window.parent !== window && window.__fnSdk) {
+    try {
+      var sdk = new window.__fnSdk.TrimApp({ debug: true });
+      await sdk.ready();
+      if (sdk.isWeb && !sdk.isStandaloneWeb) {
+        await sdk.openFileManager(path);
+        showToast('已打开文件管理器: ' + path, 'success');
+        return;
+      }
+    } catch (e) {
+      // 宿主桥不可用时回退为复制（不报错）
+    }
+  }
+  // 回退：复制路径到剪贴板
+  try {
+    await navigator.clipboard.writeText(path);
+    showToast('已复制: ' + path, 'success');
+  } catch (e) {
+    showToast(path, 'success');
+  }
 }
 
 function showCoreUpdatePopup() {
@@ -5414,6 +5436,10 @@ setInterval(() => {
 }, 10000);
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+</script>
+<script type="module">
+  import { TrimApp } from './trim-web-app.js';
+  window.__fnSdk = { TrimApp: TrimApp };
 </script>
 </body>
 </html>

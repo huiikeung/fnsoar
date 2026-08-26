@@ -41,9 +41,11 @@ if [ -f "${SOURCE_DIR}/bin/mihomo" ]; then
 fi
 
 # Copy engine starter (panel daemon manages the engine as a child)
+# 运行态位置是安装目录顶层 bin/engine-start（admin_server.py 的 ENGINE_START = TRIM_APPDEST/bin/engine-start）
 if [ -f "${SOURCE_DIR}/app/bin/engine-start" ]; then
-    cp -f "${SOURCE_DIR}/app/bin/engine-start" "${DEST_DIR}/app/bin/engine-start"
-    chmod +x "${DEST_DIR}/app/bin/engine-start"
+    mkdir -p "${DEST_DIR}/bin"
+    cp -f "${SOURCE_DIR}/app/bin/engine-start" "${DEST_DIR}/bin/engine-start"
+    chmod +x "${DEST_DIR}/bin/engine-start"
 fi
 
 # Copy config if not exists
