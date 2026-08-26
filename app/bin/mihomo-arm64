@@ -1,26 +1,22 @@
 #!/bin/bash
-# fnSoar arm64 wrapper; starts admin and launches Mihomo.
+# ---------------------------------------------------------------------------
+# fnSoar arm64 panel daemon (fnOS service entry)
+#
+# See mihomo-amd64 for the full design: fnOS tracks this process as the app
+# daemon (admin panel server in foreground); the engine is a managed child.
+# ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
+ADMIN_SERVER="${APP_ROOT}/admin/admin_server.py"
+
 DEST_DIR="${MIHOMO_DEST_DIR:-${TRIM_APPDEST:-${APP_ROOT}}}"
 DATA_DIR="${MIHOMO_DATA_DIR:-${TRIM_PKGVAR:-/vol1/@appdata/fnnas.fnsoar}}"
-ADMIN_PORT="${MIHOMO_ADMIN_PORT:-9099}"
-ENGINE_PORT="${MIHOMO_ENGINE_PORT:-9090}"
-ADMIN_SERVER="${APP_ROOT}/admin/admin_server.py"
-if [ -f "$ADMIN_SERVER" ] && ! (exec 3<>/dev/tcp/127.0.0.1/${ADMIN_PORT}) 2>/dev/null; then
-    MIHOMO_APP_NAME="fnnas.fnsoar" MIHOMO_DATA_DIR="${DATA_DIR}" MIHOMO_DEST_DIR="${DEST_DIR}" MIHOMO_ADMIN_PORT="${ADMIN_PORT}" MIHOMO_GATEWAY_SOCK="${DEST_DIR}/fnsoar.sock" nohup python3 "$ADMIN_SERVER" >> "${DATA_DIR}/admin.log" 2>&1 &
-fi
-if (exec 3<>/dev/tcp/127.0.0.1/${ENGINE_PORT}) 2>/dev/null; then
-    EXISTING_PID="$(pgrep -f 'mihomo-(amd64|arm64)\\.real -d' 2>/dev/null | head -1)"
-    [ -n "$EXISTING_PID" ] && echo "$EXISTING_PID" > "${DATA_DIR}/fnnas.fnsoar.pid"
-    exit 0
-fi
-[ -d "${DATA_DIR}" ] && echo $$ > "${DATA_DIR}/fnnas.fnsoar.pid"
-if [ -f "${DATA_DIR}/config.yaml" ] && (grep -q '^host-transparent:[[:space:]]*true' "${DATA_DIR}/config.yaml" || ! grep -q '^host-transparent:' "${DATA_DIR}/config.yaml") \
-   && grep -A3 '^tun:' "${DATA_DIR}/config.yaml" | grep -q 'enable:[[:space:]]*false' \
-   && id fnsoar >/dev/null 2>&1; then
-    grep -q '^redir-port:' "${DATA_DIR}/config.yaml" || sed -i '/^mixed-port:/a redir-port: 7892' "${DATA_DIR}/config.yaml"
-    [ -x "${APP_ROOT}/admin/host_transparent.sh" ] && FNSOAR_REDIR_PORT=7892 "${APP_ROOT}/admin/host_transparent.sh" apply || exit 1
-    exec setpriv --reuid=fnsoar --regid=fnsoar --init-groups --inh-caps=+net_admin --ambient-caps=+net_admin -- "${SCRIPT_DIR}/mihomo-arm64.real" "$@"
-fi
-exec "${SCRIPT_DIR}/mihomo-arm64.real" "$@"
+export MIHOMO_APP_NAME="${MIHOMO_APP_NAME:-fnnas.fnsoar}"
+export MIHOMO_DATA_DIR="${DATA_DIR}"
+export MIHOMO_DEST_DIR="${DEST_DIR}"
+export MIHOMO_ADMIN_PORT="${MIHOMO_ADMIN_PORT:-9099}"
+export MIHOMO_CTRL_PORT="${MIHOMO_CTRL_PORT:-9090}"
+export MIHOMO_GATEWAY_SOCK="${MIHOMO_GATEWAY_SOCK:-${DEST_DIR}/fnsoar.sock}"
+
+[ -f "$ADMIN_SERVER" ] || { echo "admin server missing: $ADMIN_SERVER" >&2; exit 1; }
+exec python3 "$ADMIN_SERVER" "$@"

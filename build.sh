@@ -40,6 +40,12 @@ if [ -f "${SOURCE_DIR}/bin/mihomo" ]; then
     chmod +x "${DEST_DIR}/bin/mihomo"
 fi
 
+# Copy engine starter (panel daemon manages the engine as a child)
+if [ -f "${SOURCE_DIR}/app/bin/engine-start" ]; then
+    cp -f "${SOURCE_DIR}/app/bin/engine-start" "${DEST_DIR}/app/bin/engine-start"
+    chmod +x "${DEST_DIR}/app/bin/engine-start"
+fi
+
 # Copy config if not exists
 if [ ! -f "${DATA_DIR}/config.yaml" ]; then
     if [ -f "${SOURCE_DIR}/config.yaml" ]; then

@@ -1,0 +1,46 @@
+#!/bin/bash
+# ---------------------------------------------------------------------------
+# fnSoar engine starter — invoked by admin_server.py start_service().
+#
+# The fnOS service daemon is now the admin panel server (bin/mihomo wrapper),
+# so the engine is a managed child started/stopped by the panel. This script
+# applies host-transparent firewall rules when needed and then launches the
+# real engine, optionally dropping to the dedicated 'fnsoar' UID.
+# ---------------------------------------------------------------------------
+set -eu
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+APP_ROOT="$(dirname "$SCRIPT_DIR")"
+
+ARCH="$(uname -m)"
+case "${ARCH}" in
+    x86_64|amd64)        REAL="${SCRIPT_DIR}/mihomo-amd64.real" ;;
+    aarch64|arm64)       REAL="${SCRIPT_DIR}/mihomo-arm64.real" ;;
+    armv7l|armv7|armhf)  REAL="${SCRIPT_DIR}/mihomo-arm64.real" ;;
+    *) echo "Unsupported architecture: ${ARCH}" >&2; exit 1 ;;
+esac
+[ -x "${REAL}" ] || { echo "engine binary missing: ${REAL}" >&2; exit 1; }
+
+# Data dir: prefer the -d argument passed by the admin server, then env.
+DATA_DIR=""
+prev=""
+for a in "$@"; do
+    if [ "${prev}" = "-d" ]; then DATA_DIR="${a}"; fi
+    prev="${a}"
+done
+[ -n "${DATA_DIR}" ] || DATA_DIR="${MIHOMO_DATA_DIR:-${TRIM_PKGVAR:-/vol1/@appdata/fnnas.fnsoar}}"
+[ -d "${DATA_DIR}" ] || { echo "data dir missing: ${DATA_DIR}" >&2; exit 1; }
+
+# Host REDIRECT mode: apply nftables interception, then run as 'fnsoar' so
+# the firewall can exclude the engine's own upstream connections.
+if [ -f "${DATA_DIR}/config.yaml" ] \
+   && (grep -q '^host-transparent:[[:space:]]*true' "${DATA_DIR}/config.yaml" || ! grep -q '^host-transparent:' "${DATA_DIR}/config.yaml") \
+   && grep -A3 '^tun:' "${DATA_DIR}/config.yaml" | grep -q 'enable:[[:space:]]*false' \
+   && id fnsoar >/dev/null 2>&1; then
+    grep -q '^redir-port:' "${DATA_DIR}/config.yaml" || sed -i '/^mixed-port:/a redir-port: 7892' "${DATA_DIR}/config.yaml"
+    [ -x "${APP_ROOT}/admin/host_transparent.sh" ] \
+        && FNSOAR_REDIR_PORT=7892 "${APP_ROOT}/admin/host_transparent.sh" apply || exit 1
+    # TUN/TProxy need CAP_NET_ADMIN; preserve only these two capabilities
+    # while running as the dedicated UID for firewall loop prevention.
+    exec setpriv --reuid=fnsoar --regid=fnsoar --init-groups --inh-caps=+net_admin --ambient-caps=+net_admin -- "${REAL}" "$@"
+fi
+exec "${REAL}" "$@"

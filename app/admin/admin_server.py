@@ -56,9 +56,16 @@ def _get_icons_map():
     return _ICONS_MAP
 LOG_FILE      = f"{TRIM_PKGVAR}/{TRIM_APPNAME}.log"
 PID_FILE      = f"{TRIM_PKGVAR}/{TRIM_APPNAME}.pid"
+SERVICE_STATE_FILE = f"{TRIM_PKGVAR}/service.state"
 PROFILES_DIR  = f"{TRIM_PKGVAR}/profiles"
 ACTIVE_FILE   = f"{TRIM_PKGVAR}/active"
+# 订阅元数据（官网/更新间隔等响应头信息，mihomo 不解析，这里单独持久化）
+SUB_META_FILE = f"{TRIM_PKGVAR}/sub-meta.json"
 MIHOMO_BIN    = f"{TRIM_APPDEST}/bin/mihomo"
+# The engine is a managed child of the panel daemon. fnOS tracks the admin
+# server (bin/mihomo wrapper) as the app daemon; the engine is launched via
+# bin/engine-start which applies host-transparent rules and drops privileges.
+ENGINE_START  = f"{TRIM_APPDEST}/bin/engine-start"
 ADMIN_DIR     = os.path.dirname(os.path.abspath(__file__))
 DASHBOARD_DIR = f"{TRIM_PKGVAR}/dashboard"
 HOST_TRANSPARENT_SCRIPT = os.path.join(ADMIN_DIR, "host_transparent.sh")
@@ -338,6 +345,25 @@ def _find_extracted_root(dest_dir):
             return full
     return dest_dir
 
+def _metacubexd_config_content():
+    """metacubexd 默认后端是 http://127.0.0.1:9090，HTTPS 页面访问会被浏览器
+    （尤其 iOS Safari/WebView）按混合内容拦截。这里返回动态 config.js 内容，
+    在面板前端计算同源网关后端（请求 /configs、/proxies 等 API 时拼上 fnOS
+    网关前缀，由 Admin 服务代理到 Mihomo）。
+    不做磁盘改写 —— 面板升级完全替换目录后依然生效。"""
+    return """window.__METACUBEXD_CONFIG__ = {
+  defaultBackendURL: (function () {
+    // 同源后端：fnOS 网关前缀（如 /app/fnnas.fnsoar）+ 当前 origin。
+    // 避免 HTTPS 页面访问 HTTP 后端被浏览器拦截，由 Admin 服务代理到 Mihomo。
+    var path = window.location.pathname || '';
+    var m = path.match(/^(\\/[^/]+\\/[^/]+)/);
+    var gw = m ? m[1] : '';
+    return window.location.origin + gw;
+  })(),
+  githubToken: '',
+}
+"""
+
 def install_dashboard(name):
     """Download latest release for `name` and atomically replace its directory."""
     latest, url, current = dashboard_latest_info(name)
@@ -509,31 +535,18 @@ def _replace_tun_enable(txt, enable):
 def is_running():
     """Return the real engine state, not only the wrapper PID file.
     fnOS can briefly leave a stale/missing PID during reinstall or wrapper
-    handoff while mihomo is already listening; the UI must still show ON. """
+    handoff while mihomo is already listening; the UI must still show ON.
+    NOTE: since v1.0.68 the PID file tracks the ADMIN daemon (which is
+    always alive while the panel is open), so engine status must never be
+    derived from it — 9090 (engine controller) is the authoritative check."""
     # 9090 是引擎控制端口；端口在监听时服务就是运行中。优先使用它，
     # 避免每次点击左栏都扫描进程导致状态短暂误判。
     if not _port_free(MIHOMO_CTRL_PORT):
         pids = _find_engine_pids()
         return True, (pids[0] if pids else None)
-    pid = None
-    try:
-        if os.path.exists(PID_FILE):
-            pid = int(open(PID_FILE).read().strip())
-            os.kill(pid, 0)
-            return True, pid
-    except (ValueError, OSError):
-        pid = None
-    # Fallback to the actual mihomo process and controller port.
     pids = _find_engine_pids()
     if pids:
         pid = pids[0]
-        try:
-            with open(PID_FILE, "w") as f:
-                f.write(str(pid))
-        except OSError:
-            pass
-        return True, pid
-    if not _port_free(MIHOMO_CTRL_PORT):
         return True, pid
     return False, None
 
@@ -560,6 +573,21 @@ def _port_free(port, host="127.0.0.1"):
             return s.connect_ex((host, port)) != 0
     except Exception:
         return True
+
+def _read_service_state():
+    """Last saved engine state: True=on, False/absent=off (first install default off)."""
+    try:
+        val = open(SERVICE_STATE_FILE, "r").read().strip().lower()
+        return val == "on"
+    except Exception:
+        return False
+
+def _write_service_state(on):
+    try:
+        with open(SERVICE_STATE_FILE, "w") as f:
+            f.write("on\n" if on else "off\n")
+    except Exception:
+        pass
 
 def _global_ipv6_available():
     """Return whether the NAS currently has a usable global IPv6 route/address."""
@@ -677,8 +705,8 @@ def start_service():
             running = False
         else:
             return {"success": False, "error": "服务已在运行"}
-    if not os.path.exists(MIHOMO_BIN):
-        return {"success": False, "error": f"找不到 mihomo: {MIHOMO_BIN}"}
+    if not os.path.exists(ENGINE_START):
+        return {"success": False, "error": f"找不到引擎启动器: {ENGINE_START}"}
     try:
         # TUN 是独立开关：启动服务时尊重 config.yaml 中用户保存的状态。
         # 不要在这里强制开启，否则“服务”和“TUN”无法独立控制。
@@ -689,13 +717,14 @@ def start_service():
             if _port_free(MIHOMO_CTRL_PORT):
                 break
             time.sleep(0.5)
-        # 直接启动 wrapper（会自动拉起 admin、写 PID 文件、exec 引擎）
+        # 引擎是面板守护的子进程，通过 bin/engine-start 启动
+        # （它会处理 host-transparent 防火墙规则并按需降权执行引擎）。
         env = dict(os.environ)
         env.setdefault("MIHOMO_APP_NAME", TRIM_APPNAME)
         env.setdefault("MIHOMO_DATA_DIR", TRIM_PKGVAR)
         env.setdefault("MIHOMO_DEST_DIR", TRIM_APPDEST)
         with open(f"{TRIM_PKGVAR}/{TRIM_APPNAME}.log", "a") as logf:
-            subprocess.Popen([MIHOMO_BIN, "-d", TRIM_PKGVAR],
+            subprocess.Popen([ENGINE_START, "-d", TRIM_PKGVAR],
                              stdout=logf, stderr=subprocess.STDOUT,
                              env=env, start_new_session=True)
         # 等待引擎起来（最多 20s）
@@ -757,12 +786,10 @@ def stop_service():
             if _port_free(MIHOMO_CTRL_PORT):
                 break
             time.sleep(0.5)
-        try:
-            if os.path.exists(PID_FILE):
-                os.remove(PID_FILE)
-        except OSError:
-            pass
-        # 停止 Mihomo 后由内核负责释放 TUN；不要改写用户保存的 TUN 开关。
+        # 注意：PID_FILE 现在是 fnOS 面板守护进程（admin server）的 PID，
+        # 由 fnOS 的 start_daemon 管理，不能在这里删除，否则 fnOS 会把
+        # 应用误判为"未运行"、桌面窗口消失。
+        # 停止 Mihomo 后由内核负责释放 TUN；不要改写用户保存的 TUN 开关：
         # 这样下次启动时可以按用户最后保存的状态恢复。
         return {"success": True}
     except Exception as e:
@@ -776,6 +803,25 @@ def extract_proxy_providers(yaml_text):
     except Exception:
         return {}
 
+def load_sub_meta():
+    """读取订阅元数据（name -> {home, updateInterval, ...}）。"""
+    try:
+        if os.path.exists(SUB_META_FILE):
+            with open(SUB_META_FILE, "r", encoding="utf-8") as f:
+                return json.load(f) or {}
+    except Exception:
+        pass
+    return {}
+
+def save_sub_meta(meta):
+    """写入订阅元数据。"""
+    try:
+        os.makedirs(os.path.dirname(SUB_META_FILE), exist_ok=True)
+        with open(SUB_META_FILE, "w", encoding="utf-8") as f:
+            json.dump(meta, f, ensure_ascii=False, indent=2)
+    except Exception as e:
+        log(f"save sub-meta failed: {e}")
+
 def _provider_block(name, url, interval, ptype="http"):
     block = f"  {name}:\n"
     block += f"    type: {ptype}\n"
@@ -785,7 +831,7 @@ def _provider_block(name, url, interval, ptype="http"):
     block += "      enable: true\n"
     block += "      url: https://www.gstatic.com/generate_204\n"
     block += "      interval: 180\n"
-    return block
+    return block + "\n"  # 与其他 provider 之间保留一行空行
 
 def _valid_provider_name(name):
     if not name or not name.strip():
@@ -795,8 +841,123 @@ def _valid_provider_name(name):
         return False, "订阅名称不能包含空格或特殊字符"
     return True, key
 
+def _sanitize_provider_name(raw):
+    """把订阅返回的名称清洗成合法的 YAML provider 键（保留中文/字母/数字/连字符）。"""
+    if not raw:
+        return ""
+    name = str(raw).strip().strip('"\' ')
+    name = re.sub(r'[\s\t:\n{}\[\]#,\\/]+', "-", name)
+    name = re.sub(r"-{2,}", "-", name).strip("-")
+    return name[:60]
+
+def probe_subscription_meta(url, timeout=7):
+    """探测订阅响应头，返回完整元数据 dict（对齐 clash-verge-rev 的能力）：
+    - name: Content-Disposition filename* / filename、Profile-Title、或 YAML profile.name
+    - updateInterval: profile-update-interval 响应头（小时，转成秒）
+    - home: profile-web-page-url 响应头（机场官网）
+    请求带超时，失败返回 {} 不阻塞添加流程。"""
+    import urllib.request as _ureq
+    meta = {}
+    try:
+        req = _ureq.Request(url, headers={"User-Agent": f"fnSoar/{_get_app_version()}"})
+        with _ureq.urlopen(req, timeout=timeout) as resp:
+            hd = {k.lower(): v for k, v in resp.headers.items()}
+            # 1) 订阅标题响应头（多数机场/面板下发）
+            for k in ("profile-title", "subscription-title"):
+                if hd.get(k) and hd[k].strip():
+                    meta["name"] = _sanitize_provider_name(hd[k])
+                    break
+            # 2) Content-Disposition → filename*（RFC 5987）或 filename
+            if not meta.get("name"):
+                cd = hd.get("content-disposition", "") or ""
+                m = re.search(r"filename\*\s*=\s*(?:UTF-8|utf-8)?''([^;]+)", cd, re.I)
+                if m:
+                    fname = urllib.parse.unquote(m.group(1).strip().strip('"'))
+                    if fname:
+                        meta["name"] = _sanitize_provider_name(fname)
+                else:
+                    m = re.search(r'filename\s*=\s*"?([^";]+)"?', cd, re.I)
+                    if m:
+                        fname = m.group(1).strip().strip('"')
+                        if fname:
+                            meta["name"] = _sanitize_provider_name(fname)
+            # 3) profile-update-interval：更新间隔（小时 → 秒）
+            ui = hd.get("profile-update-interval", "")
+            if ui:
+                try:
+                    hrs = int(str(ui).strip())
+                    if hrs > 0:
+                        meta["updateInterval"] = hrs * 3600
+                except Exception:
+                    pass
+            # 4) profile-web-page-url：机场官网
+            home = hd.get("profile-web-page-url", "")
+            if home and home.strip():
+                meta["home"] = home.strip()
+            # 5) YAML 顶层 profile.name（完整读取，很多机场把 profile 放在文件末尾）
+            #    单独 try 包裹：读 body 超时/失败不影响前面已从响应头解析出的元数据。
+            if not meta.get("name"):
+                try:
+                    data = resp.read().decode("utf-8", "ignore")
+                    data = data.lstrip("\ufeff")
+                    try:
+                        doc = yaml.safe_load(data) or {}
+                        prof = doc.get("profile") or {}
+                        if isinstance(prof, dict) and prof.get("name"):
+                            meta["name"] = _sanitize_provider_name(str(prof["name"]))
+                    except Exception:
+                        m = re.search(r'(?m)^profile:\s*\n\s*name:\s*["\']?([^"\'\n]+)', data)
+                        if m and m.group(1).strip():
+                            meta["name"] = _sanitize_provider_name(m.group(1).strip())
+                except Exception as e:
+                    log(f"probe subscription body skipped: {url}: {e}")
+    except Exception as e:
+        log(f"probe subscription meta failed: {url}: {e}")
+    return meta
+
+def probe_subscription_name(url, timeout=7):
+    """从订阅响应中提取真实名称（兼容旧调用）。"""
+    return probe_subscription_meta(url, timeout).get("name", "")
+
+def _is_token_like(s):
+    """判断字符串是否像 token/hash（长、无中文、纯字母数字连字符）。"""
+    if not s or len(s) < 6:
+        return False
+    # 包含中文 → 不是 token
+    if re.search(r'[\u4e00-\u9fff]', s):
+        return False
+    # 纯 hex 超过 12 位 → 像 hash
+    if re.match(r'^[0-9a-fA-F]{12,}$', s):
+        return True
+    # 纯字母数字连字符超过 20 位 → 像 token
+    if len(s) > 20 and re.match(r'^[a-zA-Z0-9_-]+$', s):
+        return True
+    return False
+
+def fallback_provider_name(url):
+    """无标题可用时的兜底名称：URL 末段（非泛用词、非 token）→ 域名 → 订阅。"""
+    try:
+        from urllib.parse import urlparse, unquote as _unquote
+        last = _unquote(urlparse(url).path.strip("/").rsplit("/", 1)[-1]) if urlparse(url).path.strip("/") else ""
+        generic = {"sub", "clash", "link", "api", "subscribe", "get", "download", "upload", "feed"}
+        if last and last.lower() not in generic and not _is_token_like(last):
+            return _sanitize_provider_name(last)
+        host = urlparse(url).hostname
+        if host:
+            return _sanitize_provider_name(host)
+    except Exception:
+        pass
+    return "订阅"
+
 def edit_provider_add(name, url, interval=3600, ptype="http"):
-    """Insert/replace a proxy-provider entry in config.yaml text. No restart."""
+    """Insert/replace a proxy-provider entry in config.yaml text. No restart.
+    名称缺省时自动探测订阅真实名称（对齐 clash-verge-rev），探测失败回退域名。
+    同时应用订阅响应头里下发的更新间隔（profile-update-interval）。"""
+    meta = {}
+    if not name or not name.strip():
+        meta = probe_subscription_meta(url)
+        derived = meta.get("name") or fallback_provider_name(url)
+        name = derived
     ok, key = _valid_provider_name(name)
     if not ok:
         return {"success": False, "error": key}
@@ -808,6 +969,21 @@ def edit_provider_add(name, url, interval=3600, ptype="http"):
             interval = 3600
     except Exception:
         interval = 3600
+    # 响应头 profile-update-interval 下发的更新间隔优先（仅在未显式传有效间隔时）
+    if not meta:
+        meta = probe_subscription_meta(url)
+    if meta.get("updateInterval") and meta["updateInterval"] > 0 and interval == 3600:
+        interval = int(meta["updateInterval"])
+    # 持久化订阅元数据（官网 home / 更新间隔），供订阅卡片显示「官网」跳转
+    if meta.get("home") or meta.get("updateInterval"):
+        all_meta = load_sub_meta()
+        entry = all_meta.get(key, {})
+        if meta.get("home"):
+            entry["home"] = meta["home"]
+        if meta.get("updateInterval"):
+            entry["updateInterval"] = meta["updateInterval"]
+        all_meta[key] = entry
+        save_sub_meta(all_meta)
     block = _provider_block(key, url, interval, ptype)
     content = read_config()
     # 1) proxy-providers: {}  → 展开为块
@@ -903,10 +1079,20 @@ def _http_get(url, timeout=20):
 # （merge 增强——用户本地偏好覆盖订阅，节点/规则保留）
 
 
+def _real_engine_bin():
+    """Resolve the arch-specific REAL engine binary. The bin/mihomo wrapper is
+    now the panel daemon (execs admin_server.py), so CLI invocations like
+    `mihomo -t` / `mihomo update geodata` must run against the real binary."""
+    m = (os.uname().machine or "").lower()
+    if m in ("x86_64", "amd64"):
+        return f"{TRIM_APPDEST}/bin/mihomo-amd64.real"
+    return f"{TRIM_APPDEST}/bin/mihomo-arm64.real"
+
+
 def _test_config(path):
     """mihomo -t 校验配置；返回 (ok, msg)。"""
     try:
-        r = subprocess.run([MIHOMO_BIN, "-t", "-d", TRIM_PKGVAR, "-f", path],
+        r = subprocess.run([_real_engine_bin(), "-t", "-d", TRIM_PKGVAR, "-f", path],
                            capture_output=True, text=True, timeout=30)
         if r.returncode == 0:
             return True, "配置校验通过"
@@ -923,16 +1109,159 @@ _PROXY_GET_LOCK = threading.Lock()
 
 def get_ip_info():
     """公网 IP 信息，带 300s 内存缓存（首页每次加载都调用，避免每次外网查询拖慢页面）。
-    多个服务并发请求、最快成功者胜出，单服务 3s 超时。"""
+    多个服务并发请求、最快成功者胜出，单服务 3s 超时。
+    IPv6 出口单独走 60s 短缓存（_get_ipv6_info），不随 IPv4 数据缓存 300s：
+    否则服务刚启动/引擎未就绪时的一次失败回退（本机地址）会锁 5 分钟，
+    用户会误以为 TUN 没有走代理。"""
     now = int(time.time())
     if _IPINFO_CACHE["data"] is not None and now - _IPINFO_CACHE["t"] < 300:
-        return _IPINFO_CACHE["data"]
-    data = _get_ipinfo_uncached()
-    # 查询成功(拿到真实 ip)才缓存
+        data = dict(_IPINFO_CACHE["data"])
+    else:
+        data = _get_ipinfo_uncached()
+        # 查询成功(拿到真实 ip)才缓存
+        if data and data.get("ip") and data["ip"] != "-":
+            _IPINFO_CACHE["t"] = now
+            _IPINFO_CACHE["data"] = dict(data)
     if data and data.get("ip") and data["ip"] != "-":
-        _IPINFO_CACHE["t"] = now
-        _IPINFO_CACHE["data"] = data
+        v6, geo6 = _get_ipv6_info()
+        if v6:
+            data["ipv6"] = v6
+            if geo6:
+                data["ipv6_countryCode"] = geo6.get("countryCode") or ""
+                loc = " · ".join([geo6.get("region") or "", geo6.get("city") or ""]).strip(" ·")
+                data["ipv6_location"] = loc or geo6.get("country") or ""
+        else:
+            data["ipv6"] = ""
     return data
+
+_IPV6_CACHE = {"t": 0, "addr": "", "geo": None}
+
+def _get_ipv6_info():
+    """IPv6 exit address + geo with a short 60s cache. A failed lookup is NOT
+    cached so the next page refresh retries it."""
+    now = int(time.time())
+    if _IPV6_CACHE["addr"] and now - _IPV6_CACHE["t"] < 60:
+        return _IPV6_CACHE["addr"], _IPV6_CACHE["geo"]
+    addr = _get_ipv6_exit()
+    if not addr:
+        return "", None
+    geo = _get_ipv6_geo(addr)
+    _IPV6_CACHE["t"] = now
+    _IPV6_CACHE["addr"] = addr
+    _IPV6_CACHE["geo"] = geo
+    return addr, geo
+
+def _get_ipv6_geo(addr):
+    """Best effort country/region/city for an IPv6 address (ip-api.com, v6
+    supported, no key). Returns None when the lookup fails."""
+    import urllib.request as _ureq
+    try:
+        url = ("http://ip-api.com/json/" + addr +
+               "?lang=zh-CN&fields=status,country,countryCode,regionName,city")
+        req = _ureq.Request(url, headers={"User-Agent": "curl/8"})
+        with _ureq.urlopen(req, timeout=3) as resp:
+            d = json.loads(resp.read().decode("utf-8", "replace"))
+        if d.get("status") != "success":
+            return None
+        return {
+            "country": d.get("country") or "",
+            "countryCode": (d.get("countryCode") or "").upper(),
+            "region": d.get("regionName") or "",
+            "city": d.get("city") or "",
+        }
+    except Exception:
+        return None
+
+def _local_global_ipv6s():
+    """Set of the NAS's own global IPv6 addresses (used to reject direct-exit
+    echo results that did not go through the proxy)."""
+    addrs = set()
+    try:
+        out = subprocess.run(["/usr/sbin/ip", "-6", "addr", "show", "scope", "global"],
+                             capture_output=True, text=True, timeout=3)
+        for line in out.stdout.splitlines():
+            m = re.search(r"\binet6\s+([0-9a-fA-F:]+)/\d+", line)
+            if m and ":" in m.group(1):
+                addrs.add(m.group(1).lower())
+    except Exception:
+        pass
+    return addrs
+
+def _get_ipv6_exit():
+    """Public IPv6 exit address. Uses AF_INET6 sockets (urllib would resolve to
+    an IPv4 address first and echo the node's IPv4 instead), querying echo
+    services that are matched by the proxy rules (ipify) concurrently. Results
+    equal to the NAS's own global IPv6 are rejected — they mean the request
+    went DIRECT and would show the local address instead of the proxy exit.
+    Falls back to the local global IPv6 only when every proxy query fails.
+    Returns '' when IPv6 is unsupported."""
+    import ipaddress
+    import socket as _sock
+    import ssl as _ssl
+    import concurrent.futures as _cf
+
+    local_addrs = _local_global_ipv6s()
+
+    def _try_v6(host, port=443):
+        infos = _sock.getaddrinfo(host, port, _sock.AF_INET6, _sock.SOCK_STREAM)
+        if not infos:
+            raise ValueError("no AAAA record")
+        s = _sock.socket(_sock.AF_INET6, _sock.SOCK_STREAM)
+        s.settimeout(6)
+        try:
+            s.connect(infos[0][4])
+            ctx = _ssl.create_default_context()
+            ctx.check_hostname = False
+            ctx.verify_mode = _ssl.CERT_NONE
+            with ctx.wrap_socket(s, server_hostname=host) as ss:
+                ss.sendall(("GET / HTTP/1.1\r\nHost: %s\r\nUser-Agent: curl/8\r\n"
+                            "Accept: */*\r\nConnection: close\r\n\r\n" % host).encode())
+                chunks = []
+                while True:
+                    d = ss.recv(4096)
+                    if not d:
+                        break
+                    chunks.append(d)
+            body = b"".join(chunks).split(b"\r\n\r\n", 1)[-1].decode("utf-8", "replace").strip()
+            v6 = ipaddress.IPv6Address(body)
+            if v6.exploded.lower() in local_addrs:
+                raise ValueError("direct exit (local address)")
+            return v6.compressed
+        finally:
+            try:
+                s.close()
+            except Exception:
+                pass
+
+    # These domains are matched by the Proxy ruleset, so the connection goes
+    # through Mihomo and echoes the node's IPv6 exit. icanhazip is excluded:
+    # it is NOT in the proxy ruleset, falls into the catch-all group and often
+    # goes DIRECT (echoing the NAS's own address).
+    services = ("api64.ipify.org", "api6.ipify.org")
+    try:
+        with _cf.ThreadPoolExecutor(max_workers=len(services)) as ex:
+            futs = [ex.submit(_try_v6, u) for u in services]
+            for fut in _cf.as_completed(futs):
+                try:
+                    v = fut.result()
+                    if v:
+                        return v
+                except Exception:
+                    continue
+    except Exception:
+        pass
+    try:
+        out = subprocess.run(["/usr/sbin/ip", "-6", "addr", "show", "scope", "global"],
+                             capture_output=True, text=True, timeout=3)
+        for line in out.stdout.splitlines():
+            m = re.search(r"\binet6\s+([0-9a-fA-F:]+)/\d+", line)
+            if m:
+                addr = m.group(1)
+                if ":" in addr and not addr.startswith("fe80"):
+                    return addr
+    except Exception:
+        pass
+    return ""
 
 def _get_ipinfo_uncached():
     """Query the public exit IP via external APIs (best effort).
@@ -1170,6 +1499,18 @@ class AdminHandler(BaseHTTPRequestHandler):
         except FileNotFoundError:
             self.send_error(404)
 
+    def _send_text(self, text, content_type="text/plain"):
+        """直接发送内存中的文本内容（不落盘）。"""
+        data = text.encode("utf-8")
+        self.send_response(200)
+        self.send_header("Content-Type", content_type + "; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache, no-store, must-revalidate")
+        self.send_header("Pragma", "no-cache")
+        self.send_header("Expires", "0")
+        self.send_header("Content-Length", str(len(data)))
+        self.end_headers()
+        self.wfile.write(data)
+
     def _send_icon(self, path, content_type="image/png"):
         try:
             with open(path, "rb") as f:
@@ -1387,6 +1728,10 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_file(f"{DASHBOARD_DIR}/{sub}/index.html", "text/html")
             if path.startswith(f"/{sub}/"):
                 rel = path[len(f"/{sub}/"):]
+                # metacubexd 的 config.js 动态返回同源后端配置（不读磁盘、不写磁盘），
+                # 面板升级完全替换目录后依然生效。
+                if sub == "metacubexd" and rel == "config.js":
+                    return self._send_text(_metacubexd_config_content(), "application/javascript")
                 target = f"{DASHBOARD_DIR}/{sub}/{rel}"
                 if os.path.exists(target) and os.path.isfile(target):
                     ext = os.path.splitext(target)[1].lower()
@@ -1456,6 +1801,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             ipv6_available = _global_ipv6_available()
             return self._send_json({"running": running, "pid": pid,
                                     "control_port": MIHOMO_CTRL_PORT,
+                                    "remembered_on": _read_service_state(),
                                     "tun_enabled": tun_enabled,
                                     "ipv6_available": ipv6_available,
                                     "ipv6_udp_blocked": bool(running and ipv6_available and not tun_enabled)})
@@ -1464,6 +1810,11 @@ class AdminHandler(BaseHTTPRequestHandler):
         if path == "/api/proxy-providers":
             yaml_text = read_config()
             providers = extract_proxy_providers(yaml_text)
+            # 合并订阅元数据（官网 home 等响应头信息）
+            meta = load_sub_meta()
+            for name, m in meta.items():
+                if name in providers and isinstance(providers[name], dict) and m.get("home"):
+                    providers[name]["home"] = m["home"]
             return self._send_json({"providers": providers})
         if path == "/api/providers-live":
             # 订阅页只需要节点数/更新时间/类型，不要把完整 8MB 节点列表发给浏览器。
@@ -1476,11 +1827,21 @@ class AdminHandler(BaseHTTPRequestHandler):
                     raw = json.loads(resp.read())
                 compact = {}
                 for name, item in (raw.get("providers") or {}).items():
-                    compact[name] = {
+                    si = item.get("subscriptionInfo") or {}
+                    entry = {
                         "count": len(item.get("proxies") or []),
                         "updatedAt": item.get("updatedAt", ""),
                         "vehicleType": item.get("vehicleType", "")
                     }
+                    # 流量用量 + 到期（subscription-userinfo 响应头，mihomo 已解析）
+                    if si:
+                        entry["subInfo"] = {
+                            "upload": si.get("Upload", 0) or 0,
+                            "download": si.get("Download", 0) or 0,
+                            "total": si.get("Total", 0) or 0,
+                            "expire": si.get("Expire", 0) or 0
+                        }
+                    compact[name] = entry
                 return self._send_json({"providers": compact})
             except Exception as e:
                 return self._send_json({"providers": {}, "error": str(e)}, 502)
@@ -1723,6 +2084,8 @@ class AdminHandler(BaseHTTPRequestHandler):
                     ok = stop_service()
                 if not ok:
                     return self._send_json({"success": False, "error": "操作失败"}, 500)
+                # persist the user's choice; restored next time the panel daemon starts
+                _write_service_state(enable)
                 return self._send_json({"success": True, "message": "服务已" + ("启动" if enable else "停止")})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
@@ -1758,7 +2121,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         if path == "/api/update-geo":
             try:
                 import subprocess
-                cmd = [MIHOMO_BIN, "-d", TRIM_PKGVAR, "update", "geodata"]
+                cmd = [_real_engine_bin(), "-d", TRIM_PKGVAR, "update", "geodata"]
                 r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
                 if r.returncode == 0:
                     return self._send_json({"success": True, "message": "GEO 数据已更新"})
@@ -1856,9 +2219,32 @@ class AdminHandler(BaseHTTPRequestHandler):
                 url = data.get("url", "")
                 interval = data.get("interval", 3600)
                 ptype = data.get("type", "http")
+                home = (data.get("home") or "").strip()
+                old_name = (data.get("old_name") or "").strip()
+                # 重命名：先按旧名称删除原块，再按新名称写入（一次重启生效）
+                if old_name and old_name != name.strip():
+                    del_result = edit_provider_delete(old_name)
+                    if not del_result.get("success") and "未找到" not in del_result.get("error", ""):
+                        return self._send_json(del_result, 400)
                 result = edit_provider_add(name, url, interval, ptype)
                 if not result.get("success"):
                     return self._send_json(result, 400)
+                # 持久化官网地址：用户填了就存（覆盖自动探测），清空则删除
+                final_name = (name or "").strip()
+                if final_name:
+                    all_meta = load_sub_meta()
+                    if home:
+                        entry = all_meta.get(final_name, {})
+                        entry["home"] = home
+                        all_meta[final_name] = entry
+                    elif "home" in data:  # 明确的空值 → 用户清空官网
+                        entry = all_meta.get(final_name, {})
+                        entry.pop("home", None)
+                        if entry:
+                            all_meta[final_name] = entry
+                        else:
+                            all_meta.pop(final_name, None)
+                    save_sub_meta(all_meta)
                 queued = request_provider_restart()
                 result["restarting"] = queued
                 result["message"] = result.get("message", "订阅已保存") + ("，内核正在后台重启" if queued else "，内核已在重启队列中")
@@ -1875,6 +2261,26 @@ class AdminHandler(BaseHTTPRequestHandler):
                 result["restarting"] = queued
                 result["message"] = result.get("message", "订阅已删除") + ("，内核正在后台重启" if queued else "，内核已在重启队列中")
                 return self._send_json(result)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/providers/probe-name":
+            try:
+                data = json.loads(body) if body else {}
+                url = data.get("url", "")
+                name = data.get("name", "")  # 可选：关联的订阅名，用于持久化官网
+                if not url or not url.startswith(("http://", "https://")):
+                    return self._send_json({"success": False, "error": "无效的订阅链接"}, 400)
+                meta = probe_subscription_meta(url)
+                meta["name"] = meta.get("name") or fallback_provider_name(url)
+                meta["success"] = True
+                # 持久化官网地址（前端「刷新名称」时也能补全 home）
+                if name and meta.get("home"):
+                    all_meta = load_sub_meta()
+                    entry = all_meta.get(name, {})
+                    entry["home"] = meta["home"]
+                    all_meta[name] = entry
+                    save_sub_meta(all_meta)
+                return self._send_json(meta)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/config":
@@ -2005,6 +2411,24 @@ def start_unix_socket_server():
         log(f"WARNING: Unix socket gateway disabled: {e}")
         return None
 
+def _auto_restore_service():
+    """Restore the last saved engine state when the panel daemon starts."""
+    if not _read_service_state():
+        log("service.state=off, engine stays stopped")
+        return
+    log("service.state=on, restoring engine")
+    try:
+        running, _ = is_running()
+        if running:
+            return
+        res = start_service()
+        if res.get("success"):
+            log("engine restored on startup")
+        else:
+            log("engine restore failed: " + str(res.get("error", "")))
+    except Exception as e:
+        log("engine restore error: " + str(e))
+
 def main():
     log(f"Starting fnSoar Admin Server")
     log(f"  HTTP port : {ADMIN_PORT}")
@@ -2023,14 +2447,24 @@ def main():
     httpd = ThreadedHTTPServer(("0.0.0.0", ADMIN_PORT), AdminHandler)
     log(f"HTTP admin panel: http://0.0.0.0:{ADMIN_PORT}")
 
-    # Graceful shutdown.
+    # Restore the last saved engine state (on/off) in the background so the
+    # HTTP panel becomes available immediately.
+    threading.Thread(target=_auto_restore_service, daemon=True).start()
+
+    # Graceful shutdown: stop the engine first, then exit. The fnOS daemon is
+    # this admin process, so stopping the app must not orphan the engine.
     # NOTE: httpd.shutdown() must NOT be called from the main thread — the
     # handler runs in the same thread that is blocked in serve_forever(), so
     # a direct call deadlocks forever and the process ignores SIGTERM. That
     # left orphaned admin servers holding port 9099 ("端口占用" on the next
     # install). Run shutdown in a helper thread and force-exit.
     def shutdown_handler(sig, frame):
-        log("Shutting down...")
+        log("Shutting down: stopping engine first...")
+        try:
+            stop_service()
+        except Exception as e:
+            log("stop engine on shutdown failed: " + str(e))
+        log("Shutting down admin server...")
         try:
             threading.Thread(target=httpd.shutdown, daemon=True).start()
         except Exception:

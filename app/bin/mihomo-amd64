@@ -1,70 +1,34 @@
 #!/bin/bash
 # ---------------------------------------------------------------------------
-# fnSoar amd64 wrapper
-# fnOS launches this binary directly (it never calls cmd/main), so this
-# wrapper is the ONLY guaranteed hook to also bring up the admin panel
-# server. It starts admin_server.py in the background, then execs the
-# real engine binary so the PID stays valid for fnOS's process tracking.
+# fnSoar amd64 panel daemon (fnOS service entry)
 #
-# Idempotency: if the admin port (9099) or the engine API port (9090) is
-# already listening we do NOT start a duplicate. A second engine cannot
-# bind 9090/7890/TUN and leaves the ports stuck ("端口占用") while the
-# desktop panel appears to crash — this is the exact failure loop that
-# happened when the icon was clicked while the service was already up.
+# fnOS launches bin/mihomo (architecture wrapper) as the app daemon. The
+# engine is NOT started here anymore: this wrapper runs the admin panel
+# server in the FOREGROUND so fnOS tracks THIS PID. The mihomo engine is a
+# child process managed by the admin server according to service.state.
+#
+# Behavioral change (v1.0.68+):
+#   - opening the app only brings up the panel; the engine starts only if the
+#     last saved service state is ON (dedicated 'fnsoar' UID + nftables rules
+#     for host-transparent mode are applied by bin/engine-start).
+#   - stopping the service in the panel no longer kills the fnOS daemon, so
+#     the desktop window stays open.
 # ---------------------------------------------------------------------------
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 APP_ROOT="$(dirname "$SCRIPT_DIR")"
-# Precedence mirrors admin_server.py: explicit MIHOMO_* vars first, then the
-# fnOS-provided TRIM_* vars, then sane defaults.
+ADMIN_SERVER="${APP_ROOT}/admin/admin_server.py"
+
+# Path precedence mirrors admin_server.py: explicit MIHOMO_* vars first, then
+# the fnOS-provided TRIM_* vars, then sane defaults.
 DEST_DIR="${MIHOMO_DEST_DIR:-${TRIM_APPDEST:-${APP_ROOT}}}"
 DATA_DIR="${MIHOMO_DATA_DIR:-${TRIM_PKGVAR:-/vol1/@appdata/fnnas.fnsoar}}"
-ADMIN_PORT="${MIHOMO_ADMIN_PORT:-9099}"
-ENGINE_PORT="${MIHOMO_ENGINE_PORT:-9090}"
+export MIHOMO_APP_NAME="${MIHOMO_APP_NAME:-fnnas.fnsoar}"
+export MIHOMO_DATA_DIR="${DATA_DIR}"
+export MIHOMO_DEST_DIR="${DEST_DIR}"
+export MIHOMO_ADMIN_PORT="${MIHOMO_ADMIN_PORT:-9099}"
+export MIHOMO_CTRL_PORT="${MIHOMO_CTRL_PORT:-9090}"
+export MIHOMO_GATEWAY_SOCK="${MIHOMO_GATEWAY_SOCK:-${DEST_DIR}/fnsoar.sock}"
 
-ADMIN_SERVER="${APP_ROOT}/admin/admin_server.py"
-if [ -f "$ADMIN_SERVER" ]; then
-    # Skip if an admin server is already listening on the port
-    if ! (exec 3<>/dev/tcp/127.0.0.1/${ADMIN_PORT}) 2>/dev/null; then
-        MIHOMO_APP_NAME="fnnas.fnsoar" \
-        MIHOMO_DATA_DIR="${DATA_DIR}" \
-        MIHOMO_DEST_DIR="${DEST_DIR}" \
-        MIHOMO_ADMIN_PORT="${ADMIN_PORT}" \
-        MIHOMO_GATEWAY_SOCK="${DEST_DIR}/fnsoar.sock" \
-        nohup python3 "$ADMIN_SERVER" >> "${DATA_DIR}/admin.log" 2>&1 &
-    fi
-fi
-
-# If the engine is already listening, a duplicate exec would fail to bind
-# 9090/7890/TUN — leave the running engine alone and exit cleanly. Also
-# record the existing engine's PID so fnOS's cmd/common status/stop can
-# track it (otherwise the PID file stays missing and fnOS reports the app
-# as "not running" while the engine actually holds the ports).
-if (exec 3<>/dev/tcp/127.0.0.1/${ENGINE_PORT}) 2>/dev/null; then
-    echo "[wrapper] mihomo engine already running on :${ENGINE_PORT}, skipping duplicate start" >> "${DATA_DIR}/admin.log"
-    EXISTING_PID="$(pgrep -f 'mihomo-(amd64|arm64)\.real -d' 2>/dev/null | head -1)"
-    if [ -n "${EXISTING_PID}" ] && [ -d "${DATA_DIR}" ]; then
-        echo "${EXISTING_PID}" > "${DATA_DIR}/${MIHOMO_APP_NAME:-fnnas.fnsoar}.pid"
-    fi
-    exit 0
-fi
-
-# Record our PID before exec so fnOS's cmd/common stop/status (which reads
-# $TRIM_PKGVAR/${MIHOMO_APP_NAME:-fnnas.fnsoar}.pid) can track the engine even when fnOS launched
-# this wrapper directly instead of via cmd/main. $$ stays the same across
-# exec, so this is the engine's real PID.
-if [ -n "${DATA_DIR}" ] && [ -d "${DATA_DIR}" ]; then
-    echo $$ > "${DATA_DIR}/${MIHOMO_APP_NAME:-fnnas.fnsoar}.pid"
-fi
-
-# Host REDIRECT mode uses a dedicated UID so iptables can exclude Mihomo's
-# own upstream connections without excluding every root process on the NAS.
-if [ -f "${DATA_DIR}/config.yaml" ] && (grep -q '^host-transparent:[[:space:]]*true' "${DATA_DIR}/config.yaml" || ! grep -q '^host-transparent:' "${DATA_DIR}/config.yaml") \
-   && grep -A3 '^tun:' "${DATA_DIR}/config.yaml" | grep -q 'enable:[[:space:]]*false' \
-   && id fnsoar >/dev/null 2>&1; then
-    grep -q '^redir-port:' "${DATA_DIR}/config.yaml" || sed -i '/^mixed-port:/a redir-port: 7892' "${DATA_DIR}/config.yaml"
-    [ -x "${APP_ROOT}/admin/host_transparent.sh" ] && FNSOAR_REDIR_PORT=7892 "${APP_ROOT}/admin/host_transparent.sh" apply || exit 1
-    # TUN and TProxy need CAP_NET_ADMIN; preserve only this capability while
-    # running the engine as the dedicated UID for firewall loop prevention.
-    exec setpriv --reuid=fnsoar --regid=fnsoar --init-groups --inh-caps=+net_admin --ambient-caps=+net_admin -- "${SCRIPT_DIR}/mihomo-amd64.real" "$@"
-fi
-exec "${SCRIPT_DIR}/mihomo-amd64.real" "$@"
+[ -f "$ADMIN_SERVER" ] || { echo "admin server missing: $ADMIN_SERVER" >&2; exit 1; }
+# fnOS passes "-d <dir>"; the admin server derives paths from env instead.
+exec python3 "$ADMIN_SERVER" "$@"

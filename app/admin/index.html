@@ -66,8 +66,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar.collapsed{width:56px}
 .sidebar.hidden{display:none}
 @media(min-width:861px){.sidebar.hidden{display:flex}}
-@media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:200px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
-.sidebar-hidden-toggle{display:none;position:fixed;z-index:200;width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);align-items:center;justify-content:center;cursor:grab;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);user-select:none;touch-action:none}
+@media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important;position:fixed!important;left:0;top:0;bottom:0;height:100%;z-index:150!important;box-shadow:2px 0 16px rgba(0,0,0,.3)}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:200px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
+.sidebar-hidden-toggle{display:none;position:fixed;z-index:140;width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);align-items:center;justify-content:center;cursor:grab;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);user-select:none;touch-action:none}
 @media(max-width:860px){.sidebar-hidden-toggle{display:flex}}
 .sidebar.collapsed .sidebar-header{padding:14px 0 10px;justify-content:center}
 .sidebar.collapsed .sidebar-header>div{display:none}
@@ -258,6 +258,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .ip-field:first-of-type{border-top:none}
 .ipf-label{color:var(--dim);min-width:52px;flex-shrink:0}
 .ipf-val{color:var(--text);font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ip-field .ip-flag{margin-right:6px}
+.ipf-sub{color:var(--dim);margin-left:6px;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ip-eye{background:none;border:none;cursor:pointer;padding:2px;color:var(--dim);flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;margin-left:6px;vertical-align:middle;transition:color .15s}
+.ip-eye svg{width:15px;height:15px;display:block}
+.ip-eye:hover{color:var(--text)}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0}
 .info-item{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;min-width:0;overflow:hidden}
 .i-label{font-size:11px;color:var(--dim);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -593,6 +598,18 @@ tbody tr:hover{background:var(--card2)}
 .vcfg-row input[type=number]{width:110px}
 .vcfg-row textarea{background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;resize:vertical;width:220px}
 .vcfg-row textarea:focus{border-color:var(--accent)}
+/* ── 自定义数字步进按钮（配置页 number 输入） ────────── */
+.vcfg-row input[type=number]{-moz-appearance:textfield;appearance:none}
+.vcfg-row input[type=number]::-webkit-inner-spin-button,
+.vcfg-row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.num-spin{position:relative;display:inline-flex;align-items:center;width:132px;flex-shrink:0}
+.num-spin input[type=number]{width:100%;padding-right:46px;text-align:left;font-variant-numeric:tabular-nums}
+.num-spin-btns{position:absolute;top:1px;right:1px;bottom:1px;display:flex;flex-direction:column;width:24px;overflow:hidden;border-bottom-right-radius:6px}
+.num-spin-btns button{flex:1;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-left:1px solid var(--border);color:var(--dim);padding:0;margin:0;cursor:pointer;line-height:0;transition:color .12s,background .12s}
+.num-spin-btns button:first-child{border-bottom:1px solid var(--border)}
+.num-spin-btns button:hover{color:var(--accent);background:rgba(78,110,242,.09)}
+.num-spin-btns button:active{background:rgba(78,110,242,.18)}
+.num-spin-btns button svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
 .pg-check{display:flex;align-items:center;gap:6px;padding:6px 12px;border-radius:18px;background:var(--card2);border:1px solid transparent;cursor:pointer;font-size:12.5px;color:var(--text);transition:all .12s;user-select:none}
 .pg-check:hover{border-color:var(--border)}
 .pg-check.on{background:var(--accent);color:#fff;border-color:var(--accent)}
@@ -631,6 +648,16 @@ tbody tr:hover{background:var(--card2)}
 .prov-edit:hover{background:rgba(78,110,242,.18);color:var(--accent)}
 .prov-del{background:transparent;color:var(--dim);margin-left:auto}
 .prov-del:hover{background:rgba(248,81,73,.16);color:var(--red)}
+.prov-traffic{display:flex;flex-direction:column;gap:5px}
+.prov-traffic-line{display:flex;align-items:center;justify-content:space-between;font-size:11px;color:var(--dim);gap:8px;flex-wrap:wrap}
+.prov-traffic-line .prov-traffic-val{color:var(--text);font-weight:600}
+.prov-traffic-bar{height:6px;border-radius:4px;background:var(--card2);overflow:hidden;position:relative}
+.prov-traffic-bar i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:4px;transition:width .3s}
+.prov-traffic-bar i.warn{background:linear-gradient(90deg,#f59e0b,#f97316)}
+.prov-traffic-bar i.over{background:linear-gradient(90deg,#f87171,#dc2626)}
+.prov-home{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);cursor:pointer;text-decoration:none;font-weight:600}
+.prov-home:hover{text-decoration:underline}
+.prov-home svg{width:12px;height:12px;fill:currentColor}
 .prov-empty{grid-column:1/-1;background:var(--card);border:1px dashed var(--border);border-radius:var(--radius);padding:38px;text-align:center;color:var(--faint)}
 .prov-empty p{margin:8px 0 0;font-size:13px}
 .prov-empty .btn{margin-top:16px}
@@ -652,7 +679,9 @@ tbody tr:hover{background:var(--card2)}
 }
 
 /* ── 面板 iframe（占满右侧，无顶部按钮条） ───── */
-.section-webui{position:fixed;top:0;right:0;bottom:0;left:232px;background:var(--bg);z-index:10}
+/* left 跟随侧栏折叠状态：展开=232px（201px 侧栏右缘 + 31px 呼吸空隙），折叠=88px（57px 右缘 + 同样的 31px），由 syncWebuiLeft() 切换 */
+.section-webui{position:fixed;top:0;right:0;bottom:0;left:232px;background:var(--bg);z-index:10;transition:left .2s ease}
+.section-webui.webui-narrow{left:88px}
 .section-webui iframe{width:100%;height:100%;border:none;background:var(--bg)}
 
 /* ── 测试页（解锁检测） ──────────── */
@@ -699,7 +728,7 @@ tbody tr:hover{background:var(--card2)}
   .nav .group-label{display:none}
   .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}
   .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}
-  .section-webui{left:0}
+  .section-webui,.section-webui.webui-narrow{left:0}
   .main{padding:16px}
 }
 
@@ -878,7 +907,8 @@ tbody tr:hover{background:var(--card2)}
             <span class="flex-sp"></span>
             <button class="mini-btn mini-btn-ic" onclick="loadIpInfo()" title="刷新" aria-label="刷新"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg></button>
           </div>
-          <div class="ip-big"><span class="ip-flag" id="ipFlag">🌐</span><span id="ipAddr">-</span></div>
+          <div class="ip-big"><span class="ip-flag" id="ipFlag">🌐</span><span id="ipAddr">••••••</span><button class="ip-eye" id="ipEye" onclick="toggleIpEye('ipAddr','ipEye')" title="显示/隐藏 IP" aria-label="显示/隐藏 IP"></button></div>
+          <div class="ip-field" id="ipv6Row" style="display:none"><span class="ipf-label">IPv6</span><span class="ipf-val"><span class="ip-flag" id="ipv6Flag" style="font-size:15px">🌐</span><span id="ipAddr6">••••••</span><button class="ip-eye" id="ipEye6" onclick="toggleIpEye('ipAddr6','ipEye6')" title="显示/隐藏 IPv6" aria-label="显示/隐藏 IPv6"></button><span class="ipf-sub" id="ipv6Loc"></span></span></div>
           <div class="ip-field"><span class="ipf-label">自治域</span><span class="ipf-val" id="ipAsn">N/A</span></div>
           <div class="ip-field"><span class="ipf-label">服务商</span><span class="ipf-val" id="ipIsp">Unknown</span></div>
           <div class="ip-field"><span class="ipf-label">组织</span><span class="ipf-val" id="ipOrg">Unknown</span></div>
@@ -990,11 +1020,13 @@ tbody tr:hover{background:var(--card2)}
           <div class="modal-title" id="provModalTitle">添加订阅</div>
           <div class="modal-body">
             <label class="flabel">订阅名称</label>
-            <input type="text" id="provName" placeholder="如: 我的机场" class="finput">
+            <div style="display:flex;gap:8px"><input type="text" id="provName" placeholder="如: 我的机场" class="finput" style="flex:1"><button class="btn btn-ghost" onclick="refreshProvName()" style="white-space:nowrap;font-size:12px;padding:0 8px" title="从订阅链接探测真实名称">刷新名称</button></div>
             <label class="flabel">订阅链接 URL</label>
             <input type="text" id="provUrl" placeholder="https:// 或 http:// 开头的订阅地址" class="finput">
             <label class="flabel">更新间隔（秒）</label>
             <input type="number" id="provInterval" value="3600" placeholder="3600" class="finput">
+            <label class="flabel">官网地址（选填）</label>
+            <input type="text" id="provHomeInput" placeholder="https:// 官网地址，留空则自动探测" class="finput">
           </div>
           <div class="modal-foot">
             <button class="btn btn-ghost" onclick="closeProvModal()">取消</button>
@@ -1341,10 +1373,6 @@ tbody tr:hover{background:var(--card2)}
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.showIcons">显示图标</span></div>
               <label class="toggle"><input type="checkbox" id="setShowIcons" checked onchange="saveBasicSetting('show_icons')"><span class="toggle-track"></span></label>
             </div>
-            <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.autoLoad">打开应用时自动加载配置</span></div>
-              <label class="toggle"><input type="checkbox" id="setAutoLoad" checked onchange="saveBasicSetting('auto_load')"><span class="toggle-track"></span></label>
-            </div>
           </div>
           <div class="set-card">
             <div class="set-title" data-i18n="settings.advanced">高级设置</div>
@@ -1462,6 +1490,14 @@ function showConfirm(msg, onOk, onCancel) {
 }
 
 // ── 侧边栏折叠 ────────────────────────────────
+// 面板 iframe（section-webui）是 fixed 定位，左边界必须跟随侧栏折叠状态，
+// 否则折叠侧栏后右侧面板不向左拉伸，中间会留出一大块空隙。
+function syncWebuiLeft() {
+  var webui = document.getElementById('section-webui');
+  if (!webui) return;
+  var sb = document.querySelector('.sidebar');
+  webui.classList.toggle('webui-narrow', !!(sb && sb.classList.contains('collapsed')));
+}
 function toggleSidebar() {
   var sb = document.querySelector('.sidebar');
   if (!sb) return;
@@ -1470,14 +1506,17 @@ function toggleSidebar() {
     sb.classList.toggle('expanded');
   } else {
     sb.classList.toggle('collapsed');
+    syncWebuiLeft();
   }
 }
 
 // 窄屏汉堡：单击显示窄栏，双击显示宽栏。
 var _hamburgerTimer = 0;
+var _hamburgerJustClicked = 0;
 function hamburgerClick() {
   var sb = document.querySelector('.sidebar');
   if (!sb || window.innerWidth > 860) return;
+  _hamburgerJustClicked = Date.now();
   if (_hamburgerTimer) {
     clearTimeout(_hamburgerTimer);
     _hamburgerTimer = 0;
@@ -1502,10 +1541,26 @@ function autoHideSidebar() {
   }
 }
 
+// 窄屏：点击侧栏外部区域（含面板 iframe）关闭侧栏，回到汉堡状态。
+function _handleOutsideTap(e) {
+  if (window.innerWidth > 860) return;
+  // 刚点过汉堡（双击展开 / 单击延迟展开）时跳过，防误关
+  if (Date.now() - _hamburgerJustClicked < 350) return;
+  var sb = document.querySelector('.sidebar');
+  if (!sb || !sb.classList.contains('mobile-visible')) return;
+  var target = e.target;
+  if (sb.contains(target)) return;
+  if (target && target.closest && target.closest('.sidebar-hidden-toggle')) return;
+  autoHideSidebar();
+}
+
 // ── 汉堡按钮拖拽 ─────────────────────────────
 function initHamburgerDrag() {
   var sb = document.querySelector('.sidebar');
   var btn = document.querySelector('.sidebar-hidden-toggle');
+  // 窄屏：点击侧栏外部（含面板 iframe）关闭侧栏。用 pointerdown 覆盖鼠标/触摸，
+  // 且 iframe 区域的按下事件会落到 iframe 元素上，父页面也能捕获。
+  document.addEventListener('pointerdown', _handleOutsideTap);
   if (sb) {
     // 所有侧栏操作按钮在窄屏下执行后都回到汉堡状态（导航、服务和 TUN 均适用）。
     sb.addEventListener('click', function(e) {
@@ -1585,13 +1640,35 @@ function showSection(name) {
 }
 
 // ── 面板（zashboard / metacubexd） ───────────
+function _gatewayPrefix() {
+  // fnOS gateway 前缀，形如 /app/fnnas.fnsoar（取 location.pathname 前两段）。
+  var m = location.pathname.match(/^(\/[^/]+\/[^/]+)/);
+  return m ? m[1] : '/app/fnnas.fnsoar';
+}
 function openPanel(name, title) {
   document.querySelectorAll('.section-webui, .main > section').forEach(s => s.style.display = 'none');
   document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
   const nav = document.getElementById('nav-' + name);
   if (nav) nav.classList.add('active');
   autoHideSidebar();
-  document.getElementById('webuiFrame').src = './' + name + '/';
+  const frame = document.getElementById('webuiFrame');
+  if (name === 'zashboard') {
+    // zashboard 默认后端是 http://127.0.0.1:9090，HTTPS 页面访问会被浏览器拦截
+    // （iOS Safari/WebView 最严格）。这里把后端指向面板自身的 gateway 地址（同源 HTTPS），
+    // Admin 服务已代理 /version、/proxies 等 Clash API。
+    const proto = location.protocol.replace(':', '');
+    const host = location.hostname;
+    const port = location.port || (proto === 'https' ? '443' : '80');
+    const gw = _gatewayPrefix();
+    const q = 'hostname=' + encodeURIComponent(host) +
+              '&port=' + encodeURIComponent(port) +
+              '&protocol=' + proto +
+              '&secondaryPath=' + encodeURIComponent(gw) +
+              '&disableUpgradeCore=1';
+    frame.src = './zashboard/#/setup?' + q;
+  } else {
+    frame.src = './' + name + '/';
+  }
   document.getElementById('section-webui').style.display = 'block';
   loadServiceStatus();  // 保持侧栏开关状态
 }
@@ -1845,6 +1922,41 @@ function csBuild(selectEl) {
   return wrap;
 }
 
+// ── 自定义数字步进器（配置页 number 输入） ──────────
+function initNumSteppers() {
+  document.querySelectorAll('.vcfg-row input[type="number"]').forEach(function(inp) {
+    if (inp.closest('.num-spin')) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'num-spin';
+    inp.parentNode.insertBefore(wrap, inp);
+    wrap.appendChild(inp);
+    var btns = document.createElement('span');
+    btns.className = 'num-spin-btns';
+    btns.innerHTML =
+      '<button type="button" tabindex="-1" aria-label="增加"><svg viewBox="0 0 24 24"><polyline points="6 15 12 9 18 15"></polyline></svg></button>' +
+      '<button type="button" tabindex="-1" aria-label="减少"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg></button>';
+    wrap.appendChild(btns);
+    var btnsEls = btns.querySelectorAll('button');
+    btnsEls[0].addEventListener('mousedown', function(e){ e.preventDefault(); });
+    btnsEls[0].addEventListener('click', function(e){ e.preventDefault(); stepNum(inp, 1); });
+    btnsEls[1].addEventListener('mousedown', function(e){ e.preventDefault(); });
+    btnsEls[1].addEventListener('click', function(e){ e.preventDefault(); stepNum(inp, -1); });
+  });
+}
+function stepNum(inp, dir) {
+  var min = (inp.min !== '' && !isNaN(parseFloat(inp.min))) ? parseFloat(inp.min) : -Infinity;
+  var max = (inp.max !== '' && !isNaN(parseFloat(inp.max))) ? parseFloat(inp.max) : Infinity;
+  var step = (inp.step && inp.step !== 'any' && !isNaN(parseFloat(inp.step))) ? parseFloat(inp.step) : 1;
+  var cur = parseFloat(inp.value);
+  if (isNaN(cur)) cur = 0;
+  var next = cur + step * dir;
+  if (next > max) next = max;
+  if (next < min) next = min;
+  if (next === cur) return;
+  inp.value = next;
+  inp.dispatchEvent(new Event('change', {bubbles: true}));
+}
+
 // Auto-init custom selects on all .sel-row select and .set-select
 function csInitAll() {
   document.querySelectorAll('select:not([data-cs-skip])').forEach(function(sel) {
@@ -1863,6 +1975,7 @@ function csInitAll() {
     var s = document.getElementById(id);
     if (s && !s._csInited) { s._csInited = true; csBuild(s); }
   });
+  initNumSteppers();
 }
 document.addEventListener('DOMContentLoaded', csInitAll);
 // Also init on page switch
@@ -2032,9 +2145,10 @@ function toggleService() {
     }).catch(() => { loadServiceStatus(); showToast('请求失败', 'error'); });
 }
 
-// ── 打开应用时自动加载配置 ───────────────────
-// 若引擎未运行则自动启动（可在 设置-基础设置 中关闭），
-// 保证重装/重启后 策略组 打开即可见，无需手动去配置页点击加载。
+// ── 服务状态恢复 ─────────────────────────────
+// 引擎是否运行由后端按 service.state 记忆（首次安装默认关闭）。
+// 面板打开时只做一次兜底：若上次状态是"开"但引擎异常退出，则重新拉起；
+// 若上次是"关"或从未开启，保持关闭，等待用户手动打开。
 var ipv6TunNoticeShown = false;
 function maybeWarnIpv6NeedsTun(s) {
   if (!s || !s.ipv6_available || s.tun_enabled) {
@@ -2051,17 +2165,15 @@ function ensureAutoLoadConfig() {
   fetchJSON('api/status').then(function(s) {
     if (!s) return;
     maybeWarnIpv6NeedsTun(s);
-    if (s.running) return;
-    var vs = {};
-    try { vs = JSON.parse(localStorage.getItem('vergeSettings') || '{}'); } catch(e) {}
-    if (vs.auto_load === false) return;
+    if (s.running || !s.remembered_on) { loadServiceStatus(); return; }
+    // 上次记忆为"开"但引擎不在 → 恢复拉起（例如引擎异常退出后）
     fetch('api/service', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({enable: true}) })
       .then(r => r.json()).then(function(d) {
         loadServiceStatus();
         if (d.success) {
           if (document.getElementById('section-groups').style.display !== 'none') renderGroups();
           if (document.getElementById('section-home').style.display !== 'none') loadDashboard();
-          showToast('配置已自动加载', 'success');
+          showToast('已按上次状态恢复服务', 'success');
         }
       }).catch(function() { loadServiceStatus(); });
   });
@@ -2217,6 +2329,23 @@ function fmtBytes(n) {
   if (n < 1073741824) return (n/1048576).toFixed(1) + ' MB';
   return (n/1073741824).toFixed(2) + ' GB';
 }
+function fmtTraffic(n) {
+  // 订阅流量，支持 TB 级（对齐 clash-verge-rev 的 parseTraffic）
+  if (n == null || isNaN(n)) return '-';
+  if (n < 1024) return n + ' B';
+  if (n < 1048576) return (n/1024).toFixed(1) + ' KB';
+  if (n < 1073741824) return (n/1048576).toFixed(1) + ' MB';
+  if (n < 1099511627776) return (n/1073741824).toFixed(2) + ' GB';
+  return (n/1099511627776).toFixed(2) + ' TB';
+}
+function fmtExpire(ts) {
+  // 到期时间：时间戳（秒）→ YYYY-MM-DD；0/空 → '-'
+  if (!ts) return '-';
+  var d = new Date(ts * 1000);
+  if (isNaN(d.getTime())) return '-';
+  var p = function(x) { return (x < 10 ? '0' : '') + x; };
+  return d.getFullYear() + '-' + p(d.getMonth()+1) + '-' + p(d.getDate());
+}
 function fmtSpeed(b) {
   if (b <= 0) return '0 B/s';
   if (b < 1024) return b + ' B/s';
@@ -2231,24 +2360,63 @@ function fmtUptime(secs) {
 }
 
 // ── IP 信息 ────────────────────────────────
+// 默认隐藏为 6 个点，右侧眼睛图标点击切换显示（参考 clash-verge-dev）。
+var ipRevealed = false;
+var IP_EYE_OPEN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+var IP_EYE_OFF = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>';
+function applyIpVisibility(id, eyeId) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const real = el.dataset.real !== undefined ? el.dataset.real : el.textContent;
+  el.textContent = ipRevealed ? real : '••••••';
+  if (eyeId) {
+    const eye = document.getElementById(eyeId);
+    if (eye) eye.innerHTML = ipRevealed ? IP_EYE_OFF : IP_EYE_OPEN;
+  }
+}
+function setIpText(id, val, eyeId) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.dataset.real = (val === undefined || val === null || val === '') ? '-' : String(val);
+  applyIpVisibility(id, eyeId);
+}
+function toggleIpEye(id, eyeId) {
+  ipRevealed = !ipRevealed;
+  applyIpVisibility(id, eyeId);
+}
 function flagEmoji(code) {
   if (!code || !/^[A-Za-z]{2}$/.test(code)) return '🌐';
   return String.fromCodePoint(...code.toUpperCase().split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
 }
+function setIpv6Row(ipv6, d) {
+  const row = document.getElementById('ipv6Row');
+  if (!row) return;
+  if (ipv6) {
+    row.style.display = '';
+    setIpText('ipAddr6', ipv6, 'ipEye6');
+    document.getElementById('ipv6Flag').textContent = flagEmoji((d && d.ipv6_countryCode) || '');
+    document.getElementById('ipv6Loc').textContent = (d && d.ipv6_location) || '';
+    document.getElementById('ipv6Loc').title = ipv6;
+  } else {
+    row.style.display = 'none';
+    setIpText('ipAddr6', '-', 'ipEye6');
+    document.getElementById('ipv6Loc').textContent = '';
+  }
+}
 async function loadIpInfo() {
   const d = await fetchJSON('api/ipinfo');
   if (!d || d.error) {
-    document.getElementById('ipAddr').textContent = (d && d.ip) ? d.ip : '获取失败';
+    setIpText('ipAddr', (d && d.ip) ? d.ip : '获取失败', 'ipEye');
     document.getElementById('ipAsn').textContent = 'N/A';
     document.getElementById('ipIsp').textContent = 'Unknown';
     document.getElementById('ipOrg').textContent = 'Unknown';
     document.getElementById('ipLocation').textContent = 'Unknown';
     document.getElementById('ipTimezone').textContent = 'Unknown';
+    setIpv6Row((d && d.ipv6) || '', d);
     if (d && d.error) document.getElementById('ipAddr').title = d.error;
     return;
   }
-  document.getElementById('ipAddr').textContent = d.ip || '-';
-  if (d.ipAddr) document.getElementById('ipAddr').textContent = d.ipAddr;
+  setIpText('ipAddr', (d.ipAddr || d.ip || '-'), 'ipEye');
   document.getElementById('ipFlag').textContent = flagEmoji(d.countryCode || '');
   const asn = d.asn_organization ? (d.asn ? 'AS' + d.asn + ' ' : '') + d.asn_organization : (d.asn || '');
   document.getElementById('ipAsn').textContent = asn || 'N/A';
@@ -2257,6 +2425,7 @@ async function loadIpInfo() {
   const loc = [d.country, d.region, d.city].filter(Boolean).join(' · ') || 'Unknown';
   document.getElementById('ipLocation').textContent = loc;
   document.getElementById('ipTimezone').textContent = d.timezone || 'Unknown';
+  setIpv6Row(d.ipv6 || '', d);
 }
 
 // ── Clash 信息 ─────────────────────────────
@@ -2499,6 +2668,11 @@ async function runWebTest() {
  // ── 节点订阅 ──────────────────────
  let provLive = {};   // name -> 运行时信息（节点数/更新时间），来自 /providers/proxies
  let provStatic = {};
+ // name -> 机场官网（profile-web-page-url 响应头），localStorage 持久化
+ let provHome = {};
+ try { provHome = JSON.parse(localStorage.getItem('fnsoar_prov_home') || '{}') || {}; } catch (e) { provHome = {}; }
+ function saveProvHome() { try { localStorage.setItem('fnsoar_prov_home', JSON.stringify(provHome)); } catch (e) {} }
+ let pendingProvHome = '';
  async function fetchProvLive() {
    try { const d = await fetchJSON('api/providers-live', 5000); provLive = (d && d.providers) ? d.providers : {}; }
    catch (e) { provLive = {}; }
@@ -2513,6 +2687,7 @@ async function runWebTest() {
    nodes: 'M16,11H20V21H16M4,7H8V21H4M10,2H14V21H10Z',
    clock: 'M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z',
    cloud: 'M6.5,20Q4.22,20 2.61,18.43 1,16.85 1,14.58 1,12.63 2.17,11.1 3.35,9.57 5.25,9.15 5.83,7.13 7.39,5.75 8.95,4.38 11,4.08V12.15L9.4,10.6L8,12L12,16L16,12L14.6,10.6L13,12.15V4.08Q15.58,4.43 17.29,6.39 19,8.35 19,11 20.73,11.2 21.86,12.5 23,13.78 23,15.5 23,17.38 21.69,18.69 20.38,20 18.5,20Z',
+   external: 'M14,3V5H17.59L7.76,14.83L9.17,16.24L19,6.41V10H21V3M19,19H5V5H12V3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V12H19V19Z'
  };
  function fmtInterval(sec) {
     sec = parseInt(sec, 10) || 3600;
@@ -2556,9 +2731,23 @@ async function runWebTest() {
        const interval = info.interval || 3600;
        const urlLower = (url || '').toLowerCase();
        const badge = urlLower.startsWith('https://') ? 'HTTPS' : urlLower.startsWith('http://') ? 'HTTP' : ((lv.vehicleType || info.type || 'http').toLowerCase() === 'compatible' ? t('config.title') : 'HTTP');
+       const home = info.home || provHome[name] || '';
+       const si = lv.subInfo || null;
+       let trafficHtml = '';
+       if (si && si.total > 0) {
+         const used = (si.upload || 0) + (si.download || 0);
+         const pct = Math.min(100, Math.round((used / si.total) * 100));
+         const barCls = pct >= 100 ? ' over' : (pct >= 80 ? ' warn' : '');
+         const expire = fmtExpire(si.expire);
+         trafficHtml = '<div class="prov-traffic"><div class="prov-traffic-line"><span><b class="prov-traffic-val">' + fmtTraffic(used) + '</b> / ' + fmtTraffic(si.total) + '</span>' + (expire !== '-' ? '<span title="到期时间">到期 ' + expire + '</span>' : '') + '</div><div class="prov-traffic-bar"><i class="' + barCls + '" style="width:' + pct + '%"></i></div></div>';
+       } else if (si) {
+         trafficHtml = '<div class="prov-traffic-line"><span>无流量统计</span>' + (si.expire ? '<span title="到期时间">到期 ' + fmtExpire(si.expire) + '</span>' : '') + '</div>';
+       }
        return `<div class="prov-card" id="provcard-${esc(name)}">
            <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
           <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
+           ${home ? '<a class="prov-home" href="' + esc(home) + '" target="_blank" rel="noopener">' + svgIcon(IC.external) + '官网</a>' : ''}
+           ${trafficHtml}
           <div class="prov-stats">
             <span class="prov-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b> ${t('home.node')}</span>
             <span class="prov-stat">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
@@ -2583,11 +2772,28 @@ async function runWebTest() {
    document.getElementById('provName').value = name || '';
    document.getElementById('provUrl').value = p ? (p.url || '') : '';
    document.getElementById('provInterval').value = p ? (p.interval || 3600) : 3600;
-   document.getElementById('provName').disabled = !!name; // 编辑时名称为主键不可改
+    document.getElementById('provHomeInput').value = (p && p.home) ? p.home : (provHome[name] || '');
+   document.getElementById('provName').disabled = false; // 允许编辑/重命名订阅名称
    document.getElementById('provModal').style.display = 'flex';
    if (!name) setTimeout(() => document.getElementById('provUrl').focus(), 60);
  }
  function closeProvModal() { document.getElementById('provModal').style.display = 'none'; provEditing = null; }
+ async function refreshProvName() {
+   const url = document.getElementById('provUrl').value.trim();
+   if (!url || !/^https?:\/\/.+/.test(url)) { showToast('请先填写有效的订阅链接', 'warning'); return; }
+   const btn = event.target;
+   const orig = btn.textContent;
+   btn.disabled = true; btn.textContent = '探测中…';
+   try {
+     const r = await fetch('api/providers/probe-name', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url, name: provEditing || ''}) });
+     const d = await r.json();
+     if (d.success && d.name) { document.getElementById('provName').value = d.name; showToast('名称已更新: ' + d.name, 'success'); }
+     else showToast(d.error || '探测失败', 'warning');
+     if (d.home) { document.getElementById('provHomeInput').value = d.home; }
+     pendingProvHome = d.home || '';
+   } catch (e) { showToast('请求出错: ' + e, 'error'); }
+   finally { btn.disabled = false; btn.textContent = orig; }
+ }
  function autoFillProvName() {
    const nameEl = document.getElementById('provName');
    if (nameEl && nameEl.value.trim() && !nameEl.disabled) return;
@@ -2602,14 +2808,23 @@ async function runWebTest() {
    const name = document.getElementById('provName').value.trim();
    const url = document.getElementById('provUrl').value.trim();
    const interval = parseInt(document.getElementById('provInterval').value, 10) || 3600;
-   if (!name) { showToast('请输入订阅名称', 'warning'); return; }
-   if (!/^https?:\/\/.+/.test(url)) { showToast('订阅链接必须以 http:// 或 https:// 开头', 'warning'); return; }
+    const home = document.getElementById('provHomeInput').value.trim();
+   // 新增时名称可留空：后端自动探测订阅真实名称（对齐 clash-verge-rev 的做法）
+   if (!name && !provEditing) {
+     if (!/^https?:\/\/.+/.test(url)) { showToast('订阅链接必须以 http:// 或 https:// 开头', 'warning'); return; }
+   } else if (!name || !/^https?:\/\/.+/.test(url)) { showToast('请输入订阅名称和有效的订阅链接', 'warning'); return; }
    const btn = document.getElementById('providerSubmitBtn');
    btn.disabled = true; btn.textContent = '保存中…';
    try {
-     const r = await fetch('api/providers', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name, url, interval, type:'http'}) });
+     const payload = { name, url, interval, type: 'http', home };
+     if (provEditing) payload.old_name = provEditing; // 编辑/重命名旧名
+     const r = await fetch('api/providers', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
      const d = await r.json();
-     if (d.success) { closeProvModal(); showToast(d.message, 'success'); }
+     if (d.success) {
+      if (provEditing && provHome[provEditing] && name !== provEditing) { provHome[name] = provHome[provEditing]; delete provHome[provEditing]; }
+      if (pendingProvHome) { provHome[name] = pendingProvHome; pendingProvHome = ''; }
+      saveProvHome();
+      closeProvModal(); showToast(d.message, 'success'); }
      else showToast(d.error || '保存失败', 'error');
      loadProviders();
    } catch (err) { showToast('请求出错: ' + err, 'error'); }
@@ -2649,17 +2864,22 @@ async function importProvider() {
   const url = document.getElementById("provImportUrl").value.trim();
   if (!url) { showToast("请输入订阅链接", "warning"); return; }
   if (!/^https?:\/\/.+/.test(url)) { showToast("订阅链接必须以 http:// 或 https:// 开头", "warning"); return; }
-  let name;
-  try { name = new URL(url).hostname.replace(/^www\./, ""); } catch(e) { name = "导入订阅"; }
   const btn = document.querySelector(".prov-import-row .btn");
-  btn.disabled = true; btn.textContent = "导入中…";
+  btn.disabled = true; btn.textContent = "探测中…";
   try {
-    const r = await fetch("api/providers", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({name, url, interval: 3600, type:"http"}) });
-    const d = await r.json();
-    if (d.success) { document.getElementById("provImportUrl").value = ""; showToast("导入成功: " + name, "success"); }
-    else showToast(d.error || "导入失败", "error");
-    loadProviders();
-  } catch (err) { showToast("请求出错: " + err, "error"); }
+    // 先探测真实名称，再打开弹窗让用户确认（对齐 clash-verge-rev 的导入流程）
+    const pr = await fetch("api/providers/probe-name", { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({url}) });
+    const pd = await pr.json();
+    const name = (pd.success && pd.name) ? pd.name : "";
+    pendingProvHome = (pd.success && pd.home) ? pd.home : '';
+    document.getElementById("provImportUrl").value = "";
+    openProvModal(null); // 新增模式
+    document.getElementById("provUrl").value = url;
+    document.getElementById("provName").value = name;
+    document.getElementById("provInterval").value = 3600;
+    if (pendingProvHome) document.getElementById("provHomeInput").value = pendingProvHome;
+    if (name) showToast("已识别名称: " + name + "，可修改后保存", "info");
+  } catch (err) { showToast("探测失败: " + err, "error"); }
   finally { btn.disabled = false; btn.textContent = "导入"; }
 }
 // ── 一键更新所有订阅 ──────────────────────────
@@ -3918,7 +4138,6 @@ function loadSettings() {
       if (vs.start_page) document.getElementById('setStartPage').value = vs.start_page;
       if (vs.startup_script) document.getElementById('setStartupScript').value = vs.startup_script;
       if (vs.show_icons !== undefined) document.getElementById('setShowIcons').checked = vs.show_icons;
-      if (vs.auto_load !== undefined) document.getElementById('setAutoLoad').checked = vs.auto_load;
     } catch(e) {}
   }
   fetch('api/config').then(r => r.json()).then(d => {
@@ -4054,7 +4273,6 @@ function saveBasicSetting(key) {
   else if (key === 'start_page') val = document.getElementById('setStartPage').value;
   else if (key === 'startup_script') val = document.getElementById('setStartupScript').value;
   else if (key === 'show_icons') val = document.getElementById('setShowIcons').checked;
-  else if (key === 'auto_load') val = document.getElementById('setAutoLoad').checked;
   else return;
   var ls = localStorage.getItem('vergeSettings');
   var vs = {};
@@ -4160,7 +4378,7 @@ var I18N = {
     'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.dashboard':'面板升级','settings.dashStatus':'状态','settings.dashUpToDate':'已最新','settings.dashUpdateAvail':'有可用更新',
     'settings.service':'系统服务','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'深色','settings.themeLight':'浅色','settings.themeSystem':'系统',
-    'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标','settings.autoLoad':'打开应用时自动加载配置',
+    'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标',
     'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
@@ -4288,7 +4506,7 @@ var I18N = {
     'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status','settings.dashUpToDate':'Up to date','settings.dashUpdateAvail':'Update available',
     'settings.service':'System Service','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'Dark','settings.themeLight':'Light','settings.themeSystem':'System',
-    'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons','settings.autoLoad':'Auto load config on app open',
+    'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons',
     'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
@@ -4794,7 +5012,7 @@ loadDelayCache();
   fetchVersionInfo();
   initHamburgerDrag();
   startTraffic();
-  ensureAutoLoadConfig();  // 打开应用时自动加载配置（引擎未运行则自启）
+  ensureAutoLoadConfig();  // 服务状态恢复（面板守护已启动）
 // 策略组/节点卡片点击事件委托（避免内联 onclick 引号冲突）
 document.getElementById('groupsWrap').addEventListener('click', e => {
   // 先判断是否点击了节点子卡片右侧的延迟小部件（单节点测速）

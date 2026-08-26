@@ -164,6 +164,26 @@ service_postinst()
     fix_data_ownership 2>/dev/null || true
 }
 
+validate_preupgrade()
+{
+    # Capture the engine state BEFORE fnOS stops the old daemon. Since
+    # v1.0.68 the engine is a managed child of the panel daemon and its
+    # on/off state lives in service.state; without this, an upgrade would
+    # reset a running setup to "off". (upgrade_init calls this hook before
+    # stop_daemon, whereas service_preupgrade runs after the kill.)
+    local state_file="${TRIM_PKGVAR}/service.state"
+    if pgrep -f 'bin/mihomo-(amd64|arm64)\.real' >/dev/null 2>&1; then
+        echo "on" > "${state_file}" 2>/dev/null || true
+    else
+        echo "off" > "${state_file}" 2>/dev/null || true
+    fi
+}
+
+service_preupgrade()
+{
+    :
+}
+
 service_postupgrade()
 {
     # service_postinst now preserves the live config and subscriptions.
