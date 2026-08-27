@@ -3255,7 +3255,6 @@ function renderGroups() {
     const tools = `
       <button class="ghead-tool" onclick="event.stopPropagation();locateGroupNode('${jstr(name)}')" title="定位当前节点">${toolSvg(GT.locate)}</button>
       <button class="ghead-tool" data-act="test" onclick="event.stopPropagation();testGroup('${jstr(name)}')" title="测试全部节点延迟">${toolSvg(GT.speed)}</button>
-      <button class="ghead-tool" onclick="event.stopPropagation();pickFastestGroup('${jstr(name)}')" title="一键切换到延迟最低的节点（先测速）">${toolSvg(GT.flash)}</button>
       <button class="ghead-tool${h.hideDetails ? ' active' : ''}" onclick="event.stopPropagation();toggleGroupDetails('${jstr(name)}')" title="${h.hideDetails ? '显示节点细节' : '隐藏节点细节'}">${toolSvg(GT.eye)}</button>
       <button class="ghead-tool${h.sortType ? ' active' : ''}" onclick="event.stopPropagation();cycleGroupSort('${jstr(name)}')" title="排序：${h.sortType===1 ? '按延迟' : h.sortType===2 ? '按名称' : '默认顺序'}">${toolSvg(sortIcon, h.sortType===2)}</button>
       <button class="ghead-tool${h.filterOpen ? ' active' : ''}" onclick="event.stopPropagation();toggleGroupFilter('${jstr(name)}')" title="筛选节点">${toolSvg(GT.filter)}</button>`;
@@ -3360,7 +3359,6 @@ const GT = {
   tether: 'M12,3C6.5,3 2,6.58 2,11C2,13.13 3.04,15.06 4.74,16.5C5.07,16.79 5.56,16.79 5.89,16.5C6.22,16.21 6.22,15.72 5.89,15.39C4.53,14.27 3.67,12.7 3.67,11C3.67,7.59 7.4,4.83 12,4.83C16.6,4.83 20.33,7.59 20.33,11C20.33,12.7 19.47,14.27 18.11,15.39C17.78,15.72 17.78,16.21 18.11,16.5C18.44,16.79 18.93,16.79 19.26,16.5C20.96,15.06 22,13.13 22,11C22,6.58 17.5,3 12,3M12,7.3C9.39,7.3 7.3,8.9 7.3,11C7.3,12.08 7.79,13.06 8.53,13.81C8.87,14.16 9.42,14.16 9.76,13.81C10.09,13.48 10.09,12.93 9.76,12.6C9.3,12.13 9,11.59 9,11C9,9.2 10.34,7.73 12,7.3M12,9.83C10.75,9.83 9.75,10.88 9.75,12.25C9.75,12.83 9.99,13.34 10.36,13.69C10.67,14 10.9,14.36 12,15.33C13.1,14.36 13.33,14 13.64,13.69C14.01,13.34 14.25,12.83 14.25,12.25C14.25,10.88 13.25,9.83 12,9.83M12,11.5A0.75,0.75 0 0,0 11.25,12.25A0.75,0.75 0 0,0 12,13A0.75,0.75 0 0,0 12.75,12.25A0.75,0.75 0 0,0 12,11.5Z',
   eye: 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z',
   filter: 'M14,12V19.88C14,20.5 13.5,21 12.88,21C12.64,21 12.41,20.92 12.22,20.76L8.53,17.93C8.19,17.67 8,17.27 8,16.83V12L2.21,4.62C1.89,4.19 1.96,3.68 2.2,3.36C2.42,3.09 2.78,3 3.13,3H20.87C21.22,3 21.58,3.09 21.8,3.36C22.04,3.68 22.11,4.19 21.79,4.62L14,12Z',
-  flash: 'M7,2V13H10V22L17,10H13L16,2Z'
 };
 function toolSvg(p, stroke) { return stroke
     ? `<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${p}"/></svg>`
@@ -3598,36 +3596,37 @@ function updateNodeCardLatency(name) {
 }
 
 const groupTestingSet = new Set();
-// 一键把选择类策略组切到延迟最低的成员（测速后使用；不自动触发，避免打断手动固定）
-async function pickFastestGroup(name, dry) {
-  const info = proxiesData ? proxiesData[name] : null;
-  if (!info) { showToast('暂无策略组数据', 'warning'); return null; }
-  if (info.type !== 'Selector') { showToast('仅选择(selector)类型的策略组支持一键选最快', 'warning'); return null; }
-  let best = null, bestVal = Infinity;
-  (info.all || []).forEach(n => {
-    if (['DIRECT','REJECT','REJECT-DROP','PASS','COMPATIBLE'].includes(n)) return;
-    const v = latencyOf(n);
-    if (v && v.val >= 0 && v.val < bestVal) { best = n; bestVal = v.val; }
-  });
-  if (!best) { showToast('暂无延迟数据，请先测速', 'warning'); return null; }
-  if (dry) return { best, bestVal };
-  try {
-    await fetch('proxies/' + encodeURIComponent(name), {
-      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: best})
-    });
-    info.now = best;
-    renderGroups();
-    showToast('已切换 ' + name + ' → ' + best + ' (' + bestVal + 'ms)', 'success');
-    return { best, bestVal };
-  } catch (e) { showToast('切换失败', 'error'); return null; }
-}
 async function testGroup(groupName) {
   if (groupTestingSet.has(groupName)) return;
   if (!proxiesData) { showToast('暂无策略组数据', 'warning'); return; }
   const info = proxiesData[groupName];
   if (!info) return;
-  const nodes = (info.all || []).filter(n => !['DIRECT','REJECT','REJECT-DROP','PASS','COMPATIBLE'].includes(n));
-  if (!nodes.length) return;
+  const groupTypes = ['Selector','URLTest','Fallback','LoadBalance'];
+  const special = new Set(['DIRECT','REJECT','REJECT-DROP','PASS','COMPATIBLE']);
+  // 测试清单展开：叶子节点直接测；成员组（如 香港-手动）递归收集其下全部真实叶子。
+  // 测完后：Selector 成员自动切换到延迟最低的叶子；URLTest/Fallback 由引擎自管选路，不强切。
+  const memberLeaves = new Map();   // 顶层成员名 -> 其下真实叶子列表
+  const allLeaves = new Set();      // 去重后的待测叶子
+  const selMembers = new Set();     // 测完可自动切换的 Selector 成员
+  const collect = (m, out, depth, vis) => {
+    if (special.has(m)) return;
+    const p = proxiesData[m];
+    if (!p || !groupTypes.includes(p.type)) { out.push(m); return; }
+    if (depth > 4 || vis.has(m)) return;
+    vis.add(m);
+    (p.all || []).forEach(x => collect(x, out, depth + 1, vis));
+  };
+  (info.all || []).forEach(n => {
+    if (special.has(n)) return;
+    const out = [];
+    collect(n, out, 0, new Set());
+    if (!out.length) return;
+    const uniq = [...new Set(out)];
+    memberLeaves.set(n, uniq);
+    uniq.forEach(l => allLeaves.add(l));
+    if (proxiesData[n] && proxiesData[n].type === 'Selector') selMembers.add(n);
+  });
+  if (!allLeaves.size) return;
   groupTestingSet.add(groupName);
   // 卡片默认展开；若被折叠，点击测速时自动展开以便立即看到结果
   const card = document.getElementById(gcardId(groupName));
@@ -3638,38 +3637,57 @@ async function testGroup(groupName) {
   }
   const testBtn = card ? card.querySelector('.ghead-tool[data-act="test"]') : null;
   if (testBtn) testBtn.classList.add('testing');
-  const total = nodes.length;
+  const memberByLeaf = {};   // 叶子 -> 影响到的顶层成员（单个完成即刷对应子卡）
+  memberLeaves.forEach((ls, m) => ls.forEach(l => (memberByLeaf[l] = memberByLeaf[l] || []).push(m)));
+  const total = allLeaves.size;
   let done = 0;
   // 若该组设置了自定义测速 URL 则使用它
   const testUrl = (groupHead[groupName] && groupHead[groupName].testUrl.trim()) || 'https://www.gstatic.com/generate_204';
-  // 并发 6
+  const queue = [...allLeaves];
   let idx = 0;
   const workers = Array.from({length:6}, async () => {
-    while (idx < nodes.length) {
-      const name = nodes[idx++];
-      const delay = await testOneNode(name, 5000, testUrl);
-      if (delay >= 0) {
-        nodeDelay[name] = delay;
-        const p = proxiesData[name];
+    while (idx < queue.length) {
+      const leaf = queue[idx++];
+      const delay = await testOneNode(leaf, 5000, testUrl);
+      if (delay > 0) {
+        nodeDelay[leaf] = delay;
+        const p = proxiesData[leaf];
         if (p) { p.history = p.history || []; p.history.push({delay, time: Date.now()}); if (p.history.length > 10) p.history.shift(); }
-        // 若成员本身是策略组，把本次测得的延迟同步到它的当前节点，子卡片才能显示延迟
-        const m = proxiesData[name];
-        if (m && ['Selector','URLTest','Fallback','LoadBalance'].includes(m.type) && m.now) {
-          nodeDelay[m.now] = delay;
-        }
-      } else if (nodeDelay[name] == null) {
-        nodeDelay[name] = -1; // 超时也即时反映
+      } else if (nodeDelay[leaf] == null) {
+        nodeDelay[leaf] = -1;
       }
       done++;
       if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
-      updateSubCardLatency(name); // 单个节点测试完立刻刷新卡片延迟，不必等全部完成
+      (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
     }
   });
   await Promise.all(workers);
+  // 选择类成员组自动切换到延迟最低的真实叶子
+  const cutName = s => [...String(s)].slice(0, 22).join('');
+  const switched = [];
+  for (const m of selMembers) {
+    const cand = (memberLeaves.get(m) || []).filter(l => nodeDelay[l] > 0);
+    if (!cand.length) continue;
+    const bestL = cand.reduce((a, b) => nodeDelay[a] <= nodeDelay[b] ? a : b);
+    const cur = proxiesData[m] ? proxiesData[m].now : null;
+    if (bestL && cur !== bestL) {
+      try {
+        await fetch('proxies/' + encodeURIComponent(m), {
+          method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: bestL})
+        });
+        proxiesData[m].now = bestL;
+        switched.push(cutName(m) + ' → ' + cutName(bestL) + ' (' + nodeDelay[bestL] + 'ms)');
+      } catch (e) {}
+    }
+  }
   groupTestingSet.delete(groupName);
   if (testBtn) testBtn.classList.remove('testing');
   saveDelayCache();
   renderGroups();
+  if (switched.length) {
+    const msg = switched.length <= 3 ? switched.join('；') : switched.slice(0, 3).join('；') + ' 等 ' + switched.length + ' 个';
+    showToast('已自动切换到最快节点：' + msg, 'success');
+  }
 }
 
 // ── 全局模式：全部节点测速 ──────────────────
