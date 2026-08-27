@@ -1721,6 +1721,7 @@ async function fetchJSON(url, timeoutMs) {
 let proxiesData = null;
 let nodeProvider = {};   // 真实节点名 -> 所属订阅 provider 名（测速走 provider healthcheck）
 let nodeDelay = {};      // 节点名 -> 最近一次测速延时(ms)，-1 表示超时
+let _lastSubInfo = {};   // 订阅名 -> 最近一次成功的 subscriptionInfo（刷新偶发失败时沿用，避免到期行闪没）
 let curGroup = 'GLOBAL';
 
 function renderSubInfo(name, info, provApi) {
@@ -1730,6 +1731,10 @@ function renderSubInfo(name, info, provApi) {
     document.getElementById('subFrom').textContent = host || '-';
   } catch (e) { document.getElementById('subFrom').textContent = '-'; }
   const remote = (provApi && provApi.providers && provApi.providers[name]) || null;
+  // 粘性缓存：本次拿到就更新；本次偶发失败则沿用上次成功值，保证到期/用量行不闪断
+  let si = (remote && remote.subscriptionInfo) || null;
+  if (remote && remote.subscriptionInfo) _lastSubInfo[name] = si;
+  else si = _lastSubInfo[name] || null;
   const updated = remote && remote.updatedAt ? remote.updatedAt : null;
   if (updated && updated.startsWith('0001')) {
     document.getElementById('subUpdated').textContent = '-';
@@ -1739,7 +1744,6 @@ function renderSubInfo(name, info, provApi) {
   } else {
     document.getElementById('subUpdated').textContent = '-';
   }
-  const si = remote && remote.subscriptionInfo;
   if (si && si.Total > 0) {
     const used = (si.Upload || 0) + (si.Download || 0);
     const total = si.Total;
@@ -1751,7 +1755,12 @@ function renderSubInfo(name, info, provApi) {
       document.getElementById('subExpireRow').style.display = 'flex';
       const ed = new Date(si.Expire * 1000);
       document.getElementById('subExpire').textContent = isNaN(ed) ? '-' : ed.toLocaleDateString('zh-CN');
+    } else if (si.Expire === 0) {
+      // 明确不限时（Expire=0 且已获取到订阅信息）→ 显示「不限时」
+      document.getElementById('subExpireRow').style.display = 'flex';
+      document.getElementById('subExpire').textContent = '不限时';
     } else {
+      // 拿不到到期信息 → 不显示该行
       document.getElementById('subExpireRow').style.display = 'none';
     }
   } else {
@@ -2762,15 +2771,21 @@ async function runWebTest() {
        const badge = urlLower.startsWith('https://') ? 'HTTPS' : urlLower.startsWith('http://') ? 'HTTP' : ((lv.vehicleType || info.type || 'http').toLowerCase() === 'compatible' ? t('config.title') : 'HTTP');
        const home = info.home || provHome[name] || '';
        const si = lv.subInfo || null;
+       // 到期展示片段：有期限 → 日期；明确不限时(expire===0) → 「不限时」；拿不到 → 不显示
+       const expireHtml = (function(){
+         if (!si || si.expire == null) return '';
+         if (si.expire > 0) return '<span title="到期时间">到期 ' + fmtExpire(si.expire) + '</span>';
+         if (si.expire === 0) return '<span title="到期时间">不限时</span>';
+         return '';
+       })();
        let trafficHtml = '';
        if (si && si.total > 0) {
          const used = (si.upload || 0) + (si.download || 0);
          const pct = Math.min(100, Math.round((used / si.total) * 100));
          const barCls = pct >= 100 ? ' over' : (pct >= 80 ? ' warn' : '');
-         const expire = fmtExpire(si.expire);
-         trafficHtml = '<div class="prov-traffic"><div class="prov-traffic-line"><span><b class="prov-traffic-val">' + fmtTraffic(used) + '</b> / ' + fmtTraffic(si.total) + '</span>' + (expire !== '-' ? '<span title="到期时间">到期 ' + expire + '</span>' : '') + '</div><div class="prov-traffic-bar"><i class="' + barCls + '" style="width:' + pct + '%"></i></div></div>';
+         trafficHtml = '<div class="prov-traffic"><div class="prov-traffic-line"><span><b class="prov-traffic-val">' + fmtTraffic(used) + '</b> / ' + fmtTraffic(si.total) + '</span>' + expireHtml + '</div><div class="prov-traffic-bar"><i class="' + barCls + '" style="width:' + pct + '%"></i></div></div>';
        } else if (si) {
-         trafficHtml = '<div class="prov-traffic-line"><span>无流量统计</span>' + (si.expire ? '<span title="到期时间">到期 ' + fmtExpire(si.expire) + '</span>' : '') + '</div>';
+         trafficHtml = '<div class="prov-traffic-line"><span>无流量统计</span>' + expireHtml + '</div>';
        }
        return `<div class="prov-card" id="provcard-${esc(name)}">
            <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
