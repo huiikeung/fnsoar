@@ -21,6 +21,43 @@ fnSoar 是运行于 [fnOS](https://www.fnnas.com) 应用商店的原生代理引
 - 📊 **实时状态**：流量统计、连接列表、规则命中、IP 信息、系统负载
 - 🌐 **双语言**：简体中文 / English
 
+## 📸 应用截图
+
+<div align="center">
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/home.png" alt="首页 · 总览仪表盘" width="770"/><br/>
+      <sub><b>首页</b> — 流量概览、节点状态、IP 信息、系统监控</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/groups.png" alt="策略组管理" width="770"/><br/>
+      <sub><b>策略组</b> — 分组切换、延迟测速</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center">
+      <img src="docs/screenshots/providers.png" alt="订阅管理" width="770"/><br/>
+      <sub><b>订阅</b> — 订阅卡片、流量用量、自动更新</sub>
+    </td>
+    <td align="center">
+      <img src="docs/screenshots/zashboard.png" alt="Zashboard 面板" width="770"/><br/>
+      <sub><b>Zashboard 面板</b> — 内置第三方可视化面板</sub>
+    </td>
+  </tr>
+  <tr>
+    <td align="center" colspan="2">
+      <img src="docs/screenshots/settings.png" alt="设置页"/><br/>
+      <sub><b>设置</b> — TUN 模式、端口配置、DNS、GEO 更新与面板升级</sub>
+    </td>
+  </tr>
+</table>
+
+<sub>深色主题界面 · 截图中的订阅地址与令牌已脱敏</sub>
+
+</div>
+
 ## 📦 安装
 
 ### fnOS 应用商店（推荐）
