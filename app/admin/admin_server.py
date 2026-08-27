@@ -1095,34 +1095,43 @@ def _download_sub_validated(name_hint, url, timeout=25):
     import yaml as _yv
     import time as _t3
     last_err = None
+    def _is_net_eof(e):
+        s = str(e).lower()
+        return ("eof" in s or "ssl" in s or "connection reset" in s
+                or "timed out" in s or "timeout" in s)
     uas = [None, f"clash-verge/v{_get_app_version()}"]
-    for ua in uas:
+    for i6, ua in enumerate(uas):
         try:
             if ua is None:
-                body, hd = _download_sub(url, timeout=timeout)
+                t_out = timeout if i6 == 0 else min(timeout, 12)
+            else:
+                t_out = min(timeout, 12)
+            if ua is None:
+                body, hd = _download_sub(url, timeout=t_out)
             else:
                 old_ua = _SUB_UA_OVERRIDE
                 globals()["_SUB_UA_OVERRIDE"] = ua
                 try:
-                    body, hd = _download_sub(url, timeout=timeout)
+                    body, hd = _download_sub(url, timeout=t_out)
                 finally:
                     globals()["_SUB_UA_OVERRIDE"] = old_ua
+        except Exception as e0:
+            last_err = e0
+            if _is_net_eof(e0):
+                raise                    # TLS被掐=网络层问题,换UA无意义立即止损
+            continue                     # 内容层错误才值得下一跳UA
+        try:
             txt = body.decode("utf-8", "ignore")
             doc = _yv.safe_load(txt)
             n_p = len((doc or {}).get("proxies") or [])
-            if not isinstance(doc, dict) or (
-                    not isinstance(doc.get("proxies"), list) and
-                    not doc.get("proxy-providers")):
-                last_err = RuntimeError("content missing proxies list")
-                continue
+            ok_shape = isinstance(doc, dict) and (isinstance(doc.get("proxies"), list) or bool(doc.get("proxy-providers")))
+            if not ok_shape:
+                last_err = RuntimeError("content missing proxies list"); continue
             if not n_p:
-                # proxies存在但为空(map/list均算异常情况):视为垃圾响应重试
-                last_err = RuntimeError("proxies empty")
-                continue
+                last_err = RuntimeError("proxies empty"); continue
             return body, hd
-        except Exception as e:
-            last_err = e
-        _t3.sleep(1.5)
+        except Exception as e1:
+            last_err = e1; continue
     raise last_err
 
 

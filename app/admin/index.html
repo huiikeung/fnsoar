@@ -3736,25 +3736,62 @@ async function testGroup(groupName) {
   let done = 0;
   // 若该组设置了自定义测速 URL 则使用它
   const testUrl = (groupHead[groupName] && groupHead[groupName].testUrl.trim()) || 'https://www.gstatic.com/generate_204';
-  const queue = [...allLeaves];
-  let idx = 0;
-  const workers = Array.from({length:6}, async () => {
-    while (idx < queue.length) {
-      const leaf = queue[idx++];
-      const delay = await testOneNode(leaf, 5000, testUrl);
-      if (delay > 0) {
-        nodeDelay[leaf] = delay;
-        const p = proxiesData[leaf];
-        if (p) { p.history = p.history || []; p.history.push({delay, time: Date.now()}); if (p.history.length > 10) p.history.shift(); }
-      } else if (nodeDelay[leaf] == null) {
-        nodeDelay[leaf] = -1;
+  // 批量唯一通道：内核 /group/{name}/delay 引擎侧并发完成全部测试。
+  // 返回表里没有的叶子=引擎实测失败记 -1；不再逐节点发请求，
+  // 消除对数百规模节点池的浏览器请求风暴与分钟级等待。
+  let batchOk = false;
+  try {
+    const bg = await fetch('group/' + encodeURIComponent(groupName) +
+      '/delay?timeout=5000&url=' + encodeURIComponent(testUrl));
+    if (bg.ok) {
+      const bm = await bg.json();
+      Object.entries(bm || {}).forEach(([n2, ms]) => {
+        if (typeof ms !== 'number') return;
+        nodeDelay[n2] = ms;
+        const p2 = proxiesData[n2];
+        if (p2) { p2.history = p2.history || []; p2.history.push({delay: ms, time: Date.now()}); if (p2.history.length > 10) p2.history.shift(); }
+        done++;
+        (memberByLeaf[n2] || []).forEach(updateSubCardLatency);
+      });
+      const uncovered = [...allLeaves].filter(l => !Object.prototype.hasOwnProperty.call(bm || {}, l));
+      if (uncovered.length && uncovered.length <= 30) {
+        let idx2 = 0;
+        const ws2 = Array.from({length:8}, async () => {
+          while (idx2 < uncovered.length) {
+            const leaf = uncovered[idx2++];
+            const d2 = await testOneNode(leaf, 4000, testUrl);
+            if (d2 > 0) nodeDelay[leaf] = d2; else nodeDelay[leaf] = -1;
+            done++;
+            (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
+          }
+        });
+        await Promise.all(ws2);
+      } else {
+        allLeaves.forEach(l => { if (nodeDelay[l] == null) nodeDelay[l] = -1; });
+        done += allLeaves.length;
       }
-      done++;
-      if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
-      (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
+      batchOk = true;
     }
-  });
-  await Promise.all(workers);
+  } catch (e) {}
+  if (!batchOk) {
+    const queue = [...allLeaves];
+    let idx = 0;
+    const workers = Array.from({length:8}, async () => {
+      while (idx < queue.length) {
+        const leaf = queue[idx++];
+        const delay = await testOneNode(leaf, 3000, testUrl);
+        if (delay > 0) nodeDelay[leaf] = delay;
+        else if (nodeDelay[leaf] == null) nodeDelay[leaf] = -1;
+        done++;
+        if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
+        (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
+      }
+    });
+    await Promise.all(workers);
+  }
+  if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
+  renderGroups();
+
   // 选择类成员组自动切换到延迟最低的真实叶子
   const cutName = s => [...String(s)].slice(0, 22).join('');
   const switched = [];
