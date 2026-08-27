@@ -379,6 +379,14 @@ tbody tr:hover{background:var(--card2)}
 .gsub-sub{display:flex;align-items:center;gap:6px;flex-wrap:nowrap;overflow:hidden;font-size:11px;color:var(--dim);min-width:0}
 .gsub-now{color:var(--dim);font-weight:400;white-space:nowrap;flex-shrink:0;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .gsub-tag{font-size:10px;padding:1px 6px;border-radius:8px;background:var(--bg);border:1px solid var(--border);color:var(--dim);font-weight:400;white-space:nowrap;flex-shrink:0}
+/* 子卡片第 2 行：当前节点归属订阅徽标 */
+.gsub-prov{font-size:10px;padding:1px 7px;border-radius:8px;background:rgba(78,110,242,.12);border:1px solid rgba(78,110,242,.32);color:var(--accent2);font-weight:500;white-space:nowrap;flex-shrink:0;max-width:150px;overflow:hidden;text-overflow:ellipsis}
+/* 策略组全局模式：右下角回到顶部按钮（滚动后浮现） */
+.global-backtop{position:fixed;right:26px;bottom:26px;width:42px;height:42px;border-radius:50%;background:var(--card);border:1px solid var(--border);color:var(--text);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.22);opacity:0;visibility:hidden;transform:translateY(10px);transition:all .18s;z-index:120;padding:0}
+.global-backtop.show{opacity:1;visibility:visible;transform:none}
+.global-backtop:hover{color:var(--accent2);border-color:rgba(78,110,242,.45);transform:translateY(-2px)}
+.global-backtop svg{width:20px;height:20px;fill:currentColor;pointer-events:none}
+@media(max-width:860px){.global-backtop{right:16px;bottom:16px}}
 .gsub-tag.udp{color:var(--dim);border-color:var(--border)}
 .gsub-delay{flex-shrink:0;margin-left:2px;padding:2px 8px;border-radius:7px;cursor:pointer;transition:background .12s;align-self:center;display:none}
 .gsub-delay:hover{background:rgba(78,110,242,.16)}
@@ -794,6 +802,11 @@ tbody tr:hover{background:var(--card2)}
   <!-- 窄屏侧边栏隐藏时显示的汉堡按钮 -->
   <button class="sidebar-hidden-toggle" onclick="hamburgerClick()" title="菜单" aria-label="菜单">
     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
+  </button>
+
+  <!-- 策略组全局模式：右下角回到顶部按钮（滚动后浮现） -->
+  <button id="globalBackTop" class="global-backtop" title="回到顶部" aria-label="回到顶部">
+    <svg viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"/></svg>
   </button>
 
   <!-- 右侧内容区 -->
@@ -2938,7 +2951,7 @@ async function loadGroups() {
             }
           });
         });
-        if (currentMode === 'global') renderGroups();  // 协议信息就绪后补渲染
+        if (currentMode === 'global' || document.getElementById('section-groups').style.display !== 'none') renderGroups();  // 协议/订阅归属信息就绪后补渲染
       }
     } catch (e) {}
   })();
@@ -3002,6 +3015,7 @@ function toggleGroupCard(el) {
   }
 }
 function renderGroups() {
+  updateBackTopVisibility();
   const wrap = document.getElementById('groupsWrap');
   if (!proxiesData) {
     wrap.innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">无法获取策略组数据（引擎可能未运行）</div>';
@@ -3155,13 +3169,21 @@ function renderGroups() {
       // 若成员本身是策略组，则识别其当前节点（第二行显示「当前：now」）
       const mi = proxiesData[n] || null;
       const isGrpMember = mi && ['Selector','URLTest','Fallback','LoadBalance'].includes(mi.type);
+      // 第二行：成员组显示其当前节点；当前选中节点额外显示归属订阅徽标
+      const det = [];
+      if (isGrpMember && mi.now) det.push(`<span class="gsub-now" title="${mi.now}">${mi.now}</span>`);
+      if ((isGrpMember || active) && !isBuiltin) {
+        const rp = resolveNodeProvider(isGrpMember ? (mi.now || n) : n);
+        if (rp) det.push(`<span class="gsub-prov" title="所属订阅：${esc(rp)}">${esc(rp)}</span>`);
+      }
+      const detHtml = det.length ? `<div class="gsub-sub">${det.join('')}</div>` : '';
       return `<div class="gsub${active}${hasDelay ? ' has-delay' : ''}" data-group="${name.replace(/"/g,'&quot;')}" data-node="${n.replace(/"/g,'&quot;')}" title="点击切换为「${n}」">
         <div class="gsub-main">
           <div class="gsub-top">
             <span class="gsub-name" title="${n}">${n}</span>
             ${tags ? `<span class="gsub-tags">${tags}</span>` : ''}
           </div>
-          ${isGrpMember && mi.now ? `<div class="gsub-sub"><span class="gsub-now" title="${mi.now}">${mi.now}</span></div>` : ''}
+          ${detHtml}
         </div>
         ${isBuiltin ? '' : `<span class="gsub-delay" title="重新测速" onclick="event.stopPropagation();retestSubCard('${jstr(name)}','${jstr(n)}')"><span class="lat ${lat.cls}">${lat.text}</span></span>
         <span class="gsub-check" onclick="event.stopPropagation();retestSubCard('${jstr(name)}','${jstr(n)}')" title="测速">${toolSvg(GT.speed)}</span>`}
@@ -3238,6 +3260,24 @@ function toggleGroupDetails(name) {
 }
 // 内联 onclick 中作为 JS 字符串字面量的安全转义
 function jstr(s) { return String(s == null ? '' : s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"); }
+// 解析节点归属订阅：成员若为策略组则沿 now 链向下解析到真实节点，再映射其 provider 名（无归属返回 ''）
+function resolveNodeProvider(name) {
+  let cur = name;
+  for (let i = 0; i < 6 && cur; i++) {
+    const p = proxiesData[cur];
+    if (p && ['Selector','URLTest','Fallback','LoadBalance'].includes(p.type) && p.now) cur = p.now;
+    else break;
+  }
+  return nodeProvider[cur] || '';
+}
+// 策略组全局模式回顶按钮显隐：仅在策略组页 + 全局模式 + 滚动超过阈值时显示
+function updateBackTopVisibility() {
+  const btn = document.getElementById('globalBackTop');
+  const main = document.querySelector('.main');
+  if (!btn || !main) return;
+  const inGlobal = document.getElementById('section-groups').style.display !== 'none' && currentMode === 'global';
+  btn.classList.toggle('show', inGlobal && main.scrollTop > 280);
+}
 // 工具按钮图标（Material 风格 path）
 const GT = {
   locate: 'M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,7A5,5 0 0,0 7,12A5,5 0 0,0 12,17A5,5 0 0,0 17,12A5,5 0 0,0 12,7M12,9A3,3 0 0,1 15,12A3,3 0 0,1 12,15A3,3 0 0,1 9,12A3,3 0 0,1 12,9Z',
@@ -5430,6 +5470,16 @@ setInterval(() => {
 }, 10000);
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// 策略组全局模式：滚动更新回顶按钮显隐；点击平滑回到顶部
+(function(){
+  var main = document.querySelector('.main');
+  var btn = document.getElementById('globalBackTop');
+  if (!main || !btn) return;
+  var ticking = false;
+  main.addEventListener('scroll', function(){ if (!ticking){ requestAnimationFrame(function(){ updateBackTopVisibility(); ticking = false; }); ticking = true; } }, {passive:true});
+  btn.addEventListener('click', function(){ main.scrollTo({top:0, behavior:'smooth'}); });
+})();
 </script>
 <script type="module">
   import { TrimApp } from './trim-web-app.js';
