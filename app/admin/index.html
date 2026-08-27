@@ -3707,7 +3707,7 @@ function updateNodeCardLatency(name) {
 
 const groupTestingSet = new Set();
 async function testGroup(groupName) {
-  if (groupTestingSet.has(groupName)) return;
+  if (groupTestingSet.has(groupName)) { showToast('该组测速进行中，请稍候', 'info'); return; }
   if (!proxiesData) { showToast('暂无策略组数据', 'warning'); return; }
   // 确保 provider 节点内核延迟史已就绪(策略组页可能未先访问订阅页)
   if (!window.__provHistLoaded) {
@@ -3776,6 +3776,7 @@ async function testGroup(groupName) {
   }
   if (!allLeaves.size) return;
   groupTestingSet.add(groupName);
+  try {
   // 卡片默认展开；若被折叠，点击测速时自动展开以便立即看到结果
   const card = document.getElementById(gcardId(groupName));
   if (card && card.classList.contains('collapsed')) {
@@ -3784,7 +3785,12 @@ async function testGroup(groupName) {
     gh.collapsed = false;
   }
   const testBtn = card ? card.querySelector('.ghead-tool[data-act="test"]') : null;
-  if (testBtn) testBtn.classList.add('testing');
+  if (testBtn) {
+    testBtn.classList.add('testing');
+    if (!testBtn.querySelector('.test-progress')) {
+      testBtn.innerHTML = toolSvg(GT.speed) + '<span class="test-progress">测速中</span>';
+    }
+  }
   const memberByLeaf = {};   // 叶子 -> 影响到的顶层成员（单个完成即刷对应子卡）
   memberLeaves.forEach((ls, m) => ls.forEach(l => (memberByLeaf[l] = memberByLeaf[l] || []).push(m)));
   const total = allLeaves.size;
@@ -3809,7 +3815,7 @@ async function testGroup(groupName) {
   k2.forEach((ms, l) => { nodeDelay[l] = ms; done++; });
   // 无缓存节点先不标死——只有当逐节点实测失败才标超时,避免误判
   noCache.forEach(l => { if (!k2.has(l) && nodeDelay[l] == null) nodeDelay[l] = null; });
-  if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
+  if (testBtn) { testBtn.setAttribute('data-progress', done + '/' + total); const tp = testBtn.querySelector('.test-progress'); if (tp) tp.textContent = '测速中 ' + done + '/' + total; }
   // 无缓存节点才真正发起测速：并发逐节点，仅当能测出才覆盖
   if (noCache.length) {
     let idx3 = 0;
@@ -3825,7 +3831,7 @@ async function testGroup(groupName) {
           nodeDelay[leaf] = -1;   // 实测失败才标超时
         }
         done++;
-        if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
+        if (testBtn) { testBtn.setAttribute('data-progress', done + '/' + total); const tp = testBtn.querySelector('.test-progress'); if (tp) tp.textContent = '测速中 ' + done + '/' + total; }
         (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
       }
     });
@@ -3852,10 +3858,16 @@ async function testGroup(groupName) {
       } catch (e) {}
     }
   }
+  } finally {
   groupTestingSet.delete(groupName);
-  if (testBtn) testBtn.classList.remove('testing');
+  if (testBtn) {
+    testBtn.classList.remove('testing');
+    const toolInner = testBtn.querySelector('.test-progress');
+    if (toolInner) testBtn.innerHTML = toolSvg(GT.speed);
+  }
   saveDelayCache();
   renderGroups();
+  }
   if (switched.length) {
     const msg = switched.length <= 3 ? switched.join('；') : switched.slice(0, 3).join('；') + ' 等 ' + switched.length + ' 个';
     showToast('已自动切换到最快节点：' + msg, 'success');
