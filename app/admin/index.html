@@ -3006,19 +3006,34 @@ async function loadGroups() {
 // 单个节点测速：真实订阅节点走 /providers/proxies/{provider}/{name}/healthcheck
 // （顶层 /proxies 不包含 provider 节点，直接 /proxies/{name}/delay 会 404），
 // 其余（内置/组）走 /proxies/{name}/delay。返回延时(ms)，失败返回 -1。
+// 解析组/嵌套组到真实叶子节点（沿 now 链向下，最多 6 层防环）
+function resolveTestTarget(name) {
+  let cur = name;
+  for (let i = 0; i < 6; i++) {
+    const p = proxiesData[cur];
+    if (p && ['Selector','URLTest','Fallback','LoadBalance'].includes(p.type) && p.now && p.now !== cur) cur = p.now;
+    else break;
+  }
+  return cur;
+}
 async function testOneNode(name, timeout, url) {
   const testUrl = url || 'https://www.gstatic.com/generate_204';
   try {
     let endpoint;
-    const prov = nodeProvider[name];
-    if (prov) {
+    // 成员本身是策略组（如 香港-手动）时解析到其当前叶子节点再测——
+    // 组名端点对 Selector 在部分内核版本不可靠；叶子走 provider healthcheck 最稳
+    const leaf = resolveTestTarget(name);
+    const prov = nodeProvider[leaf] || nodeProvider[name];
+    if (prov && leaf !== name) {
+      endpoint = 'providers/proxies/' + encodeURIComponent(prov) + '/' + encodeURIComponent(leaf) + '/healthcheck?timeout=' + timeout + '&url=' + encodeURIComponent(testUrl);
+    } else if (prov) {
       endpoint = 'providers/proxies/' + encodeURIComponent(prov) + '/' + encodeURIComponent(name) + '/healthcheck?timeout=' + timeout + '&url=' + encodeURIComponent(testUrl);
     } else {
       endpoint = 'proxies/' + encodeURIComponent(name) + '/delay?timeout=' + timeout + '&url=' + encodeURIComponent(testUrl);
     }
     const r = await fetch(endpoint);
     const d = await r.json();
-    if (r.ok && d.delay != null) return d.delay;
+    if (r.ok && d.delay != null) { if (leaf !== name) nodeDelay[leaf] = d.delay; return d.delay; }
   } catch (e) {}
   return -1;
 }
@@ -3240,6 +3255,7 @@ function renderGroups() {
     const tools = `
       <button class="ghead-tool" onclick="event.stopPropagation();locateGroupNode('${jstr(name)}')" title="定位当前节点">${toolSvg(GT.locate)}</button>
       <button class="ghead-tool" data-act="test" onclick="event.stopPropagation();testGroup('${jstr(name)}')" title="测试全部节点延迟">${toolSvg(GT.speed)}</button>
+      <button class="ghead-tool" onclick="event.stopPropagation();pickFastestGroup('${jstr(name)}')" title="一键切换到延迟最低的节点（先测速）">${toolSvg(GT.flash)}</button>
       <button class="ghead-tool${h.hideDetails ? ' active' : ''}" onclick="event.stopPropagation();toggleGroupDetails('${jstr(name)}')" title="${h.hideDetails ? '显示节点细节' : '隐藏节点细节'}">${toolSvg(GT.eye)}</button>
       <button class="ghead-tool${h.sortType ? ' active' : ''}" onclick="event.stopPropagation();cycleGroupSort('${jstr(name)}')" title="排序：${h.sortType===1 ? '按延迟' : h.sortType===2 ? '按名称' : '默认顺序'}">${toolSvg(sortIcon, h.sortType===2)}</button>
       <button class="ghead-tool${h.filterOpen ? ' active' : ''}" onclick="event.stopPropagation();toggleGroupFilter('${jstr(name)}')" title="筛选节点">${toolSvg(GT.filter)}</button>`;
@@ -3343,7 +3359,8 @@ const GT = {
   sortName: 'M3,11 L6,5 L9,11 M4.5,8 L7.5,8 M3,15 L9,15 L3,21 L9,21 M15,6 v12 M12,15 L15,18 L18,15',
   tether: 'M12,3C6.5,3 2,6.58 2,11C2,13.13 3.04,15.06 4.74,16.5C5.07,16.79 5.56,16.79 5.89,16.5C6.22,16.21 6.22,15.72 5.89,15.39C4.53,14.27 3.67,12.7 3.67,11C3.67,7.59 7.4,4.83 12,4.83C16.6,4.83 20.33,7.59 20.33,11C20.33,12.7 19.47,14.27 18.11,15.39C17.78,15.72 17.78,16.21 18.11,16.5C18.44,16.79 18.93,16.79 19.26,16.5C20.96,15.06 22,13.13 22,11C22,6.58 17.5,3 12,3M12,7.3C9.39,7.3 7.3,8.9 7.3,11C7.3,12.08 7.79,13.06 8.53,13.81C8.87,14.16 9.42,14.16 9.76,13.81C10.09,13.48 10.09,12.93 9.76,12.6C9.3,12.13 9,11.59 9,11C9,9.2 10.34,7.73 12,7.3M12,9.83C10.75,9.83 9.75,10.88 9.75,12.25C9.75,12.83 9.99,13.34 10.36,13.69C10.67,14 10.9,14.36 12,15.33C13.1,14.36 13.33,14 13.64,13.69C14.01,13.34 14.25,12.83 14.25,12.25C14.25,10.88 13.25,9.83 12,9.83M12,11.5A0.75,0.75 0 0,0 11.25,12.25A0.75,0.75 0 0,0 12,13A0.75,0.75 0 0,0 12.75,12.25A0.75,0.75 0 0,0 12,11.5Z',
   eye: 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z',
-  filter: 'M14,12V19.88C14,20.5 13.5,21 12.88,21C12.64,21 12.41,20.92 12.22,20.76L8.53,17.93C8.19,17.67 8,17.27 8,16.83V12L2.21,4.62C1.89,4.19 1.96,3.68 2.2,3.36C2.42,3.09 2.78,3 3.13,3H20.87C21.22,3 21.58,3.09 21.8,3.36C22.04,3.68 22.11,4.19 21.79,4.62L14,12Z'
+  filter: 'M14,12V19.88C14,20.5 13.5,21 12.88,21C12.64,21 12.41,20.92 12.22,20.76L8.53,17.93C8.19,17.67 8,17.27 8,16.83V12L2.21,4.62C1.89,4.19 1.96,3.68 2.2,3.36C2.42,3.09 2.78,3 3.13,3H20.87C21.22,3 21.58,3.09 21.8,3.36C22.04,3.68 22.11,4.19 21.79,4.62L14,12Z',
+  flash: 'M7,2V13H10V22L17,10H13L16,2Z'
 };
 function toolSvg(p, stroke) { return stroke
     ? `<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${p}"/></svg>`
@@ -3581,6 +3598,29 @@ function updateNodeCardLatency(name) {
 }
 
 const groupTestingSet = new Set();
+// 一键把选择类策略组切到延迟最低的成员（测速后使用；不自动触发，避免打断手动固定）
+async function pickFastestGroup(name, dry) {
+  const info = proxiesData ? proxiesData[name] : null;
+  if (!info) { showToast('暂无策略组数据', 'warning'); return null; }
+  if (info.type !== 'Selector') { showToast('仅选择(selector)类型的策略组支持一键选最快', 'warning'); return null; }
+  let best = null, bestVal = Infinity;
+  (info.all || []).forEach(n => {
+    if (['DIRECT','REJECT','REJECT-DROP','PASS','COMPATIBLE'].includes(n)) return;
+    const v = latencyOf(n);
+    if (v && v.val >= 0 && v.val < bestVal) { best = n; bestVal = v.val; }
+  });
+  if (!best) { showToast('暂无延迟数据，请先测速', 'warning'); return null; }
+  if (dry) return { best, bestVal };
+  try {
+    await fetch('proxies/' + encodeURIComponent(name), {
+      method: 'PUT', headers: {'Content-Type':'application/json'}, body: JSON.stringify({name: best})
+    });
+    info.now = best;
+    renderGroups();
+    showToast('已切换 ' + name + ' → ' + best + ' (' + bestVal + 'ms)', 'success');
+    return { best, bestVal };
+  } catch (e) { showToast('切换失败', 'error'); return null; }
+}
 async function testGroup(groupName) {
   if (groupTestingSet.has(groupName)) return;
   if (!proxiesData) { showToast('暂无策略组数据', 'warning'); return; }
