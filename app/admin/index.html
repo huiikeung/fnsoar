@@ -3340,10 +3340,14 @@ function renderGroups() {
         if (rp) det.push(`<span class="gsub-prov" title="所属订阅：${esc(rp)}">${esc(rp)}</span>`);
       }
       const detHtml = det.length ? `<div class="gsub-sub">${det.join('')}</div>` : '';
+      // 主标题统一「订阅名称 ｜ 节点名称」（仅订阅叶子；内置/成员组保持原名）
+      const rpLeaf = (!isBuiltin && !isGrpMember) ? (resolveNodeProvider(n) || '') : '';
+      const dispName = rpLeaf ? esc(rpLeaf) + ' ｜ ' + esc(n) : esc(n);
+      const dispTitle = rpLeaf ? rpLeaf + ' ｜ ' + n : n;
       return `<div class="gsub${active}${hasDelay ? ' has-delay' : ''}" data-group="${name.replace(/"/g,'&quot;')}" data-node="${n.replace(/"/g,'&quot;')}" title="点击切换为「${n}」">
         <div class="gsub-main">
           <div class="gsub-top">
-            <span class="gsub-name" title="${n}">${n}</span>
+            <span class="gsub-name" title="${dispTitle}">${dispName}</span>
             ${tags ? `<span class="gsub-tags">${tags}</span>` : ''}
           </div>
           ${detHtml}
@@ -3737,7 +3741,7 @@ async function testGroup(groupName) {
   const allLeaves = new Set();      // 去重后的待测叶子
   const selMembers = new Set();     // 测完可自动切换的 Selector 成员
   // 机场注入的占位/垃圾节点特征——测速时一律跳过(假节点/广告文本,连测必超时)
-  const PLACEHOLDER_RE = /(剩余流量|套餐到期|到期时间|请下载|下载客户端|分享免费|优选网|测速.?Nodes|广告|推荐.?订阅|机场.?公告|订阅.?已|此节点只|内部节点|面板链接|官网.?查看)/;
+  const PLACEHOLDER_RE = /(剩余流量|套餐到期|到期时间|距离下次|重置|官网|公告|使用教程|请下载|下载|下载客户端|分享|免费|优选网|免费优选|测速|广告|推荐|订阅|内部节点|面板链接|此节点只|只显示此节点|请尽快|请到|网站|客户端太旧|❌)/;
   const collect = (m, out, depth, vis) => {
     if (special.has(m)) return;
     const p = proxiesData[m];
