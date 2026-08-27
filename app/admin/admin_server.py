@@ -822,16 +822,78 @@ def save_sub_meta(meta):
     except Exception as e:
         log(f"save sub-meta failed: {e}")
 
+def _sub_user_agent():
+    """订阅请求 UA。机场面板普遍按客户端白名单(前缀匹配)决定是否下发
+    名称/官网/流量(userinfo)/更新间隔等元数据头 —— 对齐 clash-verge-rev
+    的默认做法(它发送 clash-verge/v{version})。fnSoar 内核即 mihomo
+    (clash.meta)，故以 clash.meta/内核版本 开头并括号标注面板来源。
+    该 UA 同时写进每条 proxy-provider 的 header，保证内核自身更新订阅时
+    与面板使用同一身份(见 _provider_header_lines)。"""
+    return f"clash.meta/{_get_core_version_cached()} (fnSoar/{_get_app_version()})"
+
+
+def _provider_header_lines():
+    """proxy-provider 的 header 配置块：钉死内核下载订阅时的 User-Agent。"""
+    return (
+        "    header:\n"
+        "      User-Agent:\n"
+        f"        - \"{_sub_user_agent()}\"\n"
+    )
+
+
 def _provider_block(name, url, interval, ptype="http"):
     block = f"  {name}:\n"
     block += f"    type: {ptype}\n"
     block += f"    url: \"{url}\"\n"
     block += f"    interval: {int(interval)}\n"
+    block += _provider_header_lines()
     block += "    health-check:\n"
     block += "      enable: true\n"
     block += "      url: https://www.gstatic.com/generate_204\n"
     block += "      interval: 180\n"
     return block + "\n"  # 与其他 provider 之间保留一行空行
+
+
+_PROVIDER_BLOCK_RE = None
+
+
+def _ensure_provider_headers():
+    """启动迁移：为所有 http 型 proxy-provider 补钉白名单 UA 的 header 块。
+    幂等（已含 header 的跳过）；仅改写 config.yaml 文本，不触发引擎动作。"""
+    global _PROVIDER_BLOCK_RE
+    try:
+        import re as _re
+        if _PROVIDER_BLOCK_RE is None:
+            _PROVIDER_BLOCK_RE = _re.compile(
+                r'(?ms)^(  (?P<key>[^\s:#][^:\n]*):\n)'
+                r'(?P<body>(?:[ \t]+[^\n]*\n)+)')
+        hl = _provider_header_lines()
+        content = read_config()
+
+        def _repl(m):
+            body = m.group("body")
+            if not _re.match(r'\s*type:\s*http\b', body):
+                return m.group(0)
+            if _re.search(r'^\s*header:', body, _re.M):
+                return m.group(0)
+            mm = _re.search(r'[ \t]+health-check:\n', body)
+            if mm:
+                body2 = body[:mm.start()] + hl + body[mm.start():]
+            else:
+                body2 = body + hl
+            return m.group(1) + body2
+
+        new_content = _PROVIDER_BLOCK_RE.sub(_repl, content)
+        if new_content != content:
+            # 先确保 YAML 可解析再落盘，防止手写配置被迁移弄坏
+            import yaml as _yaml
+            doc = _yaml.safe_load(new_content)
+            assert isinstance(doc, dict) and isinstance(doc.get("proxy-providers"), dict), \
+                "header migration produced invalid proxy-providers"
+            write_config(new_content)
+            log("provider UA headers injected (migration)")
+    except Exception as e:
+        log(f"WARNING: ensure provider headers failed: {e}")
 
 def _valid_provider_name(name):
     if not name or not name.strip():
@@ -849,6 +911,35 @@ def _sanitize_provider_name(raw):
     name = re.sub(r'[\s\t:\n{}\[\]#,\\/]+', "-", name)
     name = re.sub(r"-{2,}", "-", name).strip("-")
     return name[:60]
+
+def _parse_userinfo(hd):
+    """解析订阅的 subscription-userinfo 头（含 x-amz-meta- 等前缀变体）。
+    返回 {"upload":int,"download":int,"total":int,"expire":int}；无则 {}。"""
+    import re as _re
+    raw = None
+    for k, v in (hd or {}).items():
+        if "subscription-userinfo" in k and (
+                k == "subscription-userinfo" or k.endswith("-subscription-userinfo")):
+            raw = v
+            break
+    if not raw:
+        return {}
+    out = {}
+    for part in str(raw).split(";"):
+        if "=" in part:
+            k2, _, v2 = part.partition("=")
+            k2, v2 = k2.strip().lower(), v2.strip()
+            try:
+                out[k2] = int(float(v2)) if v2 else 0
+            except ValueError:
+                out[k2] = 0
+    return {
+        "upload": int(out.get("upload", 0)),
+        "download": int(out.get("download", 0)),
+        "total": int(out.get("total", 0)),
+        "expire": int(out.get("expire", 0)),
+    }
+
 
 def _sub_meta_from_headers(hd):
     """从订阅响应头解析元数据（name/updateInterval/home），供探测与验证共用。"""
@@ -954,13 +1045,6 @@ def _get_core_version_cached():
 _CORE_VER_CACHE = ""
 
 
-def _sub_user_agent():
-    """订阅请求 UA。机场面板普遍按客户端白名单(前缀匹配)决定是否下发
-    名称/官网/流量/更新间隔等元数据头 —— 对齐 clash-verge-rev 的默认做法
-    (它发送 clash-verge/v{version})。fnSoar 内核即 mihomo(clash.meta)，
-    故以 clash.meta/内核版本 开头并括号标注面板来源，兼容性与诚实性兼顾。"""
-    return f"clash.meta/{_get_core_version_cached()} (fnSoar/{_get_app_version()})"
-
 
 def validate_subscription(url, timeout=6):
     """保存前验证订阅：可达 + 内容像订阅格式。
@@ -991,6 +1075,26 @@ def validate_subscription(url, timeout=6):
         nm = _sub_name_from_yaml(text)
         if nm:
             meta["name"] = nm
+    meta["userInfo"] = _parse_userinfo(hd)
+
+    # 少数机场只认特定客户端：首个 UA 没拿到名称也没有 userinfo 时，换 clash-verge 重试一次
+    if not meta.get("name") and not meta.get("userInfo"):
+        try:
+            req2 = _ureq.Request(url, headers={"User-Agent": f"clash-verge/v{_get_app_version()}"})
+            with _ureq.urlopen(req2, timeout=timeout) as resp2:
+                hd2 = {k.lower(): v for k, v in resp2.headers.items()}
+                meta2 = _sub_meta_from_headers(hd2)
+                ui2 = _parse_userinfo(hd2)
+                if meta2.get("name") or ui2 or meta2.get("home") or meta2.get("updateInterval"):
+                    if not meta.get("name") and meta2.get("name"):
+                        meta["name"] = meta2["name"]
+                    if ui2 and not meta.get("userInfo"):
+                        meta["userInfo"] = ui2
+                    for k in ("home", "updateInterval"):
+                        if meta2.get(k) and not meta.get(k):
+                            meta[k] = meta2[k]
+        except Exception:
+            pass
     return {"ok": True, "meta": meta, "nodes": nodes}
 
 
@@ -1055,6 +1159,14 @@ def edit_provider_add(name, url, interval=3600, ptype="http", pre_meta=None):
     名称缺省时自动探测订阅真实名称（对齐 clash-verge-rev），探测失败回退域名。"""
     def _persist_meta(m, key):
         try:
+            ui = m.get("userInfo")
+            if isinstance(ui, dict) and (ui.get("total") or ui.get("upload") or ui.get("download")):
+                all_meta = load_sub_meta()
+                entry = all_meta.get(key, {}) if isinstance(all_meta, dict) else {}
+                entry["userInfo"] = {k: int(ui.get(k, 0) or 0)
+                                     for k in ("upload", "download", "total", "expire")}
+                all_meta[key] = entry
+                save_sub_meta(all_meta)
             if m.get("home") or m.get("updateInterval"):
                 all_meta = load_sub_meta()
                 entry = all_meta.get(key, {}) if isinstance(all_meta, dict) else {}
@@ -1975,6 +2087,17 @@ class AdminHandler(BaseHTTPRequestHandler):
                             "total": si.get("Total", 0) or 0,
                             "expire": si.get("Expire", 0) or 0
                         }
+                        # 引擎本次未带回流量信息时，用保存时验证所得的 userinfo 兜底，
+                    # 避免「刚重启/机场偶发不下发」导致卡片误判为自制订阅(∞)
+                    if "subInfo" not in entry:
+                        stored = ((load_sub_meta().get(name) or {}).get("userInfo"))
+                        if isinstance(stored, dict) and stored:
+                            entry["subInfo"] = {
+                                "upload": int(stored.get("upload", 0) or 0),
+                                "download": int(stored.get("download", 0) or 0),
+                                "total": int(stored.get("total", 0) or 0),
+                                "expire": int(stored.get("expire", 0) or 0),
+                            }
                     compact[name] = entry
                 return self._send_json({"providers": compact})
             except Exception as e:
@@ -2587,6 +2710,7 @@ def main():
 
     # 确保 config.yaml 存在（重装/首装后自动初始化），否则引擎无法加载配置
     ensure_config_initialized()
+    _ensure_provider_headers()
 
     # Start Unix socket server (for fnOS iframe integration) — non-fatal if it fails
     start_unix_socket_server()
