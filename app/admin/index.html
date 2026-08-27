@@ -804,7 +804,7 @@ tbody tr:hover{background:var(--card2)}
     <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M3 6h18v2H3V6m0 5h18v2H3v-2m0 5h18v2H3v-2z"/></svg>
   </button>
 
-  <!-- 策略组全局模式：右下角回到顶部按钮（滚动后浮现） -->
+  <!-- 策略组全局模式 / 日志页：右下角回到顶部按钮（滚动后浮现） -->
   <button id="globalBackTop" class="global-backtop" title="回到顶部" aria-label="回到顶部">
     <svg viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"/></svg>
   </button>
@@ -1261,7 +1261,7 @@ tbody tr:hover{background:var(--card2)}
         </div>
         <input class="con-search" id="logSearch" placeholder="搜索日志…" oninput="renderLogs()">
       </div>
-      <div class="card" style="padding:0;flex:1;overflow:auto;min-height:0">
+      <div class="card" id="logScrollBox" style="padding:0;flex:1;overflow:auto;min-height:0">
         <div class="log-list" id="logList"><div class="con-empty">加载中…</div></div>
       </div>
     </section>
@@ -3270,13 +3270,23 @@ function resolveNodeProvider(name) {
   }
   return nodeProvider[cur] || '';
 }
-// 策略组全局模式回顶按钮显隐：仅在策略组页 + 全局模式 + 滚动超过阈值时显示
+// 回顶按钮显隐：策略组全局模式（整页滚动）与日志页（列表内部滚动）任一滚过阈值即显示
 function updateBackTopVisibility() {
   const btn = document.getElementById('globalBackTop');
+  if (!btn) return;
   const main = document.querySelector('.main');
-  if (!btn || !main) return;
-  const inGlobal = document.getElementById('section-groups').style.display !== 'none' && currentMode === 'global';
-  btn.classList.toggle('show', inGlobal && main.scrollTop > 280);
+  const inGlobalGroups = document.getElementById('section-groups').style.display !== 'none' && currentMode === 'global';
+  const logBox = document.getElementById('logScrollBox');
+  const inLogs = document.getElementById('section-logs').style.display !== 'none';
+  const scrolled = (inGlobalGroups && main && main.scrollTop > 280) ||
+                   (inLogs && logBox && logBox.scrollTop > 280);
+  btn.classList.toggle('show', scrolled);
+}
+// 点击回顶：把所有已滚动的候选容器都平滑归零
+function backToTop() {
+  [document.querySelector('.main'), document.getElementById('logScrollBox')].forEach(el => {
+    if (el && el.scrollTop > 0) el.scrollTo({top: 0, behavior: 'smooth'});
+  });
 }
 // 工具按钮图标（Material 风格 path）
 const GT = {
@@ -5471,14 +5481,17 @@ setInterval(() => {
 
 function esc(s) { return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// 策略组全局模式：滚动更新回顶按钮显隐；点击平滑回到顶部
+// 回顶按钮：滚动更新显隐（整页 .main 与日志内滚容器 #logScrollBox），点击平滑回到顶部
 (function(){
   var main = document.querySelector('.main');
   var btn = document.getElementById('globalBackTop');
   if (!main || !btn) return;
   var ticking = false;
-  main.addEventListener('scroll', function(){ if (!ticking){ requestAnimationFrame(function(){ updateBackTopVisibility(); ticking = false; }); ticking = true; } }, {passive:true});
-  btn.addEventListener('click', function(){ main.scrollTo({top:0, behavior:'smooth'}); });
+  function onScroll(){ if (!ticking){ requestAnimationFrame(function(){ updateBackTopVisibility(); ticking = false; }); ticking = true; } }
+  main.addEventListener('scroll', onScroll, {passive:true});
+  var logBox = document.getElementById('logScrollBox');
+  if (logBox) logBox.addEventListener('scroll', onScroll, {passive:true});
+  btn.addEventListener('click', backToTop);
 })();
 </script>
 <script type="module">
