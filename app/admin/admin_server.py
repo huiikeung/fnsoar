@@ -936,6 +936,32 @@ def _looks_like_subscription(text):
     return False, 0
 
 
+def _get_core_version_cached():
+    """引擎(clash.meta 内核)版本号，进程内缓存；取不到用固定占位。"""
+    global _CORE_VER_CACHE
+    try:
+        if _CORE_VER_CACHE:
+            return _CORE_VER_CACHE
+        with urllib.request.urlopen(
+                f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/version", timeout=2) as r:
+            v = (json.loads(r.read().decode()) or {}).get("version") or ""
+        _CORE_VER_CACHE = v or "v0.0.0"
+        return _CORE_VER_CACHE
+    except Exception:
+        return "v0.0.0"
+
+
+_CORE_VER_CACHE = ""
+
+
+def _sub_user_agent():
+    """订阅请求 UA。机场面板普遍按客户端白名单(前缀匹配)决定是否下发
+    名称/官网/流量/更新间隔等元数据头 —— 对齐 clash-verge-rev 的默认做法
+    (它发送 clash-verge/v{version})。fnSoar 内核即 mihomo(clash.meta)，
+    故以 clash.meta/内核版本 开头并括号标注面板来源，兼容性与诚实性兼顾。"""
+    return f"clash.meta/{_get_core_version_cached()} (fnSoar/{_get_app_version()})"
+
+
 def validate_subscription(url, timeout=6):
     """保存前验证订阅：可达 + 内容像订阅格式。
     返回 {"ok": bool, "error": str?, "meta": {...}, "nodes": int} —— ok 时 meta 一并返回，
@@ -944,7 +970,7 @@ def validate_subscription(url, timeout=6):
     if not isinstance(url, str) or not url.startswith(("http://", "https://")):
         return {"ok": False, "error": "订阅链接必须以 http:// 或 https:// 开头"}
     try:
-        req = _ureq.Request(url, headers={"User-Agent": f"fnSoar/{_get_app_version()}"})
+        req = _ureq.Request(url, headers={"User-Agent": _sub_user_agent()})
         with _ureq.urlopen(req, timeout=timeout) as resp:
             hd = {k.lower(): v for k, v in resp.headers.items()}
             data = resp.read(3 * 1024 * 1024)
@@ -974,7 +1000,7 @@ def probe_subscription_meta(url, timeout=7):
     import urllib.request as _ureq
     meta = {}
     try:
-        req = _ureq.Request(url, headers={"User-Agent": f"fnSoar/{_get_app_version()}"})
+        req = _ureq.Request(url, headers={"User-Agent": _sub_user_agent()})
         with _ureq.urlopen(req, timeout=timeout) as resp:
             hd = {k.lower(): v for k, v in resp.headers.items()}
             meta = _sub_meta_from_headers(hd)
