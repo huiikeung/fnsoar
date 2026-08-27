@@ -1010,8 +1010,8 @@ tbody tr:hover{background:var(--card2)}
               <button class="mode-btn" data-mode="rule" onclick="setMode('rule')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"/></svg>规则</button>
               <button class="mode-btn" data-mode="global" onclick="setMode('global')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>全局</button>
               <button class="mode-btn" data-mode="direct" onclick="setMode('direct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>直连</button>
-              <button class="mode-btn" id="showHiddenBtn" onclick="toggleShowHidden()" title="显示/隐藏 自动/手动/故转/均衡 组"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>隐藏组</button>
             </div>
+            <button class="mode-btn" id="showHiddenBtn" onclick="toggleShowHidden()" title="显示 自动/手动/故转/均衡 等地域组" style="margin-left:14px;border:1px solid var(--border);border-radius:7px;padding:6px 12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="hb-label">显示地域组</span></button>
           </div>
       </div>
       <div class="gwrap" id="groupsWrap"></div>
@@ -2225,8 +2225,7 @@ async function loadServiceStatus() {
   if (pid) pid.textContent = 'PID ' + (s.pid || '-');
   const prev = showHidden;
   // 隐藏组开关由用户控制, 引擎状态不覆盖用户偏好
-  const shb = document.getElementById('showHiddenBtn');
-  if (shb) shb.classList.toggle('active', showHidden);
+  syncHiddenBtn();
   if (prev !== showHidden && document.getElementById('section-groups').style.display !== 'none') renderGroups();
   refreshTun();
 }
@@ -3332,12 +3331,13 @@ function renderGroups() {
       // 若成员本身是策略组，则识别其当前节点（第二行显示「当前：now」）
       const mi = proxiesData[n] || null;
       const isGrpMember = mi && ['Selector','URLTest','Fallback','LoadBalance'].includes(mi.type);
-      // 第二行：成员组显示其当前节点；当前选中节点额外显示归属订阅徽标
+      // 第二行：成员组显示「订阅名称 ｜ 当前节点名称」（不再使用徽章）
       const det = [];
-      if (isGrpMember && mi.now) det.push(`<span class="gsub-now" title="${mi.now}">${mi.now}</span>`);
-      if ((isGrpMember || active) && !isBuiltin) {
-        const rp = resolveNodeProvider(isGrpMember ? (mi.now || n) : n);
-        if (rp) det.push(`<span class="gsub-prov" title="所属订阅：${esc(rp)}">${esc(rp)}</span>`);
+      if (isGrpMember && mi.now) {
+        const rpNow = resolveNodeProvider(mi.now) || '';
+        const dispNow = rpNow ? esc(rpNow) + ' ｜ ' + esc(mi.now) : esc(mi.now);
+        const titleNow = rpNow ? rpNow + ' ｜ ' + mi.now : mi.now;
+        det.push(`<span class="gsub-now" title="${titleNow}">${dispNow}</span>`);
       }
       const detHtml = det.length ? `<div class="gsub-sub">${det.join('')}</div>` : '';
       // 主标题统一「订阅名称 ｜ 节点名称」（仅订阅叶子；内置/成员组保持原名）
@@ -3403,14 +3403,21 @@ function showIconsEnabled() {
 }
 let groupOrder = [];                // 策略组配置顺序（config.yaml proxy-groups 的排列）
 let hiddenGroups = {};              // 组名 -> true（config.yaml 中 hidden: true 的组）
+function syncHiddenBtn() {
+  const b = document.getElementById('showHiddenBtn');
+  if (!b) return;
+  b.classList.toggle('active', showHidden);
+  const lbl = b.querySelector('.hb-label');
+  if (lbl) lbl.textContent = showHidden ? '隐藏地域组' : '显示地域组';
+  b.title = showHidden ? '隐藏 自动/手动/故转/均衡 等地域组' : '显示 自动/手动/故转/均衡 等地域组';
+}
 function toggleShowHidden() {
   showHidden = !showHidden;
-  try { localStorage.setItem('fnsoar_show_hidden', showHidden ? '1' : '0'); } catch(e) {}
-  const b = document.getElementById('showHiddenBtn');
-  if (b) b.classList.toggle('active', showHidden);
+  try { localStorage.setItem('fnsoar_region_groups', showHidden ? '1' : '0'); } catch(e) {}
+  syncHiddenBtn();
   renderGroups();
 }
-let showHidden = (function(){ try { return localStorage.getItem('fnsoar_show_hidden') === '1'; } catch(e){ return false; } })();             // 是否显示隐藏组(用户可开关)
+let showHidden = (function(){ try { return localStorage.getItem('fnsoar_region_groups') === '1'; } catch(e){ return false; } })();   // 地域组(自动/手动/故转/均衡)显示开关, 默认隐藏
 // 图标本地化：http(s) 走 /api/icon 由服务端下载缓存到本机；data:/相对路径 直接使用
 function localIcon(url) {
   if (/^https?:\/\//i.test(url || '')) return 'api/icon?url=' + encodeURIComponent(url);
