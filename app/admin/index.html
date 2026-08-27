@@ -3753,22 +3753,22 @@ async function testGroup(groupName) {
         done++;
         (memberByLeaf[n2] || []).forEach(updateSubCardLatency);
       });
+      // 引擎批量接口在节点多时不完整返回，凡未覆盖的节点一律走逐节点
+      // 高并发补测(16并发)——批量结果仅当快速通道复用，未覆盖绝不直接判死。
       const uncovered = [...allLeaves].filter(l => !Object.prototype.hasOwnProperty.call(bm || {}, l));
-      if (uncovered.length && uncovered.length <= 30) {
+      if (uncovered.length) {
         let idx2 = 0;
-        const ws2 = Array.from({length:8}, async () => {
+        const ws2 = Array.from({length:16}, async () => {
           while (idx2 < uncovered.length) {
             const leaf = uncovered[idx2++];
-            const d2 = await testOneNode(leaf, 4000, testUrl);
-            if (d2 > 0) nodeDelay[leaf] = d2; else nodeDelay[leaf] = -1;
+            const d2 = await testOneNode(leaf, 3000, testUrl);
+            if (d2 > 0) nodeDelay[leaf] = d2; else if (nodeDelay[leaf] == null) nodeDelay[leaf] = -1;
             done++;
+            if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
             (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
           }
         });
         await Promise.all(ws2);
-      } else {
-        allLeaves.forEach(l => { if (nodeDelay[l] == null) nodeDelay[l] = -1; });
-        done += allLeaves.length;
       }
       batchOk = true;
     }
