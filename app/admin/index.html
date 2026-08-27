@@ -328,6 +328,7 @@ tbody tr:hover{background:var(--card2)}
 .gcard-info{display:flex;align-items:center;gap:9px;font-size:11px;color:var(--dim);flex-wrap:nowrap;overflow:hidden;min-width:0}
 .gcard-type{display:inline-block;padding:1px 8px;border-radius:6px;font-size:10.5px;font-weight:500;line-height:1.5;background:transparent;border:1px solid rgba(78,110,242,.4);color:var(--accent2);flex-shrink:0}
 .gcard-info .gcard-count{font-size:11px;color:var(--dim);font-weight:400;flex-shrink:0;white-space:nowrap}
+.gcard-info .gcard-lat .lat{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0}
 .gcard-info .gcard-now{font-size:11px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:26ch}
 .gcard-head-spacer{flex:1;min-width:0}
 .gcard-count-right{font-size:11px;color:var(--dim);font-weight:500;flex-shrink:0;margin-right:4px;display:flex;align-items:center;min-width:2ch;justify-content:flex-end}
@@ -3358,10 +3359,21 @@ function renderGroups() {
     }).join('');
     const typeEn = ({Selector:'selector',URLTest:'url-test',Fallback:'fallback',LoadBalance:'load-balance'})[info.type] || info.type;
     const now = info.now || '-';
+    // 组卡头部显示当前生效延迟: 常规组=当前节点延迟; 均衡组无单点now→显示成员最快延迟
+    let groupLatHtml = '';
+    if (info.type === 'LoadBalance') {
+      let minMs = Infinity;
+      (info.all || []).forEach(m => { const r = latencyOf(m); if (r && r.val > 0 && r.val < minMs) minMs = r.val; });
+      if (minMs < Infinity) { const cls = minMs < 120 ? 'lat-ok' : (minMs < 350 ? 'lat-mid' : 'lat-bad'); groupLatHtml = `<span class="lat ${cls}">最快 ${minMs} ms</span>`; }
+    } else {
+      const gl = latencyOf(name);
+      if (gl && gl.val > 0) groupLatHtml = `<span class="lat ${gl.cls}">${gl.text}</span>`;
+      else if (gl && gl.val === -2) groupLatHtml = '<span class="lat lat-bad">超时</span>';
+    }
     const sortIcon = h.sortType===1 ? GT.sortDelay : (h.sortType===2 ? GT.sortName : GT.sort);
     const tools = `
       <button class="ghead-tool" onclick="event.stopPropagation();locateGroupNode('${jstr(name)}')" title="定位当前节点">${toolSvg(GT.locate)}</button>
-      <button class="ghead-tool" data-act="test" onclick="event.stopPropagation();testGroup('${jstr(name)}')" title="测试全部节点延迟">${toolSvg(GT.speed)}</button>
+      <button class="ghead-tool${groupTestingSet.has(name) ? ' testing' : ''}" data-act="test" onclick="event.stopPropagation();testGroup('${jstr(name)}')" title="测试全部节点延迟">${toolSvg(GT.speed)}${groupTestingSet.has(name) ? `<span class="test-progress">测速中 ${testProgressText[name] || ''}</span>` : ''}</button>
       <button class="ghead-tool${h.hideDetails ? ' active' : ''}" onclick="event.stopPropagation();toggleGroupDetails('${jstr(name)}')" title="${h.hideDetails ? '显示节点细节' : '隐藏节点细节'}">${toolSvg(GT.eye)}</button>
       <button class="ghead-tool${h.sortType ? ' active' : ''}" onclick="event.stopPropagation();cycleGroupSort('${jstr(name)}')" title="排序：${h.sortType===1 ? '按延迟' : h.sortType===2 ? '按名称' : '默认顺序'}">${toolSvg(sortIcon, h.sortType===2)}</button>
       <button class="ghead-tool${h.filterOpen ? ' active' : ''}" onclick="event.stopPropagation();toggleGroupFilter('${jstr(name)}')" title="筛选节点">${toolSvg(GT.filter)}</button>`;
@@ -3379,6 +3391,7 @@ function renderGroups() {
           <div class="gcard-info">
             <span class="gcard-type">${typeEn}</span>
             <span class="gcard-now" title="${now}">${now}</span>
+            ${groupLatHtml ? `<span class="gcard-lat">${groupLatHtml}</span>` : ''}
           </div>
         </div>
         <span class="gcard-head-spacer"></span>
@@ -3717,6 +3730,7 @@ function updateNodeCardLatency(name) {
 }
 
 const groupTestingSet = new Set();
+let testProgressText = {};   // 组名 -> 'x/y' 测速进度(renderGroups 重渲染时恢复呼吸态+进度)
 async function testGroup(groupName) {
   if (groupTestingSet.has(groupName)) { showToast('该组测速进行中，请稍候', 'info'); return; }
   if (!proxiesData) { showToast('暂无策略组数据', 'warning'); return; }
@@ -3807,6 +3821,7 @@ async function testGroup(groupName) {
   // 内核已知节点全量立即上屏(可用=ms, 已知失败=超时), 点测速瞬间每张子卡都有数
   k2.forEach((ms, l) => { nodeDelay[l] = ms > 0 ? ms : -1; done++; });
   const total = k2.size + Math.min([...allLeaves].filter(l => !k2.has(l)).length, 120);
+  testProgressText[groupName] = done + '/' + total;
   if (testBtn) { testBtn.setAttribute('data-progress', done + '/' + total); const tp = testBtn.querySelector('.test-progress'); if (tp) tp.textContent = '测速中 ' + done + '/' + total; }
   renderGroups();   // 缓存节点立即渲染, 不等补测
   // 仅内核从没测过的节点才发起新测(截断到 MAX_TEST 防全量风暴)
@@ -3826,12 +3841,14 @@ async function testGroup(groupName) {
           nodeDelay[leaf] = -1;   // 实测失败才标超时
         }
         done++;
+        testProgressText[groupName] = done + '/' + total;
         if (testBtn) { testBtn.setAttribute('data-progress', done + '/' + total); const tp = testBtn.querySelector('.test-progress'); if (tp) tp.textContent = '测速中 ' + done + '/' + total; }
         (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
       }
     });
     await Promise.all(ws3);
   }
+  testProgressText[groupName] = done + '/' + total;
   if (testBtn) { testBtn.setAttribute('data-progress', done + '/' + total); if (done >= total) testBtn.classList.remove('testing'); }
   renderGroups();
 
@@ -3867,6 +3884,7 @@ async function testGroup(groupName) {
   }
   } finally {
   groupTestingSet.delete(groupName);
+  delete testProgressText[groupName];
   if (testBtn) {
     testBtn.classList.remove('testing');
     const toolInner = testBtn.querySelector('.test-progress');
