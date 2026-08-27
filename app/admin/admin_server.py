@@ -32,7 +32,7 @@ from pathlib import Path
 TRIM_APPNAME  = os.environ.get("MIHOMO_APP_NAME", "fnnas.fnsoar")
 TRIM_PKGVAR   = os.environ.get("MIHOMO_DATA_DIR", "/vol1/@appdata/fnnas.fnsoar")
 TRIM_APPDEST  = os.environ.get("MIHOMO_DEST_DIR", "/vol1/@appcenter/fnnas.fnsoar")
-ADMIN_PORT    = int(os.environ.get("MIHOMO_ADMIN_PORT", "9099"))
+ADMIN_PORT    = int(os.environ.get("ADMIN_PORT", "9099"))
 SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
                                 f"/vol1/@appcenter/{TRIM_APPNAME}/fnsoar.sock")
 
@@ -822,7 +822,11 @@ def save_sub_meta(meta):
     except Exception as e:
         log(f"save sub-meta failed: {e}")
 
+_SUB_UA_OVERRIDE = None
+
+
 def _sub_user_agent():
+    global _SUB_UA_OVERRIDE
     """订阅请求 UA。机场面板普遍按客户端白名单(前缀匹配)决定是否下发
     名称/官网/流量(userinfo)/更新间隔等元数据头 —— 对齐 clash-verge-rev
     的默认做法(它发送 clash-verge/v{version})。fnSoar 内核即 mihomo
@@ -855,6 +859,12 @@ def _provider_block(name, url, interval, ptype="http"):
 
 
 _PROVIDER_BLOCK_RE = None
+
+
+def _build_subfetch_url(orig_url):
+    import base64 as _b64
+    b64u = _b64.urlsafe_b64encode(orig_url.encode()).decode().rstrip("=")
+    return f"http://127.0.0.1:{ADMIN_PORT}/subfetch?u={b64u}"
 
 
 def _ensure_provider_headers():
@@ -1044,6 +1054,202 @@ def _get_core_version_cached():
 
 _CORE_VER_CACHE = ""
 
+
+
+PROVIDERS_DIR_KEY = "_fnsoar_sub_store"
+
+
+def _providers_dir():
+    import os
+    d = os.path.join(TRIM_PKGVAR, "providers")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def _sub_file_path(name):
+    import re as _re2
+    safe = _re2.sub(r"[^\w\u4e00-\u9fff.-]+", "_", name)[:60] or "sub"
+    return f"{_providers_dir()}/{safe}.yaml"
+
+
+class _IPv4Only:
+    """作用域内强制仅IPv4出站(防v6直连泄露)，退出即还原"""
+    def __enter__(self):
+        import socket as _s
+        self._orig_cc = _s.create_connection
+        def _cc_v4(address, *a, **kw):
+            host, port = address[0], address[1]
+            infos = _s.getaddrinfo(host, port, _s.AF_INET, _s.SOCK_STREAM)
+            return self._orig_cc((infos[0][4][0], port), *a, **kw)
+        _s.create_connection = _cc_v4
+        return self
+    def __exit__(self, *exc):
+        import socket as _s2
+        _s2.create_connection = self._orig_cc
+        return False
+
+
+def _download_sub_validated(name_hint, url, timeout=25):
+    """verge语义的完整订阅获取: 下载→必须是有效clash/b64且含节点→
+    否则按UA阶梯(clash.meta→clash-verge)重试。失败抛最后异常。"""
+    import yaml as _yv
+    import time as _t3
+    last_err = None
+    uas = [None, f"clash-verge/v{_get_app_version()}"]
+    for ua in uas:
+        try:
+            if ua is None:
+                body, hd = _download_sub(url, timeout=timeout)
+            else:
+                old_ua = _SUB_UA_OVERRIDE
+                globals()["_SUB_UA_OVERRIDE"] = ua
+                try:
+                    body, hd = _download_sub(url, timeout=timeout)
+                finally:
+                    globals()["_SUB_UA_OVERRIDE"] = old_ua
+            txt = body.decode("utf-8", "ignore")
+            doc = _yv.safe_load(txt)
+            n_p = len((doc or {}).get("proxies") or [])
+            if not isinstance(doc, dict) or (
+                    not isinstance(doc.get("proxies"), list) and
+                    not doc.get("proxy-providers")):
+                last_err = RuntimeError("content missing proxies list")
+                continue
+            if not n_p:
+                # proxies存在但为空(map/list均算异常情况):视为垃圾响应重试
+                last_err = RuntimeError("proxies empty")
+                continue
+            return body, hd
+        except Exception as e:
+            last_err = e
+        _t3.sleep(1.5)
+    raise last_err
+
+
+def _download_sub(url, timeout=20):
+    """面板侧订阅下载器(对齐clash-verge prfitem.rs::from_url语义):
+    自带UA、读subscription-userinfo头、cap 8MB、强IPv4。"""
+    import urllib.request as _urq
+    if hasattr(_urq, "Request"):
+        req = _urq.Request(url, headers={"User-Agent": (_SUB_UA_OVERRIDE or _sub_user_agent())})
+    else:
+        raise RuntimeError("urllib unavailable")
+    with _IPv4Only():
+        with _urq.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
+            body = resp.read(8 * 1024 * 1024)
+            hd = {k.lower(): v for k, v in resp.headers.items()}
+    # BOM剥离(verge同款处理)
+    if body.startswith(b"\xef\xbb\xbf"):
+        body = body[3:]
+    return body, hd
+
+
+def _refresh_all_payloads(initial=True):
+    """对齐verge自动更新:启动时及周期性把各订阅载荷重抓落盘。
+    - 仅处理file型且meta中有url的订阅
+    - 静默容错、错峰下载(间隔3s)、失败保留旧载荷"""
+    import os as _os2, time as _t2, threading as _th2
+    def _worker():
+        # 启动预热前先等HTTP面就绪日志出现(内部仅为排序输出)
+        try:
+            meta_store = load_sub_meta()
+            pps = {k: t for k, t in _yaml_provider_types().items()
+                   if t == "file"}                    # 仅现存file型订阅
+            names = [k for k in pps
+                     if (meta_store.get(k) or {}).get("url", "").startswith("http")]
+        except Exception:
+            return
+        for name in names:
+            dest = _sub_file_path(name)
+            if initial and _os2.path.exists(dest) and _os2.path.getsize(dest) > 4096:
+                continue                      # 已有健康载荷,首启不重复拉
+            try:
+                body, hd = _download_sub_validated(
+                    name, (load_sub_meta().get(name) or {}).get("url"))
+                tmp = dest + ".tmp"
+                open(tmp, "wb").write(body)
+                _os2.replace(tmp, dest)
+                log(f"payload refreshed '{name}' ({len(body)}B)")
+                ui = None
+                for k2, v2 in hd.items():
+                    if k2.endswith("subscription-userinfo"):
+                        ui = _parse_userinfo({k2: v2}); break
+                if ui is not None:
+                    ms = load_sub_meta()
+                    ent = ms.setdefault(name, {}); ent["userInfo"] = ui
+                    save_sub_meta(ms)
+            except Exception as e2:
+                log(f"WARNING: auto-refresh '{name}': {e2}")
+            _t2.sleep(3)
+    _th2.Thread(target=_worker, daemon=True).start()
+
+
+def _yaml_provider_types():
+    """返回 {name: 'file'|'http'} 映射,读当前配置"""
+    import yaml as _yv
+    try:
+        d = _yv.safe_load(read_config()) or {}
+        return {k: str((v or {}).get("type")) for k, v in (d.get('proxy-providers') or {}).items()}
+    except Exception:
+        return {}
+
+
+def _migrate_to_file_providers():
+    """把 http 型 proxy-provider 转为本地文件型(对齐verge架构):
+    1) 首次转换时下载一份载荷落地 2) 改写块为 type:file
+    3) 原URL持久化进 sub_meta 以便后续更新幂等安全"""
+    import os as _os
+    try:
+        import yaml as _yaml
+        cfg_text = read_config()
+        doc = _yaml.safe_load(cfg_text) or {}
+        pps = doc.get("proxy-providers")
+        if not isinstance(pps, dict):
+            return
+        changed = False
+        for name, pv in list(pps.items()):
+            if not isinstance(pv, dict) or str(pv.get("type")) != "http":
+                continue
+            orig_url = pv.get("url", "")
+            dest = _sub_file_path(name)
+            need_seed = not (_os.path.exists(dest) and _os.path.getsize(dest) > 64)
+            if need_seed and orig_url.startswith("http"):
+                try:
+                    body, _hd = _download_sub(orig_url)
+                    open(dest, "wb").write(body)
+                    log(f"provider '{name}' payload seeded ({len(body)}B)")
+                except Exception as e:
+                    log(f"WARNING: seed '{name}' failed: {e}; empty stub written")
+                    if not _os.path.exists(dest):
+                        open(dest, "w").write("proxies: []\n")
+            elif not _os.path.exists(dest):
+                open(dest, "w").write("proxies: []\n")
+            nb = {"type": "file",
+                  "path": f"providers/{_os.path.basename(dest)}"}
+            if isinstance(pv.get("health-check"), dict):
+                nb["health-check"] = pv["health-check"]
+            pps[name] = nb
+            changed = True
+            # 持久化原始URL供后续更新(缺才补)
+            meta_store = load_sub_meta()
+            ent = meta_store.setdefault(name, {})
+            if not ent.get("url"):
+                ent["url"] = orig_url
+                save_sub_meta(meta_store)
+        if changed:
+            out_text = _yaml.safe_dump(doc, allow_unicode=True, sort_keys=False,
+                                       default_flow_style=False, width=4096, indent=2)
+            chk = _yaml.safe_load(out_text)
+            assert len(chk.get("proxy-providers") or {}) == len(pps)
+            write_config(out_text)
+            log(f"proxy-providers converted to local-file mode ({len(pps)} entries)")
+    except Exception:
+        import traceback as _tb2
+        try:
+            open("/tmp/panel_migration_err.txt", "w").write(_tb2.format_exc())
+        except Exception:
+            pass
+        log("WARNING: migrate to file providers failed")
 
 
 def validate_subscription(url, timeout=6):
@@ -1789,6 +1995,49 @@ class AdminHandler(BaseHTTPRequestHandler):
             return True
         return False
 
+    def _api_update_provider(self):
+        """对齐 clash-verge:面板下载→落盘→通知内核重载(file型)"""
+        qs = parse_qs(urlparse(self.path).query)
+        name = (qs.get("name") or [""])[0]
+        if not name:
+            return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+        meta_store = load_sub_meta()
+        raw_url = (meta_store.get(name) or {}).get("url", "")
+        import base64 as _b64u
+        url = raw_url
+        if "/subfetch?u=" in raw_url:
+            p4 = raw_url.split("u=", 1)[1]
+            url = _b64u.urlsafe_b64decode(p4 + "=" * (-len(p4) % 4)).decode()
+            meta_store.setdefault(name, {})["url"] = url
+            save_sub_meta(meta_store)
+        if not url.startswith("http"):
+            return self._send_json({"success": False,
+                "error": f"未找到 '{name}' 的源URL, 请删除后重新添加"}, 400)
+        try:
+            body, hd = _download_sub_validated(name, url)
+            open(_sub_file_path(name), "wb").write(body)
+        except Exception as e:
+            return self._send_json({"success": False,
+                "error": f"下载失败: {e}"}, 502)
+        ui = None
+        for k5, v5 in hd.items():
+            if k5.endswith("subscription-userinfo"):
+                ui = _parse_userinfo({k5: v5}); break
+        if ui is not None:
+            ent = meta_store.setdefault(name, {}); ent["userInfo"] = ui
+            save_sub_meta(meta_store)
+        try:
+            import urllib.request as _uq3
+            rq3 = _uq3.Request(
+                f"http://127.0.0.1:{MIHOMO_CTRL_PORT}/providers/proxies/{quote(name)}",
+                method="PUT")
+            urllib.request.urlopen(rq3, timeout=20).read(64)
+            note = "已同步内核"
+        except Exception as e6:
+            note = "已落盘, 内核重载待启动生效" + (f"; {e6}" if str(e6) else "")
+        return self._send_json({"success": True, "name": name,
+                                "size": len(body), "note": note})
+
     def _proxy_mihomo(self, sub_path, headers, method="GET", body=b""):
         """Forward /api/mihomo/<rest> or catch-all → http://mihomo-ctrl:9090/<rest>.
         Always sends a response; returns nothing meaningful.
@@ -2165,14 +2414,8 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self.send_error(502, "icon fetch failed")
 
         if path == "/api/providers/update":
-            # 触发指定订阅源立即更新 (PUT /providers/proxies/{name})
-            qs = parse_qs(urlparse(self.path).query)
-            name = (qs.get("name") or [""])[0]
-            if not name:
-                return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
-            return self._proxy_mihomo(
-                f"providers/proxies/{quote(name)}",
-                self.headers, "PUT", b"")
+            return self._api_update_provider()
+
         if path == "/api/logs":
             lines = 200
             try:
@@ -2621,13 +2864,8 @@ class AdminHandler(BaseHTTPRequestHandler):
         """Proxy PUT requests (e.g. /proxies/:sel, /configs mode) to mihomo."""
         path = self._strip_gateway_prefix(urlparse(self.path).path)
         if path == "/api/providers/update":
-            qs = parse_qs(urlparse(self.path).query)
-            name = (qs.get("name") or [""])[0]
-            if not name:
-                return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
-            return self._proxy_mihomo(
-                f"providers/proxies/{quote(name)}",
-                self.headers, "PUT", b"")
+            return self._api_update_provider()
+
         if self._maybe_proxy_clash_api(path, "PUT", self._read_body()):
             return
         qs = urlparse(self.path).query
@@ -2710,7 +2948,7 @@ def main():
 
     # 确保 config.yaml 存在（重装/首装后自动初始化），否则引擎无法加载配置
     ensure_config_initialized()
-    _ensure_provider_headers()
+    _migrate_to_file_providers()
 
     # Start Unix socket server (for fnOS iframe integration) — non-fatal if it fails
     start_unix_socket_server()
@@ -2720,6 +2958,8 @@ def main():
     # Start HTTP server (for direct browser access)
     httpd = ThreadedHTTPServer(("0.0.0.0", ADMIN_PORT), AdminHandler)
     log(f"HTTP admin panel: http://0.0.0.0:{ADMIN_PORT}")
+
+    threading.Thread(target=_refresh_all_payloads, kwargs={'initial': True}, daemon=True).start()
 
     # Restore the last saved engine state (on/off) in the background so the
     # HTTP panel becomes available immediately.
