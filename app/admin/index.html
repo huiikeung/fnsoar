@@ -1632,9 +1632,31 @@ function showSection(name) {
   if (nav) nav.classList.add('active');
   autoHideSidebar();
   if (name === 'home') { loadDashboard(); refreshTun(); }
-  if (name === 'groups') { document.getElementById('groupsWrap').innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">加载中…</div>'; loadGroups(); }
+  if (name === 'groups') {
+    // 秒开：优先恢复上次渲染快照（内存 > localStorage），数据后台刷新后原位重绘
+    const gw = document.getElementById('groupsWrap');
+    let snap = null;
+    try {
+      snap = groupsSnapMem[currentMode]
+          || localStorage.getItem('fnsoarGroupsSnap:' + currentMode);
+      if (!snap) {  // 模式未知时退回上次成功渲染的模式快照
+        const lk = localStorage.getItem('fnsoarGroupsLastMode');
+        if (lk) snap = groupsSnapMem[lk] || localStorage.getItem('fnsoarGroupsSnap:' + lk);
+      }
+    } catch (e) {}
+    if (snap) gw.innerHTML = snap;
+    else gw.innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">加载中…</div>';
+    loadGroups();
+  }
   // 已有订阅卡片时立即展示，仅后台静默刷新；不再每次切换都闪“加载中”。
-  if (name === 'providers') loadProviders(!!document.querySelector('#provGrid .prov-card'));
+  if (name === 'providers') {
+    // 秒开：订阅卡片快照先铺底（内存 > localStorage），再后台静默刷新
+    const grid = document.getElementById('provGrid');
+    let snap = null;
+    try { snap = provSnapMem || localStorage.getItem('fnsoarProvSnap'); } catch (e) {}
+    if (snap && !grid.querySelector('.prov-card')) grid.innerHTML = snap;
+    loadProviders(!!grid.querySelector('.prov-card'));
+  }
   if (name === 'connections') { loadConnections(); startConnPolling(); }
   if (name === 'rules') loadRules();
   if (name === 'logs') { loadLogs(); startLogPolling(); }
@@ -2768,8 +2790,15 @@ async function runWebTest() {
        </div>`;
    }).join('');
    };
-   render();
-   fetchProvLive().then(() => { render(); });
+   const renderAndSnap = () => {
+     render();
+     if (grid.querySelector('.prov-card')) {
+       provSnapMem = grid.innerHTML;
+       try { localStorage.setItem('fnsoarProvSnap', provSnapMem); } catch (e) {}
+     }
+   };
+   renderAndSnap();
+   fetchProvLive().then(renderAndSnap);
  }
  let provEditing = null;
  function openProvModal(name) {
@@ -2909,6 +2938,21 @@ async function updateAllProviders() {
 }
 // ── 策略组 ─────────────────────────
 let currentMode = 'rule';
+let groupsSnapMem = {};   // 策略组页秒开快照 {mode: 渲染HTML}
+let provSnapMem = '';     // 订阅页秒开快照（最近一次含卡片的渲染结果）
+// 页面切换秒开：renderGroups 收尾抓取最终 HTML 存为快照（setTimeout(0) 在后台标签页也可靠触发）
+function snapGroupsSoon() {
+  setTimeout(() => {
+    const w = document.getElementById('groupsWrap');
+    if (!w || (!w.querySelector('.gcard-head') && !w.querySelector('.node-grid-all'))) return;
+    const html = w.innerHTML;
+    groupsSnapMem[currentMode] = html;
+    try {
+      localStorage.setItem('fnsoarGroupsSnap:' + currentMode, html);
+      localStorage.setItem('fnsoarGroupsLastMode', currentMode);
+    } catch (e) {}
+  }, 0);
+}
 let globalSort = 0;            // 全局模式排序：0 默认 / 1 延迟 / 2 名称
 let globalFilterOpen = false;  // 全局模式筛选框是否展开
 let globalFilterText = '';     // 全局模式筛选关键字
@@ -3016,6 +3060,7 @@ function toggleGroupCard(el) {
 }
 function renderGroups() {
   updateBackTopVisibility();
+  snapGroupsSoon();
   const wrap = document.getElementById('groupsWrap');
   if (!proxiesData) {
     wrap.innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">无法获取策略组数据（引擎可能未运行）</div>';
