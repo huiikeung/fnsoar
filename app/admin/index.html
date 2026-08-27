@@ -1722,6 +1722,49 @@ let proxiesData = null;
 let nodeProvider = {};   // 真实节点名 -> 所属订阅 provider 名（测速走 provider healthcheck）
 let nodeDelay = {};      // 节点名 -> 最近一次测速延时(ms)，-1 表示超时
 let _lastSubInfo = {};   // 订阅名 -> 最近一次成功的 subscriptionInfo（刷新偶发失败时沿用，避免到期行闪没）
+// 无 subscriptionInfo 的自制订阅：用量由本机按连接链路增量累计并持久化（浏览器重启不丢）
+let localUsage = {};
+try { localUsage = JSON.parse(localStorage.getItem('fnsoarLocalUsage') || '{}') || {}; } catch (e) { localUsage = {}; }
+function saveLocalUsage() { try { localStorage.setItem('fnsoarLocalUsage', JSON.stringify(localUsage)); } catch (e) {} }
+function bumpLocalUsage(name, du, dd) {
+  if (!du && !dd) return;
+  const e = localUsage[name] || (localUsage[name] = { u: 0, d: 0 });
+  e.u += Math.max(0, du); e.d += Math.max(0, dd);
+  saveLocalUsage();
+}
+let _usageSeen = {};   // 连接id -> 上次采样 {u,d}
+async function pollLocalUsage() {
+  let d = null;
+  try { const r = await fetch('connections'); if (r.ok) d = await r.json(); } catch (e) {}
+  if (!d || !Array.isArray(d.connections)) return;
+  d.connections.forEach(c => {
+    if (!c || !c.id) return;
+    const prev = _usageSeen[c.id];
+    const du = prev ? Math.max(0, (c.upload || 0) - prev.u) : (c.upload || 0);
+    const dd = prev ? Math.max(0, (c.download || 0) - prev.d) : (c.download || 0);
+    const chains = Array.isArray(c.chains) ? c.chains : [];
+    let pn = '';
+    for (let i = 0; i < chains.length && !pn; i++) pn = nodeProvider[chains[i]] || '';
+    if (!pn || (!du && !dd)) return;
+    bumpLocalUsage(pn, du, dd);
+  });
+  _usageSeen = d.connections.reduce((m, c) => { if (c && c.id) m[c.id] = { u: c.upload || 0, d: c.download || 0 }; return m; }, {});
+  // 轻量直更 DOM，不整页重绘
+  document.querySelectorAll('.prov-card[data-unlim="1"]').forEach(card => {
+    const n = decodeURIComponent(card.id.replace(/^provcard-/, ''));
+    const v = card.querySelector('.prov-traffic-val');
+    if (v) { const l = localUsage[n]; v.textContent = fmtTraffic(((l && (l.u + l.d)) || 0)); }
+  });
+  const su = document.getElementById('subUsage');
+  if (su && su.dataset.unlim === '1') {
+    const cur = window._subEntries && window._subEntries[window._subIndex || 0];
+    const nm = cur && cur[0];
+    const l = nm && localUsage[nm];
+    su.textContent = (l ? fmtBytes(l.u + l.d) : '-') + ' / ∞';
+  }
+}
+setInterval(pollLocalUsage, 3000);
+setTimeout(pollLocalUsage, 1500);
 let curGroup = 'GLOBAL';
 
 function renderSubInfo(name, info, provApi) {
@@ -1751,6 +1794,7 @@ function renderSubInfo(name, info, provApi) {
     const pct = Math.min(100, Math.round(used / total * 100));
     document.getElementById('subBarFill').style.width = pct + '%';
     document.getElementById('subPct').textContent = pct + '%';
+    document.getElementById('subUsage').dataset.unlim = '';
     if (si.Expire && si.Expire > 0) {
       document.getElementById('subExpireRow').style.display = 'flex';
       const ed = new Date(si.Expire * 1000);
@@ -1764,10 +1808,15 @@ function renderSubInfo(name, info, provApi) {
       document.getElementById('subExpireRow').style.display = 'none';
     }
   } else {
-    document.getElementById('subUsage').textContent = '-';
+    // 自制订阅等无 subscriptionInfo：用量为本机累计，总量 ∞，到期 ∞
+    const suEl = document.getElementById('subUsage');
+    const l = localUsage[name];
+    suEl.textContent = (l ? fmtBytes(l.u + l.d) : '-') + ' / ∞';
+    suEl.dataset.unlim = '1';
     document.getElementById('subBarFill').style.width = '0%';
-    document.getElementById('subPct').textContent = '0%';
-    document.getElementById('subExpireRow').style.display = 'none';
+    document.getElementById('subPct').textContent = '-';
+    document.getElementById('subExpireRow').style.display = 'flex';
+    document.getElementById('subExpire').textContent = '∞';
   }
   // 更新切换指示点
   var dots = document.querySelectorAll('#subDots .sub-dot');
@@ -2786,8 +2835,12 @@ async function runWebTest() {
          trafficHtml = '<div class="prov-traffic"><div class="prov-traffic-line"><span><b class="prov-traffic-val">' + fmtTraffic(used) + '</b> / ' + fmtTraffic(si.total) + '</span>' + expireHtml + '</div><div class="prov-traffic-bar"><i class="' + barCls + '" style="width:' + pct + '%"></i></div></div>';
        } else if (si) {
          trafficHtml = '<div class="prov-traffic-line"><span>无流量统计</span>' + expireHtml + '</div>';
+       } else {
+         // 无 subscriptionInfo（自制订阅）：用量为本机累计 / ∞，到期 ∞
+         const lu = localUsage[name];
+         trafficHtml = '<div class="prov-traffic"><div class="prov-traffic-line"><span><b class="prov-traffic-val">' + fmtTraffic(lu ? (lu.u + lu.d) : 0) + '</b> / ∞</span><span title="到期时间">∞</span></div><div class="prov-traffic-bar"><i style="width:0%"></i></div></div>';
        }
-       return `<div class="prov-card" id="provcard-${esc(name)}">
+       return `<div class="prov-card"${si ? '' : ' data-unlim="1"'} id="provcard-${esc(name)}">
            <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
           <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
            ${home ? '<a class="prov-home" href="' + esc(home) + '" target="_blank" rel="noopener">' + svgIcon(IC.external) + '官网</a>' : ''}
