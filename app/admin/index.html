@@ -2908,28 +2908,53 @@ async function runWebTest() {
      if (h && !nameEl.value.trim()) nameEl.value = h;
    } catch(e) {}
  }
- async function submitProvider() {
+ // 验证失败后的「仍要保存」确认框（应对机场需经代理才可达等场景）
+ function provAskForce(reason) {
+   return new Promise(resolve => {
+     const ov = document.createElement('div');
+     ov.className = 'modal-backdrop';
+     ov.style.zIndex = '300';
+     ov.innerHTML = '<div class="modal-card" style="max-width:380px"><div class="modal-title">订阅验证未通过</div>' +
+       '<div class="modal-body" style="color:var(--dim);font-size:12px;line-height:1.7">' + reason.replace(/</g,'&lt;') +
+       '<br><br>仍要保存这条订阅吗？保存后引擎会尝试加载它。</div>' +
+       '<div style="display:flex;gap:8px;justify-content:flex-end;padding:0 16px 16px">' +
+       '<button class="btn" id="pfCancel">取消</button>' +
+       '<button class="btn btn-primary" id="pfOk">仍要保存</button></div></div>';
+     document.body.appendChild(ov);
+     ov.querySelector('#pfCancel').onclick = () => { ov.remove(); resolve(false); };
+     ov.querySelector('#pfOk').onclick = () => { ov.remove(); resolve(true); };
+     ov.addEventListener('click', e => { if (e.target === ov) { ov.remove(); resolve(false); } });
+   });
+ }
+ async function submitProvider(force) {
    const name = document.getElementById('provName').value.trim();
    const url = document.getElementById('provUrl').value.trim();
    const interval = parseInt(document.getElementById('provInterval').value, 10) || 3600;
     const home = document.getElementById('provHomeInput').value.trim();
-   // 新增时名称可留空：后端自动探测订阅真实名称（对齐 clash-verge-rev 的做法）
+   // 新增时名称可留空：后端自动识别（验证响应自带名称；对齐 clash-verge-rev）
    if (!name && !provEditing) {
      if (!/^https?:\/\/.+/.test(url)) { showToast('订阅链接必须以 http:// 或 https:// 开头', 'warning'); return; }
    } else if (!name || !/^https?:\/\/.+/.test(url)) { showToast('请输入订阅名称和有效的订阅链接', 'warning'); return; }
    const btn = document.getElementById('providerSubmitBtn');
-   btn.disabled = true; btn.textContent = '保存中…';
+   btn.disabled = true; btn.textContent = force ? '保存中…' : '验证并保存中…';
    try {
      const payload = { name, url, interval, type: 'http', home };
+     if (force) payload.force = true;
      if (provEditing) payload.old_name = provEditing; // 编辑/重命名旧名
      const r = await fetch('api/providers', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });
-     const d = await r.json();
-     if (d.success) {
+     let d = null; try { d = await r.json(); } catch (e) {}
+     if (d && d.success) {
       if (provEditing && provHome[provEditing] && name !== provEditing) { provHome[name] = provHome[provEditing]; delete provHome[provEditing]; }
       if (pendingProvHome) { provHome[name] = pendingProvHome; pendingProvHome = ''; }
       saveProvHome();
-      closeProvModal(); showToast(d.message, 'success'); }
-     else showToast(d.error || '保存失败', 'error');
+      closeProvModal(); showToast(d.message, 'success');
+     } else if (d && d.can_force && !force) {
+      // 验证失败：给出原因，用户可选强制保存
+      btn.disabled = false; btn.textContent = '保存';
+      const go = await provAskForce(d.error || '无法访问或内容无效');
+      if (go) return submitProvider(true);
+      return;
+     } else showToast((d && d.error) || '保存失败', 'error');
      loadProviders();
    } catch (err) { showToast('请求出错: ' + err, 'error'); }
    finally { btn.disabled = false; btn.textContent = '保存'; }

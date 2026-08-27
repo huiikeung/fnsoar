@@ -850,69 +850,141 @@ def _sanitize_provider_name(raw):
     name = re.sub(r"-{2,}", "-", name).strip("-")
     return name[:60]
 
+def _sub_meta_from_headers(hd):
+    """从订阅响应头解析元数据（name/updateInterval/home），供探测与验证共用。"""
+    meta = {}
+    for k in ("profile-title", "subscription-title"):
+        if hd.get(k) and hd[k].strip():
+            meta["name"] = _sanitize_provider_name(hd[k])
+            break
+    if not meta.get("name"):
+        cd = hd.get("content-disposition", "") or ""
+        m = re.search(r"filename\*\s*=\s*(?:UTF-8|utf-8)?''([^;]+)", cd, re.I)
+        if m:
+            fname = urllib.parse.unquote(m.group(1).strip().strip('"'))
+            if fname:
+                meta["name"] = _sanitize_provider_name(fname)
+        else:
+            m = re.search(r'filename\s*=\s*"?([^";]+)"?', cd, re.I)
+            if m:
+                fname = m.group(1).strip().strip('"')
+                if fname:
+                    meta["name"] = _sanitize_provider_name(fname)
+    ui = hd.get("profile-update-interval", "")
+    if ui:
+        try:
+            hrs = int(str(ui).strip())
+            if hrs > 0:
+                meta["updateInterval"] = hrs * 3600
+        except Exception:
+            pass
+    home = hd.get("profile-web-page-url", "")
+    if home and home.strip():
+        meta["home"] = home.strip()
+    return meta
+
+
+def _sub_name_from_yaml(text):
+    """YAML 正文里的 profile.name（很多机场放在文件末尾）。"""
+    text = text.lstrip("\ufeff")
+    try:
+        doc = yaml.safe_load(text) or {}
+        prof = doc.get("profile") or {}
+        if isinstance(prof, dict) and prof.get("name"):
+            return _sanitize_provider_name(str(prof["name"]))
+    except Exception:
+        m = re.search(r'(?m)^profile:\s*\n\s*name:\s*["\']?([^"\'\n]+)', text)
+        if m and m.group(1).strip():
+            return _sanitize_provider_name(m.group(1).strip())
+    return ""
+
+
+_NODE_LINK_RE = re.compile(r'\b(?:vmess|vless|trojan|ss|ssr|hysteria2?|tuic|snell)://')
+
+
+def _looks_like_subscription(text):
+    """判断内容是否像一份可用订阅。返回 (ok, node_count)。"""
+    t = (text or "").strip()
+    if not t:
+        return False, 0
+    # a) 纯 base64 订阅体
+    compact = re.sub(r'\s+', '', t)
+    if len(compact) > 64 and re.fullmatch(r'[A-Za-z0-9+/=_-]+', compact):
+        import base64 as _b64
+        for pad in ("", "=", "=="):
+            try:
+                dec = _b64.b64decode(compact + pad, validate=False).decode("utf-8", "ignore")
+            except Exception:
+                dec = ""
+            if dec and _NODE_LINK_RE.search(dec):
+                return True, len(_NODE_LINK_RE.findall(dec))
+    # b) Clash YAML：带 proxies 列表 / provider 配置 / 完整配置骨架
+    try:
+        doc = yaml.safe_load(t)
+        if isinstance(doc, dict):
+            px = doc.get("proxies")
+            if isinstance(px, list) and px:
+                return True, len(px)
+            if doc.get("proxy-providers") or doc.get("mode") in ("rule", "global", "direct"):
+                return True, 0
+    except Exception:
+        pass
+    # c) 明文节点链接列表
+    n = len(_NODE_LINK_RE.findall(t))
+    if n > 0:
+        return True, n
+    return False, 0
+
+
+def validate_subscription(url, timeout=6):
+    """保存前验证订阅：可达 + 内容像订阅格式。
+    返回 {"ok": bool, "error": str?, "meta": {...}, "nodes": int} —— ok 时 meta 一并返回，
+    保存路径复用该结果，全程只拉一次订阅。"""
+    import urllib.request as _ureq
+    if not isinstance(url, str) or not url.startswith(("http://", "https://")):
+        return {"ok": False, "error": "订阅链接必须以 http:// 或 https:// 开头"}
+    try:
+        req = _ureq.Request(url, headers={"User-Agent": f"fnSoar/{_get_app_version()}"})
+        with _ureq.urlopen(req, timeout=timeout) as resp:
+            hd = {k.lower(): v for k, v in resp.headers.items()}
+            data = resp.read(3 * 1024 * 1024)
+    except Exception as e:
+        reason = str(e) or e.__class__.__name__
+        hint = "；若该机场需经代理访问，首次添加可选择「仍要保存」"
+        return {"ok": False, "error": f"无法访问订阅链接（{reason}）{hint}"}
+    try:
+        text = data.decode("utf-8", "ignore")
+    except Exception:
+        text = ""
+    ok, nodes = _looks_like_subscription(text)
+    if not ok:
+        return {"ok": False,
+                "error": "内容不是有效的订阅格式（需要 Clash YAML、base64 或节点链接列表）；若确认无误可选择「仍要保存」"}
+    meta = _sub_meta_from_headers(hd)
+    if not meta.get("name"):
+        nm = _sub_name_from_yaml(text)
+        if nm:
+            meta["name"] = nm
+    return {"ok": True, "meta": meta, "nodes": nodes}
+
+
 def probe_subscription_meta(url, timeout=7):
-    """探测订阅响应头，返回完整元数据 dict（对齐 clash-verge-rev 的能力）：
-    - name: Content-Disposition filename* / filename、Profile-Title、或 YAML profile.name
-    - updateInterval: profile-update-interval 响应头（小时，转成秒）
-    - home: profile-web-page-url 响应头（机场官网）
-    请求带超时，失败返回 {} 不阻塞添加流程。"""
+    """探测订阅响应头，返回元数据 dict。失败返回 {} 不阻塞调用方。
+    验证场景请用 validate_subscription（一次请求同时验证+取元数据）。"""
     import urllib.request as _ureq
     meta = {}
     try:
         req = _ureq.Request(url, headers={"User-Agent": f"fnSoar/{_get_app_version()}"})
         with _ureq.urlopen(req, timeout=timeout) as resp:
             hd = {k.lower(): v for k, v in resp.headers.items()}
-            # 1) 订阅标题响应头（多数机场/面板下发）
-            for k in ("profile-title", "subscription-title"):
-                if hd.get(k) and hd[k].strip():
-                    meta["name"] = _sanitize_provider_name(hd[k])
-                    break
-            # 2) Content-Disposition → filename*（RFC 5987）或 filename
+            meta = _sub_meta_from_headers(hd)
             if not meta.get("name"):
-                cd = hd.get("content-disposition", "") or ""
-                m = re.search(r"filename\*\s*=\s*(?:UTF-8|utf-8)?''([^;]+)", cd, re.I)
-                if m:
-                    fname = urllib.parse.unquote(m.group(1).strip().strip('"'))
-                    if fname:
-                        meta["name"] = _sanitize_provider_name(fname)
-                else:
-                    m = re.search(r'filename\s*=\s*"?([^";]+)"?', cd, re.I)
-                    if m:
-                        fname = m.group(1).strip().strip('"')
-                        if fname:
-                            meta["name"] = _sanitize_provider_name(fname)
-            # 3) profile-update-interval：更新间隔（小时 → 秒）
-            ui = hd.get("profile-update-interval", "")
-            if ui:
-                try:
-                    hrs = int(str(ui).strip())
-                    if hrs > 0:
-                        meta["updateInterval"] = hrs * 3600
-                except Exception:
-                    pass
-            # 4) profile-web-page-url：机场官网
-            home = hd.get("profile-web-page-url", "")
-            if home and home.strip():
-                meta["home"] = home.strip()
-            # 5) YAML 顶层 profile.name（完整读取，很多机场把 profile 放在文件末尾）
-            #    单独 try 包裹：读 body 超时/失败不影响前面已从响应头解析出的元数据。
-            if not meta.get("name"):
-                try:
-                    data = resp.read().decode("utf-8", "ignore")
-                    data = data.lstrip("\ufeff")
-                    try:
-                        doc = yaml.safe_load(data) or {}
-                        prof = doc.get("profile") or {}
-                        if isinstance(prof, dict) and prof.get("name"):
-                            meta["name"] = _sanitize_provider_name(str(prof["name"]))
-                    except Exception:
-                        m = re.search(r'(?m)^profile:\s*\n\s*name:\s*["\']?([^"\'\n]+)', data)
-                        if m and m.group(1).strip():
-                            meta["name"] = _sanitize_provider_name(m.group(1).strip())
-                except Exception as e:
-                    log(f"probe subscription body skipped: {url}: {e}")
+                # profile.name 常在文件末尾：封顶 3MB 探测正文
+                nm = _sub_name_from_yaml(resp.read(3 * 1024 * 1024).decode("utf-8", "ignore"))
+                if nm:
+                    meta["name"] = nm
     except Exception as e:
-        log(f"probe subscription meta failed: {url}: {e}")
+        log(f"probe subscription failed (ignored): {url}: {e}")
     return meta
 
 def probe_subscription_name(url, timeout=7):
@@ -949,15 +1021,53 @@ def fallback_provider_name(url):
         pass
     return "订阅"
 
-def edit_provider_add(name, url, interval=3600, ptype="http"):
+def edit_provider_add(name, url, interval=3600, ptype="http", pre_meta=None):
     """Insert/replace a proxy-provider entry in config.yaml text. No restart.
-    名称缺省时自动探测订阅真实名称（对齐 clash-verge-rev），探测失败回退域名。
-    同时应用订阅响应头里下发的更新间隔（profile-update-interval）。"""
-    meta = {}
-    if not name or not name.strip():
-        meta = probe_subscription_meta(url)
-        derived = meta.get("name") or fallback_provider_name(url)
-        name = derived
+    pre_meta: 验证阶段已取得的元数据（保存路径全程只拉一次订阅）。
+      - 非 None（常规保存）：不再发起任何网络请求，写盘立即返回。
+      - None（强制保存，跳过验证）：名称留空时内联探测；已命名则后台线程补探。
+    名称缺省时自动探测订阅真实名称（对齐 clash-verge-rev），探测失败回退域名。"""
+    def _persist_meta(m, key):
+        try:
+            if m.get("home") or m.get("updateInterval"):
+                all_meta = load_sub_meta()
+                entry = all_meta.get(key, {}) if isinstance(all_meta, dict) else {}
+                if m.get("home"):
+                    entry["home"] = m["home"]
+                if m.get("updateInterval"):
+                    entry["updateInterval"] = m["updateInterval"]
+                if entry:
+                    all_meta[key] = entry
+                    save_sub_meta(all_meta)
+        except Exception:
+            pass
+
+    def _bg_probe_persist(key, url):
+        """强制保存后的补充探测：合并官网/更新间隔到 sub_meta，并回写 interval。"""
+        try:
+            m = probe_subscription_meta(url, timeout=6)
+            if not m:
+                return
+            _persist_meta(m, key)
+            ui = m.get("updateInterval")
+            if isinstance(ui, int) and ui > 0:
+                content2 = read_config()
+                pat = (r"(?m)^(  " + re.escape(key) +
+                       r":\n(?:    [^\n]*\n)*?    interval:\s*)\d+")
+                old_line = re.search(pat, content2)
+                if old_line:
+                    write_config(content2[:old_line.start()] +
+                                 old_line.group(1) + str(ui) +
+                                 content2[old_line.end():])
+        except Exception:
+            pass
+
+    named_by_user = bool(name and name.strip())
+    meta = dict(pre_meta) if pre_meta else {}
+    if not named_by_user and not meta.get("name"):
+        # 常规保存时验证已带回 name；走到这里说明是强制保存或无验证调用
+        meta.update(probe_subscription_meta(url, timeout=4))
+    name = (meta.get("name") or name or "").strip() or fallback_provider_name(url)
     ok, key = _valid_provider_name(name)
     if not ok:
         return {"success": False, "error": key}
@@ -969,21 +1079,13 @@ def edit_provider_add(name, url, interval=3600, ptype="http"):
             interval = 3600
     except Exception:
         interval = 3600
-    # 响应头 profile-update-interval 下发的更新间隔优先（仅在未显式传有效间隔时）
-    if not meta:
-        meta = probe_subscription_meta(url)
+    # 订阅响应头下发的更新间隔优先（仅在未显式传有效间隔时）
     if meta.get("updateInterval") and meta["updateInterval"] > 0 and interval == 3600:
         interval = int(meta["updateInterval"])
     # 持久化订阅元数据（官网 home / 更新间隔），供订阅卡片显示「官网」跳转
     if meta.get("home") or meta.get("updateInterval"):
-        all_meta = load_sub_meta()
-        entry = all_meta.get(key, {})
-        if meta.get("home"):
-            entry["home"] = meta["home"]
-        if meta.get("updateInterval"):
-            entry["updateInterval"] = meta["updateInterval"]
-        all_meta[key] = entry
-        save_sub_meta(all_meta)
+        _persist_meta(meta, key)
+
     block = _provider_block(key, url, interval, ptype)
     content = read_config()
     # 1) proxy-providers: {}  → 展开为块
@@ -991,24 +1093,30 @@ def edit_provider_add(name, url, interval=3600, ptype="http"):
     if m:
         content = content[:m.start()] + "proxy-providers:\n" + block + content[m.end():]
         write_config(content)
+        if pre_meta is None and named_by_user:
+            threading.Thread(target=_bg_probe_persist, args=(key, url), daemon=True).start()
         return {"success": True, "message": f"已添加订阅「{key}」"}
     # 2) 已有 proxy-providers: 块 → 替换同名或追加
     m = re.search(r'^proxy-providers:\s*$', content, re.M)
     if m:
         prefix = content[:m.start()]
         suffix = content[m.start():]
-        # 替换同名：删除该 key 的旧块（不重启版）
         head, rest, found = _strip_provider_block(suffix, key)
         if found:
             write_config(prefix + "proxy-providers:\n" + head + block + rest)
+            if pre_meta is None and named_by_user:
+                threading.Thread(target=_bg_probe_persist, args=(key, url), daemon=True).start()
             return {"success": True, "message": f"已更新订阅「{key}」"}
-        # 追加：新块插入到 section 末尾（所有现有 key 块之后、顶层行之前）
         head2, rest2, _ = _strip_provider_block(suffix, "\x00never")
         write_config(prefix + "proxy-providers:\n" + head2 + block + rest2)
+        if pre_meta is None and named_by_user:
+            threading.Thread(target=_bg_probe_persist, args=(key, url), daemon=True).start()
         return {"success": True, "message": f"已添加订阅「{key}」"}
     # 3) 完全不存在 → 追加到文件末尾
     content = content.rstrip("\n") + "\n\nproxy-providers:\n" + block
     write_config(content)
+    if pre_meta is None and named_by_user:
+        threading.Thread(target=_bg_probe_persist, args=(key, url), daemon=True).start()
     return {"success": True, "message": f"已添加订阅「{key}」"}
 
 def _strip_provider_block(section_text, key):
@@ -2221,12 +2329,28 @@ class AdminHandler(BaseHTTPRequestHandler):
                 ptype = data.get("type", "http")
                 home = (data.get("home") or "").strip()
                 old_name = (data.get("old_name") or "").strip()
+                force = bool(data.get("force"))
+                # 保存前验证订阅（可达 + 内容格式）；强制保存跳过该步。
+                # 验证结果复用为元数据来源，整条保存路径只拉一次订阅。
+                pre_meta = None
+                node_hint = ""
+                if not force:
+                    v = validate_subscription(url, timeout=7)
+                    if not v.get("ok"):
+                        return self._send_json({"success": False,
+                                                "error": (v.get("error") or "订阅验证未通过"),
+                                                "can_force": True}, 400)
+                    pre_meta = v.get("meta") or {}
+                    n = v.get("nodes") or 0
+                    node_hint = f"，发现 {n} 个节点" if n else ""
                 # 重命名：先按旧名称删除原块，再按新名称写入（一次重启生效）
                 if old_name and old_name != name.strip():
                     del_result = edit_provider_delete(old_name)
                     if not del_result.get("success") and "未找到" not in del_result.get("error", ""):
                         return self._send_json(del_result, 400)
-                result = edit_provider_add(name, url, interval, ptype)
+                result = edit_provider_add(name, url, interval, ptype, pre_meta=pre_meta)
+                if result.get("success") and node_hint:
+                    result["message"] = result.get("message", "订阅已保存") + node_hint
                 if not result.get("success"):
                     return self._send_json(result, 400)
                 # 持久化官网地址：用户填了就存（覆盖自动探测），清空则删除
