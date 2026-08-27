@@ -83,8 +83,14 @@ service_postinst()
     # Preserve the user's live config on upgrade. The old behavior always
     # copied the bundled template and erased proxy-providers/subscriptions.
     # Only initialize config.yaml when it does not exist (or is empty).
+    # config_fresh marks a first-time initialization: wizard values describe
+    # a FIRST-TIME setup and must never mutate an already-preserved user
+    # configuration (on reinstall/upgrade the wizard env may be absent, and
+    # applying its defaults used to silently switch the user's tun/dns off).
+    local config_fresh=0
     if [ ! -s "${MIHOMO_CONFIG}" ] && [ -f "${TRIM_APPDEST}/default-config/config.yaml" ]; then
         cp "${TRIM_APPDEST}/default-config/config.yaml" "${MIHOMO_CONFIG}"
+        config_fresh=1
         echo "Initialized default config.yaml template" >> "${LOG_FILE}"
     elif [ ! -s "${MIHOMO_CONFIG}" ]; then
         echo "WARNING: No default config template found" >> "${LOG_FILE}"
@@ -100,10 +106,10 @@ service_postinst()
     fi
 
     # Apply wizard settings to config.yaml
-    if [ -n "${wizard_mixed_port:-}" ]; then
+    if [ "${config_fresh:-0}" = "1" ] && [ -n "${wizard_mixed_port:-}" ]; then
         sed -i "s/^mixed-port:.*/mixed-port: ${wizard_mixed_port}/" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
-    if [ -n "${wizard_external_port:-}" ]; then
+    if [ "${config_fresh:-0}" = "1" ] && [ -n "${wizard_external_port:-}" ]; then
         sed -i "s|external-controller:.*|external-controller: '0.0.0.0:${wizard_external_port}'|" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
 
@@ -123,7 +129,7 @@ service_postinst()
     fi
 
     # Configure proxy-providers from wizard subscription link
-    if [ -n "${wizard_sub_link:-}" ] && [ -n "${wizard_sub_link}" ]; then
+    if [ "${config_fresh:-0}" = "1" ] && [ -n "${wizard_sub_link:-}" ]; then
         local interval="${wizard_sub_interval:-86400}"
         local provider_block=""
         provider_block="proxy-providers:\n"
@@ -143,13 +149,13 @@ service_postinst()
     fi
 
     # Apply DNS settings
-    if [ "${wizard_dns_enable:-true}" = "false" ]; then
+    if [ "${config_fresh:-0}" = "1" ] && [ "${wizard_dns_enable:-true}" = "false" ]; then
         sed -i "s/^  enable: true/  enable: false/" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
-    if [ "${wizard_fakeip_enable:-true}" = "false" ]; then
+    if [ "${config_fresh:-0}" = "1" ] && [ "${wizard_fakeip_enable:-true}" = "false" ]; then
         sed -i "s/^  enhanced-mode: fake-ip/  enhanced-mode: normal/" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
-    if [ "${wizard_tun_enable:-false}" = "false" ]; then
+    if [ "${config_fresh:-0}" = "1" ] && [ "${wizard_tun_enable:-false}" = "false" ]; then
         sed -i "/^tun:/,/^  [a-z]/{s/  enable: true/  enable: false/}" "${MIHOMO_CONFIG}" 2>/dev/null || true
     fi
 

@@ -66,7 +66,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar.collapsed{width:56px}
 .sidebar.hidden{display:none}
 @media(min-width:861px){.sidebar.hidden{display:flex}}
-@media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important;position:fixed!important;left:0;top:0;bottom:0;height:100%;z-index:150!important;box-shadow:2px 0 16px rgba(0,0,0,.3)}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:200px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
+@media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important;position:relative;height:100%;z-index:auto;box-shadow:none}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:200px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
 .sidebar-hidden-toggle{display:none;position:fixed;z-index:140;width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);align-items:center;justify-content:center;cursor:grab;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);user-select:none;touch-action:none}
 @media(max-width:860px){.sidebar-hidden-toggle{display:flex}}
 .sidebar.collapsed .sidebar-header{padding:14px 0 10px;justify-content:center}
@@ -729,6 +729,9 @@ tbody tr:hover{background:var(--card2)}
   .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}
   .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}
   .section-webui,.section-webui.webui-narrow{left:0}
+  /* 右推模式：窄屏打开侧栏时，面板 iframe 左边界跟随侧栏宽度（56px 窄栏 / 200px 宽栏），不再被侧栏遮挡 */
+  body:has(> .layout > .sidebar.mobile-visible:not(.expanded)) > .section-webui{left:57px}
+  body:has(> .layout > .sidebar.mobile-visible.expanded) > .section-webui{left:201px}
   .main{padding:16px}
 }
 
@@ -1510,13 +1513,18 @@ function toggleSidebar() {
   }
 }
 
-// 窄屏汉堡：单击显示窄栏，双击显示宽栏。
+// 窄屏汉堡：单击显示窄栏（侧栏已展开时再次单击则收起），双击显示宽栏。
+// 右推模式下侧栏占据布局宽度、把右侧内容顶开，因此不再"点外部自动收起"——
+// 收起只通过汉堡再次点击或点击导航项后自动隐藏完成。
 var _hamburgerTimer = 0;
-var _hamburgerJustClicked = 0;
 function hamburgerClick() {
   var sb = document.querySelector('.sidebar');
   if (!sb || window.innerWidth > 860) return;
-  _hamburgerJustClicked = Date.now();
+  // 侧栏已展开（窄栏或宽栏）：再次点击汉堡收起，回到汉堡状态。
+  if (sb.classList.contains('mobile-visible')) {
+    autoHideSidebar();
+    return;
+  }
   if (_hamburgerTimer) {
     clearTimeout(_hamburgerTimer);
     _hamburgerTimer = 0;
@@ -1527,6 +1535,8 @@ function hamburgerClick() {
   }
   _hamburgerTimer = setTimeout(function() {
     _hamburgerTimer = 0;
+    // 280ms 内没等到第二次点击：显示窄栏；期间已被收起（如点了导航）则不再展开。
+    if (!sb.classList.contains('hidden')) return;
     sb.classList.remove('hidden');
     sb.classList.add('mobile-visible');
     sb.classList.remove('expanded');
@@ -1541,26 +1551,10 @@ function autoHideSidebar() {
   }
 }
 
-// 窄屏：点击侧栏外部区域（含面板 iframe）关闭侧栏，回到汉堡状态。
-function _handleOutsideTap(e) {
-  if (window.innerWidth > 860) return;
-  // 刚点过汉堡（双击展开 / 单击延迟展开）时跳过，防误关
-  if (Date.now() - _hamburgerJustClicked < 350) return;
-  var sb = document.querySelector('.sidebar');
-  if (!sb || !sb.classList.contains('mobile-visible')) return;
-  var target = e.target;
-  if (sb.contains(target)) return;
-  if (target && target.closest && target.closest('.sidebar-hidden-toggle')) return;
-  autoHideSidebar();
-}
-
 // ── 汉堡按钮拖拽 ─────────────────────────────
 function initHamburgerDrag() {
   var sb = document.querySelector('.sidebar');
   var btn = document.querySelector('.sidebar-hidden-toggle');
-  // 窄屏：点击侧栏外部（含面板 iframe）关闭侧栏。用 pointerdown 覆盖鼠标/触摸，
-  // 且 iframe 区域的按下事件会落到 iframe 元素上，父页面也能捕获。
-  document.addEventListener('pointerdown', _handleOutsideTap);
   if (sb) {
     // 所有侧栏操作按钮在窄屏下执行后都回到汉堡状态（导航、服务和 TUN 均适用）。
     sb.addEventListener('click', function(e) {
