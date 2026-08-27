@@ -1720,6 +1720,7 @@ async function fetchJSON(url, timeoutMs) {
 // ── 首页 ───────────────────────────
 let proxiesData = null;
 let nodeProvider = {};   // 真实节点名 -> 所属订阅 provider 名（测速走 provider healthcheck）
+let provHist = {};   // 节点名 -> 内核health-check测过的延迟(0=失败), 来自 /providers/proxies
 let nodeDelay = {};      // 节点名 -> 最近一次测速延时(ms)，-1 表示超时
 let _lastSubInfo = {};   // 订阅名 -> 最近一次成功的 subscriptionInfo（刷新偶发失败时沿用，避免到期行闪没）
 // 无 subscriptionInfo 的自制订阅：用量由本机按连接链路增量累计并持久化（浏览器重启不丢）
@@ -1866,7 +1867,13 @@ async function renderSubCardAsync() {
   if (provApi && provApi.providers) {
     Object.entries(provApi.providers).forEach(([pname, pv]) => {
       if (pv.vehicleType !== 'HTTP' && pv.vehicleType !== 'File') return;
-      (pv.proxies || []).forEach(n => { if (n && n.name) nodeProvider[n.name] = pname; });
+      (pv.proxies || []).forEach(n => {
+        if (n && n.name) {
+          nodeProvider[n.name] = pname;
+          const h = n.history && n.history.length ? n.history[n.history.length - 1] : null;
+          if (h && typeof h.delay === 'number') provHist[n.name] = h.delay;
+        }
+      });
     });
   }
   if (prov && prov.providers) {
@@ -3692,6 +3699,24 @@ const groupTestingSet = new Set();
 async function testGroup(groupName) {
   if (groupTestingSet.has(groupName)) return;
   if (!proxiesData) { showToast('暂无策略组数据', 'warning'); return; }
+  // 确保 provider 节点内核延迟史已就绪(策略组页可能未先访问订阅页)
+  if (!window.__provHistLoaded) {
+    try {
+      const ph = await fetchJSON('providers/proxies');
+      if (ph && ph.providers) {
+        Object.entries(ph.providers).forEach(([pname, pv]) => {
+          (pv.proxies || []).forEach(n => {
+            if (n && n.name) {
+              nodeProvider[n.name] = pname;
+              const h = n.history && n.history.length ? n.history[n.history.length - 1] : null;
+              if (h && typeof h.delay === 'number') provHist[n.name] = h.delay;
+            }
+          });
+        });
+      }
+    } catch (e) {}
+    window.__provHistLoaded = true;
+  }
   const info = proxiesData[groupName];
   if (!info) return;
   const groupTypes = ['Selector','URLTest','Fallback','LoadBalance'];
@@ -3701,10 +3726,12 @@ async function testGroup(groupName) {
   const memberLeaves = new Map();   // 顶层成员名 -> 其下真实叶子列表
   const allLeaves = new Set();      // 去重后的待测叶子
   const selMembers = new Set();     // 测完可自动切换的 Selector 成员
+  // 机场注入的占位/垃圾节点特征——测速时一律跳过(假节点/广告文本,连测必超时)
+  const PLACEHOLDER_RE = /(剩余流量|套餐到期|到期时间|请下载|下载客户端|分享免费|优选网|测速.?Nodes|广告|推荐.?订阅|机场.?公告|订阅.?已|此节点只|内部节点|面板链接|官网.?查看)/;
   const collect = (m, out, depth, vis) => {
     if (special.has(m)) return;
     const p = proxiesData[m];
-    if (!p || !groupTypes.includes(p.type)) { out.push(m); return; }
+    if (!p || !groupTypes.includes(p.type)) { if (!PLACEHOLDER_RE.test(m)) out.push(m); return; }
     if (depth > 4 || vis.has(m)) return;
     vis.add(m);
     (p.all || []).forEach(x => collect(x, out, depth + 1, vis));
@@ -3719,6 +3746,24 @@ async function testGroup(groupName) {
     uniq.forEach(l => allLeaves.add(l));
     if (proxiesData[n] && proxiesData[n].type === 'Selector') selMembers.add(n);
   });
+  // 超大订阅截断：节点池太大时只保留 MAX_TEST 个，但**优先保留内核缓存里
+  // 已有延迟史(能测通的)节点**，再补少量未知节点。这样避免前 120 恰好全是
+  // BV/DB 的坏 AnyTLS/hy2 节点而拖慢测速；能通节点直接闪显延迟。
+  const MAX_TEST = 120;
+  if (allLeaves.size > MAX_TEST) {
+    const arr = [...allLeaves];
+    // 能测通判定：顶层/providers 内核缓存里 delay>0 的节点
+    const hasHist = (n) => {
+      const p = proxiesData[n];
+      if (p && p.history && p.history.length && p.history[p.history.length-1].delay > 0) return true;
+      return typeof provHist[n] === 'number' && provHist[n] > 0;
+    };
+    const okNodes = arr.filter(hasHist);
+    const unkNodes = arr.filter(n => !hasHist(n));
+    const keep = [...okNodes, ...unkNodes].slice(0, MAX_TEST);
+    allLeaves.clear();
+    keep.forEach(k => allLeaves.add(k));
+  }
   if (!allLeaves.size) return;
   groupTestingSet.add(groupName);
   // 卡片默认展开；若被折叠，点击测速时自动展开以便立即看到结果
@@ -3736,60 +3781,47 @@ async function testGroup(groupName) {
   let done = 0;
   // 若该组设置了自定义测速 URL 则使用它
   const testUrl = (groupHead[groupName] && groupHead[groupName].testUrl.trim()) || 'https://www.gstatic.com/generate_204';
-  // 批量唯一通道：内核 /group/{name}/delay 引擎侧并发完成全部测试。
-  // 返回表里没有的叶子=引擎实测失败记 -1；不再逐节点发请求，
-  // 消除对数百规模节点池的浏览器请求风暴与分钟级等待。
-  let batchOk = false;
-  try {
-    const bg = await fetch('group/' + encodeURIComponent(groupName) +
-      '/delay?timeout=5000&url=' + encodeURIComponent(testUrl));
-    if (bg.ok) {
-      const bm = await bg.json();
-      Object.entries(bm || {}).forEach(([n2, ms]) => {
-        if (typeof ms !== 'number') return;
-        nodeDelay[n2] = ms;
-        const p2 = proxiesData[n2];
-        if (p2) { p2.history = p2.history || []; p2.history.push({delay: ms, time: Date.now()}); if (p2.history.length > 10) p2.history.shift(); }
-        done++;
-        (memberByLeaf[n2] || []).forEach(updateSubCardLatency);
-      });
-      // 引擎批量接口在节点多时不完整返回，凡未覆盖的节点一律走逐节点
-      // 高并发补测(16并发)——批量结果仅当快速通道复用，未覆盖绝不直接判死。
-      const uncovered = [...allLeaves].filter(l => !Object.prototype.hasOwnProperty.call(bm || {}, l));
-      if (uncovered.length) {
-        let idx2 = 0;
-        const ws2 = Array.from({length:16}, async () => {
-          while (idx2 < uncovered.length) {
-            const leaf = uncovered[idx2++];
-            const d2 = await testOneNode(leaf, 3000, testUrl);
-            if (d2 > 0) nodeDelay[leaf] = d2; else if (nodeDelay[leaf] == null) nodeDelay[leaf] = -1;
-            done++;
-            if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
-            (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
-          }
-        });
-        await Promise.all(ws2);
-      }
-      batchOk = true;
+  // 内核缓存优先：health-check 定时已在后台测过大量节点并缓存延迟史。
+  // 有缓存的直接用现成延迟(秒显)，只对内核尚无结果的节点发起新测，
+  // 避免每次手动测速都全量风暴把 500 节点拖到几十秒。
+  const k2 = new Map();   // node -> 内核缓存延迟(顶层builtin + provider节点)
+  for (const l of allLeaves) {
+    const p = proxiesData[l];
+    if (p && p.history && p.history.length) {
+      const last = p.history[p.history.length - 1];
+      if (typeof last.delay === 'number' && last.delay > 0) { k2.set(l, last.delay); continue; }
     }
-  } catch (e) {}
-  if (!batchOk) {
-    const queue = [...allLeaves];
-    let idx = 0;
-    const workers = Array.from({length:8}, async () => {
-      while (idx < queue.length) {
-        const leaf = queue[idx++];
-        const delay = await testOneNode(leaf, 3000, testUrl);
-        if (delay > 0) nodeDelay[leaf] = delay;
-        else if (nodeDelay[leaf] == null) nodeDelay[leaf] = -1;
+    // provider订阅节点：内核 /providers/proxies 已带 health-check 延迟史
+    if (typeof provHist[l] === 'number' && provHist[l] > 0) k2.set(l, provHist[l]);
+  }
+  const noCache = [...allLeaves].filter(l => !k2.has(l));
+  // 先铺内核缓存延迟(有延迟的直接显示,秒显)
+  k2.forEach((ms, l) => { nodeDelay[l] = ms; done++; });
+  // 无缓存节点先不标死——只有当逐节点实测失败才标超时,避免误判
+  noCache.forEach(l => { if (!k2.has(l) && nodeDelay[l] == null) nodeDelay[l] = null; });
+  if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
+  // 无缓存节点才真正发起测速：并发逐节点，仅当能测出才覆盖
+  if (noCache.length) {
+    let idx3 = 0;
+    const ws3 = Array.from({length:16}, async () => {
+      while (idx3 < noCache.length) {
+        const leaf = noCache[idx3++];
+        const d3 = await testOneNode(leaf, 3000, testUrl);
+        if (d3 > 0) {
+          nodeDelay[leaf] = d3;
+          const p3 = proxiesData[leaf];
+          if (p3) { p3.history = p3.history || []; p3.history.push({delay: d3, time: Date.now()}); if (p3.history.length > 10) p3.history.shift(); }
+        } else {
+          nodeDelay[leaf] = -1;   // 实测失败才标超时
+        }
         done++;
         if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
         (memberByLeaf[leaf] || []).forEach(updateSubCardLatency);
       }
     });
-    await Promise.all(workers);
+    await Promise.all(ws3);
   }
-  if (testBtn) testBtn.setAttribute('data-progress', done + '/' + total);
+  if (testBtn) { testBtn.setAttribute('data-progress', done + '/' + total); if (done >= total) testBtn.classList.remove('testing'); }
   renderGroups();
 
   // 选择类成员组自动切换到延迟最低的真实叶子
