@@ -3360,7 +3360,8 @@ function renderGroups() {
       </div>`;
     }).join('');
     const typeEn = ({Selector:'selector',URLTest:'url-test',Fallback:'fallback',LoadBalance:'load-balance'})[info.type] || info.type;
-    const now = info.now || '-';
+    // 均衡组引擎无单点now, 显示负载均衡状态代替难看的'-'
+    const now = info.now || (info.type === 'LoadBalance' ? ('负载均衡 · ' + (info.all || []).length + ' 节点') : '-');
     // 组卡头部显示当前生效延迟: 常规组=当前节点延迟; 均衡组无单点now→显示成员最快延迟
     let groupLatHtml = '';
     if (info.type === 'LoadBalance') {
