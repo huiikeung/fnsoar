@@ -1203,6 +1203,74 @@ def _yaml_provider_types():
         return {}
 
 
+def _yaml_doc_save(doc):
+    """统一落盘出口：dump→结构校验→write_config"""
+    import yaml as _ys
+    out = _ys.safe_dump(doc, allow_unicode=True, sort_keys=False,
+                        default_flow_style=False, width=4096, indent=2)
+    chk = _ys.safe_load(out) or {}
+    assert isinstance(chk.get("proxy-providers", {}) or {}, dict)
+    write_config(out)
+
+
+def _rename_provider_side(old, new):
+    """file架构下重命名订阅：yaml键名/payload文件/sub-meta三处同步"""
+    import os as _osR
+    import yaml as _yq
+    doc = _yq.safe_load(read_config()) or {}
+    pps = doc.get('proxy-providers') or {}
+    if old in pps and new not in pps:
+        pps[new] = pps.pop(old)
+        _yaml_doc_save(doc)
+    po, pn2 = _sub_file_path(old), _sub_file_path(new)
+    if _osR.path.exists(po) and not _osR.path.exists(pn2):
+        _osR.replace(po, pn2)
+    ms = load_sub_meta()
+    if old in ms and new not in ms:
+        ms[new] = ms.pop(old)
+        save_sub_meta(ms)
+
+
+def _upsert_file_provider_block(name, health_check=None):
+    """把file型块写入doc(存在则仅确保形状正确)，返回变更bool"""
+    import yaml as _yu
+    doc = _yu.safe_load(read_config()) or {}
+    pps = doc.setdefault('proxy-providers', {})
+    dest_rel = "providers/" + _sub_file_path(name).split('/')[-1]
+    nb = {'type': 'file', 'path': dest_rel}
+    hc = health_check or {
+        'enable': True,
+        'url': 'https://www.gstatic.com/generate_204',
+        'interval': 180}
+    nb['health-check'] = hc
+    prev = pps.get(name)
+    if prev != nb:
+        pps[name] = nb
+        _yaml_doc_save(doc)
+        return True
+    return False
+
+
+def edit_provider_exists(name):
+    """检查配置中是否存在该订阅块"""
+    return name in (_yaml_provider_types() or {})
+
+
+def _cleanup_provider_assets(name):
+    """删除订阅后同步清理payload文件与sub-meta条目"""
+    import os as _osC
+    try:
+        f = _sub_file_path(name)
+        if _osC.path.exists(f):
+            _osC.remove(f)
+        ms = load_sub_meta()
+        if name in ms:
+            ms.pop(name)
+            save_sub_meta(ms)
+    except Exception as e:
+        log(f"WARNING: cleanup provider assets '{name}': {e}")
+
+
 def _migrate_to_file_providers():
     """把 http 型 proxy-provider 转为本地文件型(对齐verge架构):
     1) 首次转换时下载一份载荷落地 2) 改写块为 type:file
@@ -2316,9 +2384,21 @@ class AdminHandler(BaseHTTPRequestHandler):
             providers = extract_proxy_providers(yaml_text)
             # 合并订阅元数据（官网 home 等响应头信息）
             meta = load_sub_meta()
-            for name, m in meta.items():
-                if name in providers and isinstance(providers[name], dict) and m.get("home"):
-                    providers[name]["home"] = m["home"]
+            for name, pv in providers.items():
+                if not isinstance(pv, dict):
+                    continue
+                m = meta.get(name) or {}
+                if m.get("home"):
+                    pv["home"] = m["home"]
+                if str(pv.get("type")) == "file":
+                    # file架构下原始URL存于sub-meta，此处回填给前端编辑框使用
+                    if m.get("url"):
+                        pv["url"] = m["url"]
+                    iv = m.get("interval")
+                    try:
+                        pv["interval"] = int(iv) if iv else 3600
+                    except Exception:
+                        pv["interval"] = 3600
             return self._send_json({"providers": providers})
         if path == "/api/providers-live":
             # 订阅页只需要节点数/更新时间/类型，不要把完整 8MB 节点列表发给浏览器。
@@ -2744,16 +2824,90 @@ class AdminHandler(BaseHTTPRequestHandler):
                     pre_meta = v.get("meta") or {}
                     n = v.get("nodes") or 0
                     node_hint = f"，发现 {n} 个节点" if n else ""
-                # 重命名：先按旧名称删除原块，再按新名称写入（一次重启生效）
-                if old_name and old_name != name.strip():
-                    del_result = edit_provider_delete(old_name)
-                    if not del_result.get("success") and "未找到" not in del_result.get("error", ""):
-                        return self._send_json(del_result, 400)
-                result = edit_provider_add(name, url, interval, ptype, pre_meta=pre_meta)
-                if result.get("success") and node_hint:
-                    result["message"] = result.get("message", "订阅已保存") + node_hint
-                if not result.get("success"):
-                    return self._send_json(result, 400)
+                cur_types = _yaml_provider_types()
+                final_name = (name or "").strip()
+                old_is_file = bool(old_name) and cur_types.get(old_name) == "file"
+                tgt_is_file = old_is_file or cur_types.get(final_name) == "file"
+                if tgt_is_file:
+                    # ── file架构下的编辑(重命名/换链/改间隔) ──
+                    if old_is_file and old_name != final_name:
+                        _rename_provider_side(old_name, final_name)
+                    elif not edit_provider_exists(final_name):
+                        return self._send_json({"success": False,
+                            "error": f"订阅「{final_name}」不存在"}, 400)
+                    ms2 = load_sub_meta()
+                    ent = ms2.setdefault(final_name, {})
+                    url_changed = bool(url) and url.strip() != ent.get("url", "")
+                    ent["url"] = url.strip() or ent.get("url", "")
+                    ent["interval"] = int(interval) if interval else 3600
+                    if home:
+                        ent["home"] = home
+                    save_sub_meta(ms2)
+                    dest = _sub_file_path(final_name)
+                    import os as _osE
+                    stale = (not _osE.path.exists(dest)) or _osE.path.getsize(dest) < 4096
+                    if url_changed or stale:
+                        try:
+                            body, hd7 = _download_sub_validated(final_name, ent["url"])
+                            tmpf = dest + ".tmp"
+                            open(tmpf, "wb").write(body)
+                            os.replace(tmpf, dest)
+                        except Exception as e8:
+                            return self._send_json({"success": False,
+                                "error": f"载荷刷新失败: {e8}"}, 502)
+                        for k9, v9 in (hd7 or {}).items():
+                            if k9.endswith("subscription-userinfo"):
+                                ui9 = _parse_userinfo({k9: v9})
+                                if ui9 is not None:
+                                    ent["userInfo"] = ui9
+                                    save_sub_meta(ms2)
+                                break
+                    _upsert_file_provider_block(final_name)
+                    try:
+                        import urllib.request as _uqF
+                        rqF = _uqF.Request(
+                            f"http://127.0.0.1:{MIHOMO_CTRL_PORT}/providers/proxies/{quote(final_name)}",
+                            method="PUT")
+                        urllib.request.urlopen(rqF, timeout=15).read(16)
+                    except Exception as e10:
+                        log(f"reload after edit '{final_name}': {e10}")
+                    return self._send_json({"success": True,
+                        "message": f"订阅已更新{node_hint}"})
+                # 统一走file架构新增:载荷落地+块形态file
+                eff_name = (pre_meta or {}).get("name") or name
+                if not eff_name:
+                    import hashlib as _hh
+                    eff_name = re.sub(r"^https?://", "", url).split("/")[0]
+                body_c, hd_c = None, None
+                try:
+                    body_c, hd_c = _download_sub_validated(eff_name, url)
+                    open(_sub_file_path(eff_name), "wb").write(body_c)
+                except Exception as e11:
+                    return self._send_json({"success": False,
+                        "error": f"订阅下载失败: {e11}", "can_force": False}, 400)
+                pre_meta = pre_meta or {}
+                _upsert_file_provider_block(eff_name)
+                all_meta3 = load_sub_meta()
+                e12 = all_meta3.setdefault(eff_name, {})
+                e12.update({"url": url, "interval": int(interval) if interval else 3600})
+                if (pre_meta.get("home")) or home:
+                    e12["home"] = home or (pre_meta.get("home") or "")
+                if pre_meta.get("userInfo"):
+                    e12["userInfo"] = {k13: int(pre_meta["userInfo"].get(k13, 0) or 0)
+                                       for k13 in ("upload","download","total","expire")}
+                save_sub_meta(all_meta3)
+                try:
+                    import urllib.request as _uqG
+                    rqG = _uqG.Request(
+                        f"http://127.0.0.1:{MIHOMO_CTRL_PORT}/providers/proxies/{quote(eff_name)}",
+                        method="PUT")
+                    urllib.request.urlopen(rqG, timeout=15).read(16)
+                except Exception as e14:
+                    log(f"reload after create '{eff_name}': {e14}")
+                result = {"success": True, "message": f"订阅已保存",
+                          "name": eff_name}
+                if node_hint:
+                    result["message"] += node_hint
                 # 持久化官网地址：用户填了就存（覆盖自动探测），清空则删除
                 final_name = (name or "").strip()
                 if final_name:
@@ -2782,6 +2936,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 result = edit_provider_delete(data.get("name", ""))
                 if not result.get("success"):
                     return self._send_json(result, 400)
+                _cleanup_provider_assets(data.get("name", ""))
                 queued = request_provider_restart()
                 result["restarting"] = queued
                 result["message"] = result.get("message", "订阅已删除") + ("，内核正在后台重启" if queued else "，内核已在重启队列中")
