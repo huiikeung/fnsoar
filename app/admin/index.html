@@ -1010,6 +1010,7 @@ tbody tr:hover{background:var(--card2)}
               <button class="mode-btn" data-mode="rule" onclick="setMode('rule')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"/></svg>规则</button>
               <button class="mode-btn" data-mode="global" onclick="setMode('global')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>全局</button>
               <button class="mode-btn" data-mode="direct" onclick="setMode('direct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>直连</button>
+              <button class="mode-btn" id="showHiddenBtn" onclick="toggleShowHidden()" title="显示/隐藏 自动/手动/故转/均衡 组"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>隐藏组</button>
             </div>
           </div>
       </div>
@@ -2223,7 +2224,9 @@ async function loadServiceStatus() {
   const pid = document.getElementById('svcPid');
   if (pid) pid.textContent = 'PID ' + (s.pid || '-');
   const prev = showHidden;
-  showHidden = !s.running;
+  // 隐藏组开关由用户控制, 引擎状态不覆盖用户偏好
+  const shb = document.getElementById('showHiddenBtn');
+  if (shb) shb.classList.toggle('active', showHidden);
   if (prev !== showHidden && document.getElementById('section-groups').style.display !== 'none') renderGroups();
   refreshTun();
 }
@@ -3396,7 +3399,14 @@ function showIconsEnabled() {
 }
 let groupOrder = [];                // 策略组配置顺序（config.yaml proxy-groups 的排列）
 let hiddenGroups = {};              // 组名 -> true（config.yaml 中 hidden: true 的组）
-let showHidden = false;             // 是否显示隐藏组
+function toggleShowHidden() {
+  showHidden = !showHidden;
+  try { localStorage.setItem('fnsoar_show_hidden', showHidden ? '1' : '0'); } catch(e) {}
+  const b = document.getElementById('showHiddenBtn');
+  if (b) b.classList.toggle('active', showHidden);
+  renderGroups();
+}
+let showHidden = (function(){ try { return localStorage.getItem('fnsoar_show_hidden') === '1'; } catch(e){ return false; } })();             // 是否显示隐藏组(用户可开关)
 // 图标本地化：http(s) 走 /api/icon 由服务端下载缓存到本机；data:/相对路径 直接使用
 function localIcon(url) {
   if (/^https?:\/\//i.test(url || '')) return 'api/icon?url=' + encodeURIComponent(url);
