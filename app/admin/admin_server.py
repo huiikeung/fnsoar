@@ -1189,6 +1189,24 @@ def _download_sub_validated(name_hint, url, timeout=25):
 _SUB_PROXY_URL = "http://127.0.0.1:7890"   # 本机 mihomo mixed-port 代理出口(与clash-verge同源)
 
 
+def _subscription_request_error(exc):
+    """提取机场服务端返回的 JSON/text 错误，避免只显示笼统的 HTTP 403。"""
+    reason = str(exc) or exc.__class__.__name__
+    try:
+        raw = exc.read(4096).decode("utf-8", "ignore").strip()
+        if raw:
+            try:
+                payload = json.loads(raw)
+                detail = payload.get("message") or payload.get("error")
+            except Exception:
+                detail = raw
+            if detail:
+                reason += f" ({detail})"
+    except Exception:
+        pass
+    return reason
+
+
 def _open_sub_with_proxy(url, timeout, ua):
     """获取订阅：先直连（能拿到 profile-title 等响应头，与旧版行为一致），
     直连超时/失败再走本机 mihomo 代理兜底（对齐 clash-verge 经代理出口，解决被墙 timed out）。
@@ -1204,7 +1222,7 @@ def _open_sub_with_proxy(url, timeout, ua):
             hd = {k.lower(): v for k, v in resp.headers.items()}
             return body, hd, False
     except Exception as e:
-        attempts.append("direct:" + (str(e) or e.__class__.__name__))
+        attempts.append("direct:" + _subscription_request_error(e))
     # 直连失败再走代理
     try:
         proxy = _urq.ProxyHandler({"http": _SUB_PROXY_URL, "https": _SUB_PROXY_URL})
@@ -1215,7 +1233,7 @@ def _open_sub_with_proxy(url, timeout, ua):
             hd = {k.lower(): v for k, v in resp.headers.items()}
             return body, hd, True
     except Exception as e:
-        attempts.append("proxy:" + (str(e) or e.__class__.__name__))
+        attempts.append("proxy:" + _subscription_request_error(e))
     raise RuntimeError("; ".join(attempts))
 
 
@@ -1475,21 +1493,8 @@ def validate_subscription(url, timeout=6):
     if not isinstance(url, str) or not url.startswith(("http://", "https://")):
         return {"ok": False, "error": "订阅链接必须以 http:// 或 https:// 开头"}
     try:
-        req = _ureq.Request(url, headers={"User-Agent": _sub_user_agent()})
-        # 优先走本机mihomo代理(对齐clash-verge), 直连超时/被墙时可经代理获取
-        data = None
-        hd = {}
-        try:
-            data, hd, _up = _open_sub_with_proxy(url, timeout, _sub_user_agent())
-        except Exception:
-            # 代理路径失败再回退原直连逻辑
-            try:
-                with _IPv4Only():
-                    with _ureq.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
-                        data = resp.read(3 * 1024 * 1024)
-                        hd = {k.lower(): v for k, v in resp.headers.items()}
-            except Exception as e2:
-                return {"ok": False, "error": f"无法访问订阅链接（{e2}）"}
+        # 下载器内部已处理直连优先、mihomo代理兜底，并保留服务端详细错误。
+        data, hd, _up = _open_sub_with_proxy(url, timeout, _sub_user_agent())
     except Exception as e:
         reason = str(e) or e.__class__.__name__
         hint = "；若该机场需经代理访问，首次添加可选择「仍要保存」"
@@ -3111,7 +3116,13 @@ class AdminHandler(BaseHTTPRequestHandler):
                 name = data.get("name", "")  # 可选：关联的订阅名，用于持久化官网
                 if not url or not url.startswith(("http://", "https://")):
                     return self._send_json({"success": False, "error": "无效的订阅链接"}, 400)
-                meta = probe_subscription_meta(url)
+                # 名称探测必须先确认链接能返回有效订阅；不能在 403/token 无效/超时后
+                # 把 URL 尾段冒充成“识别到的名称”。有效订阅无标题时才按 Verge 规则兜底。
+                checked = validate_subscription(url, timeout=12)
+                if not checked.get("ok"):
+                    return self._send_json({"success": False,
+                                            "error": checked.get("error") or "订阅验证未通过"}, 400)
+                meta = checked.get("meta") or {}
                 meta["name"] = meta.get("name") or fallback_provider_name(url)
                 meta["success"] = True
                 # 持久化官网地址（前端「刷新名称」时也能补全 home）
