@@ -309,6 +309,9 @@ tbody tr:hover{background:var(--card2)}
 .mode-btn.active{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .mode-btn svg{width:15px;height:15px;flex-shrink:0}
 .gview-seg .mode-btn{padding:7px 10px}
+/* 视图图标按钮：选中只让图标变蓝，不显示蓝色背景 */
+.gview-seg .mode-btn:hover{background:transparent;color:var(--text)}
+.gview-seg .mode-btn.active{background:transparent;box-shadow:none;color:var(--accent)}
 
 /* ── 策略组页 ────────────────────── */
 .groups-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap}
