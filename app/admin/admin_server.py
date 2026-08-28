@@ -997,17 +997,33 @@ def _sub_name_from_yaml(text):
 
 _NODE_LINK_RE = re.compile(r'\b(?:vmess|vless|trojan|ss|ssr|hysteria2?|tuic|snell)://')
 
-# 机场常用普通节点伪装流量/到期/公告信息；这些条目无法作为稳定代理使用。
-_INFO_NODE_RE = re.compile(
-    r'(?:剩余(?:流量|可用)|流量(?:剩余|重置)|套餐(?:到期|过期|流量)|'
-    r'到期(?:时间|日期)?|过期(?:时间|日期)?|有效期|官网|网站|公告|通知|'
-    r'客服|工单|群组|频道|traffic\s*(?:left|remain|reset)|'
-    r'(?:expire|expiry|reset)\s*(?:at|date|time)?)', re.I)
+def _subscription_filter_rules():
+    """从主 config.yaml 读取用户可编辑的订阅信息节点过滤规则。"""
+    try:
+        cfg = yaml.safe_load(read_config()) or {}
+        opts = ((cfg.get("x-fnsoar") or {}).get("subscription-filter") or {})
+        if not isinstance(opts, dict) or not bool(opts.get("enabled", False)):
+            return [], []
+        keywords = [str(x).strip().lower() for x in (opts.get("exclude-name-keywords") or [])
+                    if str(x).strip()]
+        regexes = []
+        for expr in (opts.get("exclude-name-regex") or []):
+            try:
+                regexes.append(re.compile(str(expr), re.I))
+            except re.error as e:
+                log(f"WARNING: invalid subscription filter regex '{expr}': {e}")
+        return keywords, regexes
+    except Exception as e:
+        log(f"WARNING: load subscription filter config failed: {e}")
+        return [], []
 
 
 def _filter_subscription_info_nodes(body):
-    """从 Clash YAML 载荷删除流量、到期时间、官网/公告等伪装信息节点。"""
+    """按 config.yaml 中的规则删除流量、到期时间等信息节点。"""
     try:
+        keywords, regexes = _subscription_filter_rules()
+        if not keywords and not regexes:
+            return body, 0
         text = body.decode("utf-8", "ignore") if isinstance(body, (bytes, bytearray)) else str(body)
         doc = yaml.safe_load(text)
         proxies = (doc or {}).get("proxies") if isinstance(doc, dict) else None
@@ -1017,7 +1033,11 @@ def _filter_subscription_info_nodes(body):
         removed = 0
         for proxy in proxies:
             name = str(proxy.get("name", "")) if isinstance(proxy, dict) else ""
-            if name and _INFO_NODE_RE.search(name):
+            lowered = name.lower()
+            matched = any(keyword in lowered for keyword in keywords)
+            if not matched:
+                matched = any(regex.search(name) for regex in regexes)
+            if name and matched:
                 removed += 1
                 continue
             kept.append(proxy)
