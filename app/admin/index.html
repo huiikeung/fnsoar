@@ -3344,7 +3344,9 @@ function renderGroups() {
       const tags = h.showType ? nodeTypeTags(n) : '';
       // 直连/拒绝 等内置组不显示延迟，也不显示超时
       const isBuiltin = ['直连','DIRECT','拒绝','REJECT','REJECT-DROP','PASS','COMPATIBLE'].includes(n);
-      const hasDelay = !isBuiltin && (lat.val >= 0 || lat.val === -2);
+      // 直连可测速且有意义(直连网络延迟)，正常显示；拒绝类节点测速必失败，继续隐藏
+      const noDelayBuiltin = ['拒绝','REJECT','REJECT-DROP','PASS','COMPATIBLE'].includes(n);
+      const hasDelay = !noDelayBuiltin && (lat.val >= 0 || lat.val === -2);
       // 若成员本身是策略组，则识别其当前节点（第二行显示「当前：now」）
       const mi = proxiesData[n] || null;
       const isGrpMember = mi && ['Selector','URLTest','Fallback','LoadBalance'].includes(mi.type);
@@ -3369,7 +3371,7 @@ function renderGroups() {
           </div>
           ${detHtml}
         </div>
-        ${isBuiltin ? '' : `<span class="gsub-delay" title="重新测速" onclick="event.stopPropagation();retestSubCard('${jstr(name)}','${jstr(n)}')"><span class="lat ${lat.cls}">${lat.text}</span></span>
+        ${noDelayBuiltin ? '' : `<span class="gsub-delay" title="重新测速" onclick="event.stopPropagation();retestSubCard('${jstr(name)}','${jstr(n)}')"><span class="lat ${lat.cls}">${lat.text}</span></span>
         <span class="gsub-check" onclick="event.stopPropagation();retestSubCard('${jstr(name)}','${jstr(n)}')" title="测速">${toolSvg(GT.speed)}</span>`}
       </div>`;
     }).join('');
@@ -3690,12 +3692,12 @@ function loadDelayCache() {
 function updateSubCardLatency(name) {
   const lat = latencyOf(name);
   if (!lat) return;
-  const isBuiltin = ['直连','DIRECT','拒绝','REJECT','REJECT-DROP','PASS','COMPATIBLE'].includes(name);
+  const noDelayBuiltin = ['拒绝','REJECT','REJECT-DROP','PASS','COMPATIBLE'].includes(name);
   document.querySelectorAll('.gsub').forEach(sub => {
     if (sub.dataset.node === name) {
       const el = sub.querySelector('.lat');
       if (el) { el.textContent = lat.text; el.className = 'lat ' + lat.cls; }
-      if (!isBuiltin && (lat.val >= 0 || lat.val === -2)) sub.classList.add('has-delay');
+      if (!noDelayBuiltin && (lat.val >= 0 || lat.val === -2)) sub.classList.add('has-delay');
     }
   });
 }
