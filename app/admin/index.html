@@ -329,8 +329,6 @@ tbody tr:hover{background:var(--card2)}
 .gcard-type{display:inline-block;padding:1px 8px;border-radius:6px;font-size:10.5px;font-weight:500;line-height:1.5;background:transparent;border:1px solid rgba(78,110,242,.4);color:var(--accent2);flex-shrink:0}
 .gcard-info .gcard-count{font-size:11px;color:var(--dim);font-weight:400;flex-shrink:0;white-space:nowrap}
 .gcard-info .gcard-lat .lat{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0}
-.region-toggle-btn{margin-left:14px;border:1px solid var(--border);border-radius:7px;padding:6px 12px}
-@media(max-width:880px){.groups-toolbar{flex-wrap:wrap}.groups-tools{flex-wrap:wrap;flex-shrink:1}.region-toggle-btn{margin-left:0}}
 .gcard-info .gcard-now{font-size:11px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:26ch}
 .gcard-head-spacer{flex:1;min-width:0}
 .gcard-count-right{font-size:11px;color:var(--dim);font-weight:500;flex-shrink:0;margin-right:4px;display:flex;align-items:center;min-width:2ch;justify-content:flex-end}
@@ -1014,7 +1012,6 @@ tbody tr:hover{background:var(--card2)}
               <button class="mode-btn" data-mode="global" onclick="setMode('global')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>全局</button>
               <button class="mode-btn" data-mode="direct" onclick="setMode('direct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>直连</button>
             </div>
-            <button class="mode-btn region-toggle-btn" id="showHiddenBtn" onclick="toggleShowHidden()" title="显示 自动/手动/故转/均衡 等地域组"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="hb-label">显示地域组</span></button>
           </div>
       </div>
       <div class="gwrap" id="groupsWrap"></div>
@@ -2226,10 +2223,6 @@ async function loadServiceStatus() {
   if (st) { st.textContent = s.running ? t('svc.on') : t('svc.off'); st.className = ''; }
   const pid = document.getElementById('svcPid');
   if (pid) pid.textContent = 'PID ' + (s.pid || '-');
-  const prev = showHidden;
-  // 隐藏组开关由用户控制, 引擎状态不覆盖用户偏好
-  syncHiddenBtn();
-  if (prev !== showHidden && document.getElementById('section-groups').style.display !== 'none') renderGroups();
   refreshTun();
 }
 function toggleService() {
@@ -3205,16 +3198,7 @@ function renderGroups() {
     }
     groups = ordered;
   }
-  // 隐藏组过滤（config.yaml 中 hidden: true 的组，默认不显示）
-  // 兜底：若 API 未返回 hidden 数据，按名称自动隐藏地区组（含"自动/手动/故转/均衡"）
-  const _hiddenKeys = Object.keys(hiddenGroups);
-  if (!showHidden) {
-    if (_hiddenKeys.length) {
-      groups = groups.filter(([name]) => !hiddenGroups[name]);
-    } else {
-      groups = groups.filter(([name]) => !/自动|手动|故转|均衡/.test(name));
-    }
-  }
+  // 隐藏组过滤（仅以 config.yaml 中 hidden: true 为权威；配置已去除地域组hidden, 全部直接显示）
   if (currentMode === 'global') {
     // 全局模式：显示订阅中的所有真实节点（每个节点一张卡片），点击切换 GLOBAL 组
     // 收集所有节点名：从所有组的 all 中取真实订阅节点（排除组自身与 DIRECT/REJECT 等特殊项）
@@ -3419,20 +3403,6 @@ function showIconsEnabled() {
 }
 let groupOrder = [];                // 策略组配置顺序（config.yaml proxy-groups 的排列）
 let hiddenGroups = {};              // 组名 -> true（config.yaml 中 hidden: true 的组）
-function syncHiddenBtn() {
-  const b = document.getElementById('showHiddenBtn');
-  if (!b) return;
-  b.classList.toggle('active', showHidden);
-  const lbl = b.querySelector('.hb-label');
-  if (lbl) lbl.textContent = showHidden ? '隐藏地域组' : '显示地域组';
-  b.title = showHidden ? '隐藏 自动/手动/故转/均衡 等地域组' : '显示 自动/手动/故转/均衡 等地域组';
-}
-function toggleShowHidden() {
-  showHidden = !showHidden;
-  syncHiddenBtn();
-  renderGroups();
-}
-let showHidden = false;   // 地域组(自动/手动/故转/均衡)每次打开默认隐藏, 开关仅当前会话有效
 // 图标本地化：http(s) 走 /api/icon 由服务端下载缓存到本机；data:/相对路径 直接使用
 function localIcon(url) {
   if (/^https?:\/\//i.test(url || '')) return 'api/icon?url=' + encodeURIComponent(url);
