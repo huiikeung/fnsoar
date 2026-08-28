@@ -1135,18 +1135,43 @@ def _download_sub_validated(name_hint, url, timeout=25):
     raise last_err
 
 
-def _download_sub(url, timeout=20):
-    """面板侧订阅下载器(对齐clash-verge prfitem.rs::from_url语义):
-    自带UA、读subscription-userinfo头、cap 8MB、强IPv4。"""
+_SUB_PROXY_URL = "http://127.0.0.1:7890"   # 本机 mihomo mixed-port 代理出口(与clash-verge同源)
+
+
+def _open_sub_with_proxy(url, timeout, ua):
+    """优先走本机 mihomo 代理获取订阅(对齐 clash-verge 经代理出口的行为),
+    代理不可用/失败时回退直连。返回 (body, headers)。"""
     import urllib.request as _urq
-    if hasattr(_urq, "Request"):
-        req = _urq.Request(url, headers={"User-Agent": (_SUB_UA_OVERRIDE or _sub_user_agent())})
-    else:
-        raise RuntimeError("urllib unavailable")
-    with _IPv4Only():
+    headers = {"User-Agent": ua or _sub_user_agent()}
+    attempts = []
+    # 先走代理
+    try:
+        proxy = _urq.ProxyHandler({"http": _SUB_PROXY_URL, "https": _SUB_PROXY_URL})
+        opener = _urq.build_opener(proxy)
+        req = _urq.Request(url, headers=headers)
+        with opener.open(req, timeout=timeout) as resp:
+            body = resp.read(8 * 1024 * 1024)
+            hd = {k.lower(): v for k, v in resp.headers.items()}
+            return body, hd, True
+    except Exception as e:
+        attempts.append("proxy:" + (str(e) or e.__class__.__name__))
+    # 回退直连
+    try:
+        req = _urq.Request(url, headers=headers)
         with _urq.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
             body = resp.read(8 * 1024 * 1024)
             hd = {k.lower(): v for k, v in resp.headers.items()}
+            return body, hd, False
+    except Exception as e:
+        attempts.append("direct:" + (str(e) or e.__class__.__name__))
+    raise RuntimeError("; ".join(attempts))
+
+
+def _download_sub(url, timeout=20):
+    """面板侧订阅下载器(对齐clash-verge prfitem.rs::from_url语义):
+    自带UA、读subscription-userinfo头、cap 8MB、优先走本机mihomo代理, 失败回退直连。"""
+    import urllib.request as _urq
+    body, hd, used_proxy = _open_sub_with_proxy(url, timeout, _SUB_UA_OVERRIDE or _sub_user_agent())
     # BOM剥离(verge同款处理)
     if body.startswith(b"\xef\xbb\xbf"):
         body = body[3:]
@@ -1399,9 +1424,14 @@ def validate_subscription(url, timeout=6):
         return {"ok": False, "error": "订阅链接必须以 http:// 或 https:// 开头"}
     try:
         req = _ureq.Request(url, headers={"User-Agent": _sub_user_agent()})
-        with _ureq.urlopen(req, timeout=timeout) as resp:
-            hd = {k.lower(): v for k, v in resp.headers.items()}
-            data = resp.read(3 * 1024 * 1024)
+        # 优先走本机mihomo代理(对齐clash-verge), 直连超时/被墙时可经代理获取
+        try:
+            data, _hd, _up = _open_sub_with_proxy(url, timeout, _sub_user_agent())
+        except Exception:
+            # 代理路径失败再回退原直连逻辑
+            with _IPv4Only():
+                with _ureq.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
+                    data = resp.read(3 * 1024 * 1024)
     except Exception as e:
         reason = str(e) or e.__class__.__name__
         hint = "；若该机场需经代理访问，首次添加可选择「仍要保存」"
