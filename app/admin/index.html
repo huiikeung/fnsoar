@@ -330,6 +330,8 @@ tbody tr:hover{background:var(--card2)}
 .gcard-info .gcard-count{font-size:11px;color:var(--dim);font-weight:400;flex-shrink:0;white-space:nowrap}
 .gcard-info .gcard-lat .lat{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0}
 .gview-seg .gv-n{font-size:11px;opacity:.7;margin-left:4px;font-weight:600}
+.gview-row{display:flex;align-items:center;padding:2px 0 14px 0}
+.gview-row .gview-seg{margin-bottom:0}
 @media(max-width:880px){.groups-toolbar{flex-wrap:wrap}.groups-tools{flex-wrap:wrap;flex-shrink:1}}
 .gcard-info .gcard-now{font-size:11px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:26ch}
 .gcard-head-spacer{flex:1;min-width:0}
@@ -1014,12 +1016,14 @@ tbody tr:hover{background:var(--card2)}
               <button class="mode-btn" data-mode="global" onclick="setMode('global')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>全局</button>
               <button class="mode-btn" data-mode="direct" onclick="setMode('direct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>直连</button>
             </div>
-            <div class="mode-seg gview-seg" id="gviewSeg">
-              <button class="mode-btn" data-view="all" onclick="setGroupView('all')">全部 <span class="gv-n" id="gvCountAll"></span></button>
-              <button class="mode-btn" data-view="strategy" onclick="setGroupView('strategy')">策略组 <span class="gv-n" id="gvCountStrat"></span></button>
-              <button class="mode-btn" data-view="region" onclick="setGroupView('region')">节点组 <span class="gv-n" id="gvCountRegion"></span></button>
-            </div>
           </div>
+      </div>
+      <div class="gview-row" id="gviewRow">
+        <div class="mode-seg gview-seg" id="gviewSeg">
+          <button class="mode-btn" data-view="all" onclick="setGroupView('all')">全部 <span class="gv-n" id="gvCountAll"></span></button>
+          <button class="mode-btn" data-view="strategy" onclick="setGroupView('strategy')">策略组 <span class="gv-n" id="gvCountStrat"></span></button>
+          <button class="mode-btn" data-view="region" onclick="setGroupView('region')">节点组 <span class="gv-n" id="gvCountRegion"></span></button>
+        </div>
       </div>
       <div class="gwrap" id="groupsWrap"></div>
     </section>
@@ -3183,6 +3187,9 @@ function toggleGroupCard(el) {
 function renderGroups() {
   updateBackTopVisibility();
   snapGroupsSoon();
+  // 视图切换行(全部/策略组/节点组)仅规则模式显示；全局/直连隐藏
+  const gvr = document.getElementById('gviewRow');
+  if (gvr) gvr.style.display = (currentMode === 'rule' ? '' : 'none');
   const wrap = document.getElementById('groupsWrap');
   if (!proxiesData) {
     wrap.innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:40px">无法获取策略组数据（引擎可能未运行）</div>';
