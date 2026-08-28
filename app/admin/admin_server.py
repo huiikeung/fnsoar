@@ -1139,12 +1139,22 @@ _SUB_PROXY_URL = "http://127.0.0.1:7890"   # 本机 mihomo mixed-port 代理出�
 
 
 def _open_sub_with_proxy(url, timeout, ua):
-    """优先走本机 mihomo 代理获取订阅(对齐 clash-verge 经代理出口的行为),
-    代理不可用/失败时回退直连。返回 (body, headers)。"""
+    """获取订阅：先直连（能拿到 profile-title 等响应头，与旧版行为一致），
+    直连超时/失败再走本机 mihomo 代理兜底（对齐 clash-verge 经代理出口，解决被墙 timed out）。
+    返回 (body, headers)。"""
     import urllib.request as _urq
     headers = {"User-Agent": ua or _sub_user_agent()}
     attempts = []
-    # 先走代理
+    # 先直连
+    try:
+        req = _urq.Request(url, headers=headers)
+        with _urq.urlopen(req, timeout=min(timeout, 12), context=_SSL_CTX) as resp:
+            body = resp.read(8 * 1024 * 1024)
+            hd = {k.lower(): v for k, v in resp.headers.items()}
+            return body, hd, False
+    except Exception as e:
+        attempts.append("direct:" + (str(e) or e.__class__.__name__))
+    # 直连失败再走代理
     try:
         proxy = _urq.ProxyHandler({"http": _SUB_PROXY_URL, "https": _SUB_PROXY_URL})
         opener = _urq.build_opener(proxy)
@@ -1155,15 +1165,6 @@ def _open_sub_with_proxy(url, timeout, ua):
             return body, hd, True
     except Exception as e:
         attempts.append("proxy:" + (str(e) or e.__class__.__name__))
-    # 回退直连
-    try:
-        req = _urq.Request(url, headers=headers)
-        with _urq.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
-            body = resp.read(8 * 1024 * 1024)
-            hd = {k.lower(): v for k, v in resp.headers.items()}
-            return body, hd, False
-    except Exception as e:
-        attempts.append("direct:" + (str(e) or e.__class__.__name__))
     raise RuntimeError("; ".join(attempts))
 
 
