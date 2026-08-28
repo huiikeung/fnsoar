@@ -829,9 +829,8 @@ _SUB_UA_OVERRIDE = None
 
 
 def _sub_user_agent():
-    """订阅请求 UA，精确对齐 Clash Verge Rev 的 NetworkManager 默认值。
-    部分机场仅对白名单 UA 下发 profile-title、官网和流量等元数据头。"""
-    return _SUB_UA_OVERRIDE or f"clash-verge/v{_get_app_version()}"
+    """订阅请求 UA。Clash Meta 格式可让机场返回完整 YAML 和名称响应头。"""
+    return _SUB_UA_OVERRIDE or f"clash.meta/{_get_core_version_cached()}"
 
 
 def _provider_header_lines():
@@ -1150,7 +1149,7 @@ def _download_sub_validated(name_hint, url, timeout=25):
         s = str(e).lower()
         return ("eof" in s or "ssl" in s or "connection reset" in s
                 or "timed out" in s or "timeout" in s)
-    # 默认 UA 已是 clash-verge/v{version}，无需再用相同 UA 重复下载。
+    # 默认 UA 已是 clash.meta/{core-version}，无需再用相同 UA 重复下载。
     uas = [None]
     for i6, ua in enumerate(uas):
         try:
@@ -1227,7 +1226,11 @@ def _open_sub_with_proxy(url, timeout, ua):
             return body, hd, False
     except Exception as e:
         attempts.append("direct:" + _subscription_request_error(e))
-    # 直连失败再走代理
+        # 读取超时说明已连上机场但响应过慢；再走本机代理只会叠加一次完整等待。
+        # 仅对快速连接失败尝试代理兜底。
+        if isinstance(e, (TimeoutError, socket.timeout)) or "timed out" in str(e).lower():
+            raise RuntimeError("; ".join(attempts))
+    # 快速连接失败再走代理
     try:
         proxy = _urq.ProxyHandler({"http": _SUB_PROXY_URL, "https": _SUB_PROXY_URL})
         opener = _urq.build_opener(proxy)
@@ -3144,7 +3147,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                     return self._send_json({"success": False, "error": "无效的订阅链接"}, 400)
                 # 名称探测必须先确认链接能返回有效订阅；不能在 403/token 无效/超时后
                 # 把 URL 尾段冒充成“识别到的名称”。有效订阅无标题时才按 Verge 规则兜底。
-                checked = validate_subscription(url, timeout=12)
+                checked = validate_subscription(url, timeout=7)
                 if not checked.get("ok"):
                     return self._send_json({"success": False,
                                             "error": checked.get("error") or "订阅验证未通过"}, 400)
