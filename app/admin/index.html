@@ -3135,7 +3135,7 @@ function resolveTestTarget(name) {
   return cur;
 }
 async function testOneNode(name, timeout, url) {
-  const testUrl = url || 'https://www.gstatic.com/generate_204';
+  const testUrl = url || 'http://connect.rom.miui.com/generate_204';
   try {
     let endpoint;
     // 成员本身是策略组（如 香港-手动）时解析到其当前叶子节点再测——
@@ -3609,7 +3609,7 @@ function locateGroupNode(name) {
 }
 // 单节点测速（点击节点卡片右侧延迟小部件）
 async function testSingleNode(group, name) {
-  const testUrl = (groupHead[group] && groupHead[group].testUrl.trim()) || 'https://www.gstatic.com/generate_204';
+  const testUrl = (groupHead[group] && groupHead[group].testUrl.trim()) || 'http://connect.rom.miui.com/generate_204';
   const delay = await testOneNode(name, 5000, testUrl);
   if (delay >= 0) {
     nodeDelay[name] = delay;
@@ -3845,7 +3845,7 @@ async function testGroup(groupName) {
   memberLeaves.forEach((ls, m) => ls.forEach(l => (memberByLeaf[l] = memberByLeaf[l] || []).push(m)));
   let done = 0;
   // 若该组设置了自定义测速 URL 则使用它
-  const testUrl = (groupHead[groupName] && groupHead[groupName].testUrl.trim()) || 'https://www.gstatic.com/generate_204';
+  const testUrl = (groupHead[groupName] && groupHead[groupName].testUrl.trim()) || 'http://connect.rom.miui.com/generate_204';
   // 内核缓存优先：health-check 定时已在后台测过大量节点并缓存延迟史。
   // 有缓存的直接用现成延迟(秒显)，只对内核尚无结果的节点发起新测，
   // 避免每次手动测速都全量风暴把 500 节点拖到几十秒。
