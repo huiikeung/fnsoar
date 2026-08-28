@@ -72,6 +72,9 @@ HOST_TRANSPARENT_SCRIPT = os.path.join(ADMIN_DIR, "host_transparent.sh")
 HOST_TRANSPARENT_PORT = int(os.environ.get("MIHOMO_REDIR_PORT", "7892"))
 _PROVIDER_RESTART_LOCK = threading.Lock()
 _PROVIDER_RESTARTING = False
+_SUB_VALIDATION_CACHE = {}
+_SUB_VALIDATION_CACHE_LOCK = threading.Lock()
+_SUB_VALIDATION_CACHE_TTL = 120
 MIHOMO_CTRL_PORT = int(os.environ.get("MIHOMO_CTRL_PORT", "9090"))
 MIHOMO_CTRL_HOST = os.environ.get("MIHOMO_CTRL_HOST", "127.0.0.1")
 
@@ -1147,7 +1150,8 @@ def _download_sub_validated(name_hint, url, timeout=25):
         s = str(e).lower()
         return ("eof" in s or "ssl" in s or "connection reset" in s
                 or "timed out" in s or "timeout" in s)
-    uas = [None, f"clash-verge/v{_get_app_version()}"]
+    # 默认 UA 已是 clash-verge/v{version}，无需再用相同 UA 重复下载。
+    uas = [None]
     for i6, ua in enumerate(uas):
         try:
             if ua is None:
@@ -1485,13 +1489,44 @@ def _migrate_to_file_providers():
         log("WARNING: migrate to file providers failed")
 
 
-def validate_subscription(url, timeout=6):
-    """保存前验证订阅：可达 + 内容像订阅格式。
-    返回 {"ok": bool, "error": str?, "meta": {...}, "nodes": int} —— ok 时 meta 一并返回，
-    保存路径复用该结果，全程只拉一次订阅。"""
+def _subscription_cache_get(url):
+    now = time.time()
+    with _SUB_VALIDATION_CACHE_LOCK:
+        item = _SUB_VALIDATION_CACHE.get(url)
+        if not item:
+            return None
+        if now - item.get("time", 0) > _SUB_VALIDATION_CACHE_TTL:
+            _SUB_VALIDATION_CACHE.pop(url, None)
+            return None
+        return item
+
+
+def _subscription_cache_put(url, result, body, headers):
+    with _SUB_VALIDATION_CACHE_LOCK:
+        _SUB_VALIDATION_CACHE[url] = {
+            "time": time.time(), "result": result,
+            "body": body, "headers": headers,
+        }
+
+
+def _subscription_cache_take(url):
+    """保存成功前原子取走缓存，避免同一探测结果被重复消费。"""
+    with _SUB_VALIDATION_CACHE_LOCK:
+        item = _SUB_VALIDATION_CACHE.pop(url, None)
+    if item and time.time() - item.get("time", 0) <= _SUB_VALIDATION_CACHE_TTL:
+        return item
+    return None
+
+
+def validate_subscription(url, timeout=6, use_cache=True):
+    """保存前验证订阅；成功结果与过滤后的载荷缓存 120 秒供保存直接复用。"""
     import urllib.request as _ureq
     if not isinstance(url, str) or not url.startswith(("http://", "https://")):
         return {"ok": False, "error": "订阅链接必须以 http:// 或 https:// 开头"}
+    if use_cache:
+        cached = _subscription_cache_get(url)
+        if cached:
+            return dict(cached["result"])
     try:
         # 下载器内部已处理直连优先、mihomo代理兜底，并保留服务端详细错误。
         data, hd, _up = _open_sub_with_proxy(url, timeout, _sub_user_agent())
@@ -1507,7 +1542,7 @@ def validate_subscription(url, timeout=6):
     if not ok:
         return {"ok": False,
                 "error": "内容不是有效的订阅格式（需要 Clash YAML、base64 或节点链接列表）；若确认无误可选择「仍要保存」"}
-    _filtered_data, removed_info_nodes = _filter_subscription_info_nodes(data)
+    filtered_data, removed_info_nodes = _filter_subscription_info_nodes(data)
     nodes = max(0, nodes - removed_info_nodes)
     meta = _sub_meta_from_headers(hd)
     if not meta.get("name"):
@@ -1516,34 +1551,15 @@ def validate_subscription(url, timeout=6):
             meta["name"] = nm
     meta["userInfo"] = _parse_userinfo(hd)
 
-    # 默认 UA 已与 Clash Verge Rev 一致。若仍缺名称，切换常见 Clash UA 重试并合并元数据；
-    # 不能以 userInfo 是否存在作为重试条件，因为有些机场只返回流量但不返回标题。
-    if not meta.get("name"):
-        for ua2 in (f"clash.meta/{_get_core_version_cached()}", "ClashforWindows/0.20.39"):
-            try:
-                data2, hd2, _via_proxy2 = _open_sub_with_proxy(url, timeout, ua2)
-                meta2 = _sub_meta_from_headers(hd2)
-                if not meta2.get("name"):
-                    nm2 = _sub_name_from_yaml(data2.decode("utf-8", "ignore"))
-                    if nm2:
-                        meta2["name"] = nm2
-                ui2 = _parse_userinfo(hd2)
-                if meta2.get("name") and not meta.get("name"):
-                    meta["name"] = meta2["name"]
-                if ui2 and not meta.get("userInfo"):
-                    meta["userInfo"] = ui2
-                for k in ("home", "updateInterval"):
-                    if meta2.get(k) and not meta.get(k):
-                        meta[k] = meta2[k]
-                if meta.get("name"):
-                    break
-            except Exception:
-                continue
+    # 请求使用 Clash Verge Rev 默认 UA。一次成功响应同时用于名称、元数据、验证和载荷；
+    # 不再为了名称切换 UA 重复下载整份订阅，避免添加过程成倍变慢。
     # 对齐 Clash Verge Rev：响应头/YAML 没有名称时，使用 URL 最后一段作为 profile name。
     # 这样正文没有 profile.name、且服务端没有 Content-Disposition 时仍会有稳定名称。
     if not meta.get("name"):
         meta["name"] = fallback_provider_name(url)
-    return {"ok": True, "meta": meta, "nodes": nodes}
+    result = {"ok": True, "meta": meta, "nodes": nodes}
+    _subscription_cache_put(url, result, filtered_data, hd)
+    return dict(result)
 
 
 def probe_subscription_meta(url, timeout=7):
@@ -2976,6 +2992,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 # 保存前验证订阅（可达 + 内容格式）；强制保存跳过该步。
                 # 验证结果复用为元数据来源，整条保存路径只拉一次订阅。
                 pre_meta = None
+                cached_download = None
                 node_hint = ""
                 if not force:
                     v = validate_subscription(url, timeout=7)
@@ -2984,6 +3001,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                                                 "error": (v.get("error") or "订阅验证未通过"),
                                                 "can_force": True}, 400)
                     pre_meta = v.get("meta") or {}
+                    cached_download = _subscription_cache_take(url)
                     n = v.get("nodes") or 0
                     node_hint = f"，发现 {n} 个节点" if n else ""
                 cur_types = _yaml_provider_types()
@@ -3010,7 +3028,11 @@ class AdminHandler(BaseHTTPRequestHandler):
                     stale = (not _osE.path.exists(dest)) or _osE.path.getsize(dest) < 4096
                     if url_changed or stale:
                         try:
-                            body, hd7 = _download_sub_validated(final_name, ent["url"])
+                            if cached_download:
+                                body = cached_download["body"]
+                                hd7 = cached_download["headers"]
+                            else:
+                                body, hd7 = _download_sub_validated(final_name, ent["url"])
                             tmpf = dest + ".tmp"
                             open(tmpf, "wb").write(body)
                             os.replace(tmpf, dest)
@@ -3046,7 +3068,11 @@ class AdminHandler(BaseHTTPRequestHandler):
                     eff_name = fallback_provider_name(url)
                 body_c, hd_c = None, None
                 try:
-                    body_c, hd_c = _download_sub_validated(eff_name, url)
+                    if cached_download:
+                        body_c = cached_download["body"]
+                        hd_c = cached_download["headers"]
+                    else:
+                        body_c, hd_c = _download_sub_validated(eff_name, url)
                     open(_sub_file_path(eff_name), "wb").write(body_c)
                 except Exception as e11:
                     return self._send_json({"success": False,
