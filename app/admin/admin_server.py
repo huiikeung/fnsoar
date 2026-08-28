@@ -1203,14 +1203,78 @@ def _yaml_provider_types():
         return {}
 
 
+def _render_providers_text(pps):
+    """把 proxy-providers dict 渲染为嵌套在 proxy-providers: 下的 YAML 块(缩进2)"""
+    import yaml as _yr
+    if not pps:
+        return ""
+    out = _yr.safe_dump(pps, allow_unicode=True, sort_keys=False,
+                        default_flow_style=False, width=4096, indent=2)
+    # 每行加 2 空格缩进, 使其成为 proxy-providers 的子键
+    indented = "\n".join(("  " + ln) if ln.strip() else ln for ln in out.splitlines())
+    return indented
+
+
 def _yaml_doc_save(doc):
-    """统一落盘出口：dump→结构校验→write_config"""
+    """落盘：保留 config.yaml 原有注释/排版，仅替换 proxy-providers 段。
+    避免 safe_dump 全量重写冲掉用户的手写注释与分段样式。"""
+    pps = (doc.get('proxy-providers') or {})
+    # 结构校验（沿用原有保险）
+    import yaml as _ys
+    assert isinstance(pps, dict)
+    raw = read_config()
+    if not raw.strip():
+        _yaml_doc_save_dump(doc)
+        return
+    providers_text = _render_providers_text(pps)
+    new_raw = _patch_proxy_providers_section(raw, providers_text)
+    if new_raw is None:
+        # 找不到 proxy-providers 段：回退到原有 safe_dump（保底）
+        _yaml_doc_save_dump(doc)
+        return
+    chk = _ys.safe_load(new_raw) or {}
+    assert isinstance(chk.get('proxy-providers', {}) or {}, dict)
+    write_config(new_raw)
+
+
+def _yaml_doc_save_dump(doc):
+    """原 safe_dump 全量落盘(仅在无文本可patch时回退)。"""
     import yaml as _ys
     out = _ys.safe_dump(doc, allow_unicode=True, sort_keys=False,
                         default_flow_style=False, width=4096, indent=2)
     chk = _ys.safe_load(out) or {}
     assert isinstance(chk.get("proxy-providers", {}) or {}, dict)
     write_config(out)
+
+
+def _patch_proxy_providers_section(raw, providers_text):
+    """在原 config 文本中定位顶层 proxy-providers: 段, 整段替换为其渲染文本。
+    其余字节(注释/分段/其它区块)原样保留。找不到返回 None。
+    段结束：遇到下一个顶格行(含顶格注释)即停, 以保留其后注释与区块。"""
+    import re as _re
+    lines = raw.splitlines(keepends=True)
+    start = None
+    for i, ln in enumerate(lines):
+        if _re.match(r'^proxy-providers:\s*$', ln):
+            start = i
+            break
+    if start is None:
+        return None
+    # 段结束: 第一个顶格非空行(缩进为0), 无论是否注释, 都视为下一段开始
+    end = len(lines)
+    for j in range(start + 1, len(lines)):
+        l = lines[j]
+        if l.strip() and l[:1] not in (' ', '\t'):
+            end = j
+            break
+    if providers_text:
+        block = "proxy-providers:\n" + providers_text
+        if not providers_text.endswith("\n"):
+            block += "\n"
+    else:
+        block = "proxy-providers: {}\n"
+    new_lines = lines[:start] + [block] + lines[end:]
+    return "".join(new_lines)
 
 
 def _rename_provider_side(old, new):
