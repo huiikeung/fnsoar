@@ -827,6 +827,33 @@ def save_sub_meta(meta):
 
 _SUB_UA_OVERRIDE = None
 
+# 订阅拉取通道记忆（对齐 clash-verge-rev 的 PrfOption.self_proxy 持久化语义）：
+# 每条 URL 记住上次成功通道（direct/proxy），更新时优先走它，避免被墙域名反复直连干等。
+_SUB_CHANNELS_FILE = f"{TRIM_PKGVAR}/sub-channels.json"
+
+
+def _sub_channel_get(url):
+    try:
+        with open(_SUB_CHANNELS_FILE, "r", encoding="utf-8") as f:
+            return (json.load(f) or {}).get(url)
+    except Exception:
+        return None
+
+
+def _sub_channel_set(url, channel):
+    try:
+        data = {}
+        if os.path.exists(_SUB_CHANNELS_FILE):
+            with open(_SUB_CHANNELS_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f) or {}
+        data[url] = channel
+        tmp = _SUB_CHANNELS_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False)
+        os.replace(tmp, _SUB_CHANNELS_FILE)
+    except Exception as e:
+        log(f"save sub channel failed: {e}")
+
 
 def _sub_user_agent():
     """订阅请求 UA。Clash Meta 格式可让机场返回完整 YAML 和名称响应头。"""
@@ -1222,36 +1249,35 @@ def _subscription_request_error(exc):
 
 
 def _open_sub_with_proxy(url, timeout, ua):
-    """获取订阅：先直连（能拿到 profile-title 等响应头，与旧版行为一致），
-    直连超时/失败再走本机 mihomo 代理兜底（对齐 clash-verge 经代理出口，解决被墙 timed out）。
-    返回 (body, headers)。"""
+    """获取订阅，对齐 clash-verge-rev 的通道选择语义：
+    记住该订阅上次成功通道并优先使用（相当于 Verge 持久化的 self_proxy 选项）；
+    未知链接先直连（限时12秒），失败再走本机 mixed-port。直连超时不再直接放弃，
+    因为被墙域名只能经代理获取。返回 (body, headers, via_proxy)。"""
     import urllib.request as _urq
     headers = {"User-Agent": ua or _sub_user_agent()}
+    remembered = _sub_channel_get(url)
+    if remembered in ("direct", "proxy"):
+        order = [remembered] + [c for c in ("direct", "proxy") if c != remembered]
+    else:
+        order = ["direct", "proxy"]
     attempts = []
-    # 先直连
-    try:
-        req = _urq.Request(url, headers=headers)
-        with _urq.urlopen(req, timeout=min(timeout, 12), context=_SSL_CTX) as resp:
-            body = resp.read(8 * 1024 * 1024)
-            hd = {k.lower(): v for k, v in resp.headers.items()}
-            return body, hd, False
-    except Exception as e:
-        attempts.append("direct:" + _subscription_request_error(e))
-        # 读取超时说明已连上机场但响应过慢；再走本机代理只会叠加一次完整等待。
-        # 仅对快速连接失败尝试代理兜底。
-        if isinstance(e, (TimeoutError, socket.timeout)) or "timed out" in str(e).lower():
-            raise RuntimeError("; ".join(attempts))
-    # 快速连接失败再走代理
-    try:
-        proxy = _urq.ProxyHandler({"http": _SUB_PROXY_URL, "https": _SUB_PROXY_URL})
-        opener = _urq.build_opener(proxy)
-        req = _urq.Request(url, headers=headers)
-        with opener.open(req, timeout=timeout) as resp:
-            body = resp.read(8 * 1024 * 1024)
-            hd = {k.lower(): v for k, v in resp.headers.items()}
-            return body, hd, True
-    except Exception as e:
-        attempts.append("proxy:" + _subscription_request_error(e))
+    for i6, channel in enumerate(order):
+        t_out = min(timeout, 12) if i6 == 0 else min(timeout, 6)
+        try:
+            req = _urq.Request(url, headers=headers)
+            if channel == "proxy":
+                proxy = _urq.ProxyHandler({"http": _SUB_PROXY_URL, "https": _SUB_PROXY_URL})
+                opener = _urq.build_opener(proxy)
+                resp = opener.open(req, timeout=t_out)
+            else:
+                resp = _urq.urlopen(req, timeout=t_out, context=_SSL_CTX)
+            with resp:
+                body = resp.read(8 * 1024 * 1024)
+                hd = {k.lower(): v for k, v in resp.headers.items()}
+            _sub_channel_set(url, channel)
+            return body, hd, channel == "proxy"
+        except Exception as e:
+            attempts.append(channel + ":" + _subscription_request_error(e))
     raise RuntimeError("; ".join(attempts))
 
 
