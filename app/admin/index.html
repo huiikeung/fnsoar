@@ -329,8 +329,8 @@ tbody tr:hover{background:var(--card2)}
 .gcard-type{display:inline-block;padding:1px 8px;border-radius:6px;font-size:10.5px;font-weight:500;line-height:1.5;background:transparent;border:1px solid rgba(78,110,242,.4);color:var(--accent2);flex-shrink:0}
 .gcard-info .gcard-count{font-size:11px;color:var(--dim);font-weight:400;flex-shrink:0;white-space:nowrap}
 .gcard-info .gcard-lat .lat{font-size:11px;font-weight:700;white-space:nowrap;flex-shrink:0}
-.region-toggle-btn{margin-left:14px;border:1px solid var(--border);border-radius:7px;padding:6px 12px}
-@media(max-width:880px){.groups-toolbar{flex-wrap:wrap}.groups-tools{flex-wrap:wrap;flex-shrink:1}.region-toggle-btn{margin-left:0}}
+.gview-seg .gv-n{font-size:11px;opacity:.7;margin-left:4px;font-weight:600}
+@media(max-width:880px){.groups-toolbar{flex-wrap:wrap}.groups-tools{flex-wrap:wrap;flex-shrink:1}}
 .gcard-info .gcard-now{font-size:11px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:26ch}
 .gcard-head-spacer{flex:1;min-width:0}
 .gcard-count-right{font-size:11px;color:var(--dim);font-weight:500;flex-shrink:0;margin-right:4px;display:flex;align-items:center;min-width:2ch;justify-content:flex-end}
@@ -1014,7 +1014,11 @@ tbody tr:hover{background:var(--card2)}
               <button class="mode-btn" data-mode="global" onclick="setMode('global')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>全局</button>
               <button class="mode-btn" data-mode="direct" onclick="setMode('direct')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10"/></svg>直连</button>
             </div>
-            <button class="mode-btn region-toggle-btn" id="showHiddenBtn" onclick="toggleShowHidden()" title="显示 自动/手动/故转/均衡 等地域组"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span class="hb-label">显示地域组</span></button>
+            <div class="mode-seg gview-seg" id="gviewSeg">
+              <button class="mode-btn" data-view="all" onclick="setGroupView('all')">全部 <span class="gv-n" id="gvCountAll"></span></button>
+              <button class="mode-btn" data-view="strategy" onclick="setGroupView('strategy')">策略组 <span class="gv-n" id="gvCountStrat"></span></button>
+              <button class="mode-btn" data-view="region" onclick="setGroupView('region')">节点组 <span class="gv-n" id="gvCountRegion"></span></button>
+            </div>
           </div>
       </div>
       <div class="gwrap" id="groupsWrap"></div>
@@ -2226,10 +2230,8 @@ async function loadServiceStatus() {
   if (st) { st.textContent = s.running ? t('svc.on') : t('svc.off'); st.className = ''; }
   const pid = document.getElementById('svcPid');
   if (pid) pid.textContent = 'PID ' + (s.pid || '-');
-  const prev = showHidden;
-  // 隐藏组开关由用户控制, 引擎状态不覆盖用户偏好
-  syncHiddenBtn();
-  if (prev !== showHidden && document.getElementById('section-groups').style.display !== 'none') renderGroups();
+  // 引擎状态就绪后刷新策略组视图（组卡显示由 groupView 分类决定，不受引擎状态覆盖）
+  if (document.getElementById('section-groups').style.display !== 'none') renderGroups();
   refreshTun();
 }
 function toggleService() {
@@ -3205,16 +3207,6 @@ function renderGroups() {
     }
     groups = ordered;
   }
-  // 隐藏组过滤（config.yaml 中 hidden: true 的组，默认不显示）
-  // 兜底：若 API 未返回 hidden 数据，按名称自动隐藏地区组（含"自动/手动/故转/均衡"）
-  const _hiddenKeys = Object.keys(hiddenGroups);
-  if (!showHidden) {
-    if (_hiddenKeys.length) {
-      groups = groups.filter(([name]) => !hiddenGroups[name]);
-    } else {
-      groups = groups.filter(([name]) => !/自动|手动|故转|均衡/.test(name));
-    }
-  }
   if (currentMode === 'global') {
     // 全局模式：显示订阅中的所有真实节点（每个节点一张卡片），点击切换 GLOBAL 组
     // 收集所有节点名：从所有组的 all 中取真实订阅节点（排除组自身与 DIRECT/REJECT 等特殊项）
@@ -3296,6 +3288,14 @@ function renderGroups() {
     return;
   }
   groups = groups.filter(([k]) => k !== 'GLOBAL');
+  // 视图分类：策略组(业务分流) / 节点组(地域组 自动/手动/故转/均衡) / 全部
+  // 默认显示策略组；计数按当前数据实时统计（置于 GLOBAL 剔除后，规则模式路径）
+  syncGroupView();
+  if (groupView === 'strategy') {
+    groups = groups.filter(([name]) => !/自动|手动|故转|均衡/.test(name));
+  } else if (groupView === 'region') {
+    groups = groups.filter(([name]) => /自动|手动|故转|均衡/.test(name));
+  }
   // 排序：分类策略组（谷歌/苹果/流媒体等）排前，
   // 带"手动/自动"的订阅地域组（香港-手动、台湾-自动等）始终排后面
   groups.sort((a, b) => {
@@ -3419,20 +3419,43 @@ function showIconsEnabled() {
 }
 let groupOrder = [];                // 策略组配置顺序（config.yaml proxy-groups 的排列）
 let hiddenGroups = {};              // 组名 -> true（config.yaml 中 hidden: true 的组）
-function syncHiddenBtn() {
-  const b = document.getElementById('showHiddenBtn');
-  if (!b) return;
-  b.classList.toggle('active', showHidden);
-  const lbl = b.querySelector('.hb-label');
-  if (lbl) lbl.textContent = showHidden ? '隐藏地域组' : '显示地域组';
-  b.title = showHidden ? '隐藏 自动/手动/故转/均衡 等地域组' : '显示 自动/手动/故转/均衡 等地域组';
-}
-function toggleShowHidden() {
-  showHidden = !showHidden;
-  syncHiddenBtn();
+function setGroupView(v) {
+  groupView = v || 'strategy';
+  syncGroupView();
   renderGroups();
 }
-let showHidden = false;   // 地域组(自动/手动/故转/均衡)每次打开默认隐藏, 开关仅当前会话有效
+// 统计并同步视图计数/高亮（基于完整组数据，不受当前过滤影响）
+function syncGroupView() {
+  const seg = document.getElementById('gviewSeg');
+  if (seg) {
+    seg.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.view === groupView));
+  }
+  if (!proxiesData) return;
+  const types = ['Selector','URLTest','Fallback','LoadBalance'];
+  const seen = new Set();
+  let all = [];
+  // 优先按配置顺序(含追加未配置组, 排除 GLOBAL/非组)
+  const byOrder = [];
+  if (groupOrder.length) {
+    for (const nm of groupOrder) {
+      const v = proxiesData[nm];
+      if (v && types.includes(v.type)) { byOrder.push([nm, v]); seen.add(nm); }
+    }
+    Object.entries(proxiesData).forEach(([nm, v]) => { if (types.includes(v.type) && !seen.has(nm)) byOrder.push([nm, v]); });
+  } else {
+    Object.entries(proxiesData).forEach(([nm, v]) => { if (types.includes(v.type)) byOrder.push([nm, v]); });
+  }
+  all = byOrder.filter(([nm]) => nm !== 'GLOBAL');
+  const isRegion = nm => /自动|手动|故转|均衡/.test(nm);
+  const nAll = all.length;
+  const nStrat = all.filter(([nm]) => !isRegion(nm)).length;
+  const nRegion = all.filter(([nm]) => isRegion(nm)).length;
+  const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+  set('gvCountAll', nAll);
+  set('gvCountStrat', nStrat);
+  set('gvCountRegion', nRegion);
+}
+let groupView = 'strategy';   // all / strategy / region, 默认显示策略组
 // 图标本地化：http(s) 走 /api/icon 由服务端下载缓存到本机；data:/相对路径 直接使用
 function localIcon(url) {
   if (/^https?:\/\//i.test(url || '')) return 'api/icon?url=' + encodeURIComponent(url);
