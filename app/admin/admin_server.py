@@ -1088,18 +1088,29 @@ def _looks_like_subscription(text):
 
 
 def _get_core_version_cached():
-    """引擎(clash.meta 内核)版本号，进程内缓存；取不到用固定占位。"""
+    """获取 Mihomo 版本；引擎关闭时从随包二进制读取，首次订阅也使用真实 UA。"""
     global _CORE_VER_CACHE
-    try:
-        if _CORE_VER_CACHE:
-            return _CORE_VER_CACHE
-        with urllib.request.urlopen(
-                f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/version", timeout=2) as r:
-            v = (json.loads(r.read().decode()) or {}).get("version") or ""
-        _CORE_VER_CACHE = v or "v0.0.0"
+    if _CORE_VER_CACHE:
         return _CORE_VER_CACHE
+    try:
+        with urllib.request.urlopen(
+                f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/version", timeout=1) as r:
+            v = (json.loads(r.read().decode()) or {}).get("version") or ""
+        if v:
+            _CORE_VER_CACHE = v
+            return _CORE_VER_CACHE
     except Exception:
-        return "v0.0.0"
+        pass
+    try:
+        out = subprocess.check_output([MIHOMO_BIN, "-v"], stderr=subprocess.STDOUT,
+                                      text=True, timeout=3)
+        match = re.search(r"\bv?([0-9]+(?:\.[0-9]+){2})\b", out)
+        if match:
+            _CORE_VER_CACHE = "v" + match.group(1)
+            return _CORE_VER_CACHE
+    except Exception:
+        pass
+    return "v1.19.30"
 
 
 _CORE_VER_CACHE = ""
