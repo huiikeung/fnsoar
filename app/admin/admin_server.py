@@ -1476,6 +1476,10 @@ def validate_subscription(url, timeout=6):
                             meta[k] = meta2[k]
         except Exception:
             pass
+    # 对齐 Clash Verge Rev：响应头/YAML 没有名称时，使用 URL 最后一段作为 profile name。
+    # 这样正文没有 profile.name、且服务端没有 Content-Disposition 时仍会有稳定名称。
+    if not meta.get("name"):
+        meta["name"] = fallback_provider_name(url)
     return {"ok": True, "meta": meta, "nodes": nodes}
 
 
@@ -1518,19 +1522,19 @@ def _is_token_like(s):
     return False
 
 def fallback_provider_name(url):
-    """无标题可用时的兜底名称：URL 末段（非泛用词、非 token）→ 域名 → 订阅。"""
+    """按 Clash Verge Rev 的 from_url 规则兜底：URL 最后一段优先，最后才用 Remote File。"""
     try:
         from urllib.parse import urlparse, unquote as _unquote
-        last = _unquote(urlparse(url).path.strip("/").rsplit("/", 1)[-1]) if urlparse(url).path.strip("/") else ""
+        parsed = urlparse(url)
+        path = (parsed.path or "").strip("/")
+        last = _unquote(path.rsplit("/", 1)[-1]) if path else ""
+        # 上游直接使用 URL 最后一段，即使它是 token/hash；仅过滤明显的泛用路径名。
         generic = {"sub", "clash", "link", "api", "subscribe", "get", "download", "upload", "feed"}
-        if last and last.lower() not in generic and not _is_token_like(last):
+        if last and last.lower() not in generic:
             return _sanitize_provider_name(last)
-        host = urlparse(url).hostname
-        if host:
-            return _sanitize_provider_name(host)
     except Exception:
         pass
-    return "订阅"
+    return "Remote File"
 
 def edit_provider_add(name, url, interval=3600, ptype="http", pre_meta=None):
     """Insert/replace a proxy-provider entry in config.yaml text. No restart.
@@ -2974,8 +2978,8 @@ class AdminHandler(BaseHTTPRequestHandler):
                 # 统一走file架构新增:载荷落地+块形态file
                 eff_name = (pre_meta or {}).get("name") or name
                 if not eff_name:
-                    import hashlib as _hh
-                    eff_name = re.sub(r"^https?://", "", url).split("/")[0]
+                    # 与 Clash Verge Rev 一致：没有服务端名称时使用 URL 最后一段。
+                    eff_name = fallback_provider_name(url)
                 body_c, hd_c = None, None
                 try:
                     body_c, hd_c = _download_sub_validated(eff_name, url)
