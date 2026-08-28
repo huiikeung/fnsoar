@@ -1248,12 +1248,22 @@ def _subscription_request_error(exc):
     return reason
 
 
+class _SubFetchError(RuntimeError):
+    """订阅拉取失败。server_responded=True 表示服务器有明确响应（如 403 token 无效），
+    与网络不可达（超时/拒连）区分开，便于给出正确的处理建议。"""
+
+    def __init__(self, message, server_responded=False):
+        super().__init__(message)
+        self.server_responded = server_responded
+
+
 def _open_sub_with_proxy(url, timeout, ua):
     """获取订阅，对齐 clash-verge-rev 的通道选择语义：
     记住该订阅上次成功通道并优先使用（相当于 Verge 持久化的 self_proxy 选项）；
     未知链接先直连（限时12秒），失败再走本机 mixed-port。直连超时不再直接放弃，
     因为被墙域名只能经代理获取。返回 (body, headers, via_proxy)。"""
     import urllib.request as _urq
+    import urllib.error as _ule
     headers = {"User-Agent": ua or _sub_user_agent()}
     remembered = _sub_channel_get(url)
     if remembered in ("direct", "proxy"):
@@ -1261,6 +1271,7 @@ def _open_sub_with_proxy(url, timeout, ua):
     else:
         order = ["direct", "proxy"]
     attempts = []
+    server_responded = False
     for i6, channel in enumerate(order):
         t_out = min(timeout, 12) if i6 == 0 else min(timeout, 6)
         try:
@@ -1278,7 +1289,12 @@ def _open_sub_with_proxy(url, timeout, ua):
             return body, hd, channel == "proxy"
         except Exception as e:
             attempts.append(channel + ":" + _subscription_request_error(e))
-    raise RuntimeError("; ".join(attempts))
+            if isinstance(e, _ule.HTTPError):
+                # 直连收到 HTTP 错误 = 源站真实响应；代理通道的 502/503/504
+                # 是 mihomo 网关自身的错误，属于网络失败而非服务器拒绝。
+                if channel == "direct" or e.code not in (502, 503, 504):
+                    server_responded = True
+    raise _SubFetchError("; ".join(attempts), server_responded)
 
 
 def _download_sub(url, timeout=20):
@@ -1568,8 +1584,17 @@ def validate_subscription(url, timeout=6, use_cache=True):
         if cached:
             return dict(cached["result"])
     try:
-        # 下载器内部已处理直连优先、mihomo代理兜底，并保留服务端详细错误。
+        # 下载器内部已处理通道记忆、直连/代理回退，并保留服务端详细错误。
         data, hd, _up = _open_sub_with_proxy(url, timeout, _sub_user_agent())
+    except _SubFetchError as e:
+        if e.server_responded:
+            # 服务器有明确响应（如 403 token is error）：链接被服务端拒绝，
+            # 换代理或强制保存都无意义，引导用户重新复制有效订阅链接。
+            return {"ok": False, "can_force": False,
+                    "error": f"订阅服务器拒绝了请求（{e}）。通常是链接已失效，"
+                             "或复制的是分享短链而不是 Clash 订阅链接；请到机场后台重新复制订阅链接"}
+        return {"ok": False, "can_force": True,
+                "error": f"无法访问订阅链接（{e}）；若该机场需经代理访问，首次添加可选择「仍要保存」"}
     except Exception as e:
         reason = str(e) or e.__class__.__name__
         hint = "；若该机场需经代理访问，首次添加可选择「仍要保存」"
@@ -3039,7 +3064,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                     if not v.get("ok"):
                         return self._send_json({"success": False,
                                                 "error": (v.get("error") or "订阅验证未通过"),
-                                                "can_force": True}, 400)
+                                                "can_force": bool(v.get("can_force", True))}, 400)
                     pre_meta = v.get("meta") or {}
                     cached_download = _subscription_cache_take(url)
                     n = v.get("nodes") or 0
