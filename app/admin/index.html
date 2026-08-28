@@ -1053,7 +1053,7 @@ tbody tr:hover{background:var(--card2)}
           <div class="modal-title" id="provModalTitle">添加订阅</div>
           <div class="modal-body">
             <label class="flabel">订阅名称</label>
-            <div style="display:flex;gap:8px"><input type="text" id="provName" placeholder="如: 我的机场" class="finput" style="flex:1"><button class="btn btn-ghost" onclick="refreshProvName()" style="white-space:nowrap;font-size:12px;padding:0 8px" title="从订阅链接探测真实名称">刷新名称</button></div>
+            <div style="display:flex;gap:8px"><input type="text" id="provName" placeholder="留空则自动识别订阅名称" class="finput" style="flex:1" oninput="provNameManual=true"><button class="btn btn-ghost" onclick="refreshProvName()" style="white-space:nowrap;font-size:12px;padding:0 8px" title="从订阅链接探测真实名称">刷新名称</button></div>
             <label class="flabel">订阅链接 URL</label>
             <input type="text" id="provUrl" placeholder="https:// 或 http:// 开头的订阅地址" class="finput">
             <label class="flabel">更新间隔（秒）</label>
@@ -2892,8 +2892,10 @@ async function runWebTest() {
    fetchProvLive().then(renderAndSnap);
  }
  let provEditing = null;
+  let provNameManual = false;
  function openProvModal(name) {
    provEditing = name || null;
+    provNameManual = !!name;
    document.getElementById('provModalTitle').textContent = name ? t('providers.edit') : t('providers.add');
    const p = (name && provStatic && provStatic[name]) || null;
    document.getElementById('provName').value = name || '';
@@ -2914,7 +2916,7 @@ async function runWebTest() {
    try {
      const r = await fetch('api/providers/probe-name', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({url, name: provEditing || ''}) });
      const d = await r.json();
-     if (d.success && d.name) { document.getElementById('provName').value = d.name; showToast('名称已更新: ' + d.name, 'success'); }
+     if (d.success && d.name) { document.getElementById('provName').value = d.name; provNameManual = false; showToast('名称已更新: ' + d.name, 'success'); }
      else showToast(d.error || '探测失败', 'warning');
      if (d.home) { document.getElementById('provHomeInput').value = d.home; }
      pendingProvHome = d.home || '';
@@ -2961,7 +2963,7 @@ async function runWebTest() {
    const btn = document.getElementById('providerSubmitBtn');
    btn.disabled = true; btn.textContent = force ? '保存中…' : '验证并保存中…';
    try {
-     const payload = { name, url, interval, type: 'http', home };
+     const payload = { name, url, interval, type: 'http', home, manual_name: provNameManual };
      if (force) payload.force = true;
      if (provEditing) payload.old_name = provEditing; // 编辑/重命名旧名
      const r = await fetch('api/providers', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(payload) });

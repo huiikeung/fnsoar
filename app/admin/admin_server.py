@@ -2967,6 +2967,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 home = (data.get("home") or "").strip()
                 old_name = (data.get("old_name") or "").strip()
                 force = bool(data.get("force"))
+                manual_name = bool(data.get("manual_name"))
                 # 保存前验证订阅（可达 + 内容格式）；强制保存跳过该步。
                 # 验证结果复用为元数据来源，整条保存路径只拉一次订阅。
                 pre_meta = None
@@ -3030,8 +3031,11 @@ class AdminHandler(BaseHTTPRequestHandler):
                     return self._send_json({"success": True,
                         "message": f"订阅已更新{node_hint}"})
                 # 统一走file架构新增:载荷落地+块形态file
-                # 用户显式填写名称优先；留空时才采用服务端 Content-Disposition/profile-title 名称。
-                eff_name = name or (pre_meta or {}).get("name")
+                # 新增订阅优先采用服务端 Content-Disposition/profile-title 名称。
+                # 前端可能填入域名/URL兜底值，不能覆盖已经识别出的真实订阅名称；
+                # 编辑已有订阅的重命名在上面的 file 分支处理，不受这里影响。
+                detected_name = ((pre_meta or {}).get("name") or "").strip()
+                eff_name = name if (manual_name and name) else (detected_name or name)
                 if not eff_name:
                     # 与 Clash Verge Rev 一致：没有服务端名称时使用 URL 最后一段。
                     eff_name = fallback_provider_name(url)
