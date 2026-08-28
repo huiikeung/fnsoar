@@ -1378,11 +1378,8 @@ def _migrate_to_file_providers():
                 ent["url"] = orig_url
                 save_sub_meta(meta_store)
         if changed:
-            out_text = _yaml.safe_dump(doc, allow_unicode=True, sort_keys=False,
-                                       default_flow_style=False, width=4096, indent=2)
-            chk = _yaml.safe_load(out_text)
-            assert len(chk.get("proxy-providers") or {}) == len(pps)
-            write_config(out_text)
+            # 用保留样式的落盘(仅改写 proxy-providers 段, 注释/分段/其它区块原样保留)
+            _yaml_doc_save(doc)
             log(f"proxy-providers converted to local-file mode ({len(pps)} entries)")
     except Exception:
         import traceback as _tb2
