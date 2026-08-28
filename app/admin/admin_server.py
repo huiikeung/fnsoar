@@ -1425,13 +1425,19 @@ def validate_subscription(url, timeout=6):
     try:
         req = _ureq.Request(url, headers={"User-Agent": _sub_user_agent()})
         # 优先走本机mihomo代理(对齐clash-verge), 直连超时/被墙时可经代理获取
+        data = None
+        hd = {}
         try:
-            data, _hd, _up = _open_sub_with_proxy(url, timeout, _sub_user_agent())
+            data, hd, _up = _open_sub_with_proxy(url, timeout, _sub_user_agent())
         except Exception:
             # 代理路径失败再回退原直连逻辑
-            with _IPv4Only():
-                with _ureq.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
-                    data = resp.read(3 * 1024 * 1024)
+            try:
+                with _IPv4Only():
+                    with _ureq.urlopen(req, timeout=timeout, context=_SSL_CTX) as resp:
+                        data = resp.read(3 * 1024 * 1024)
+                        hd = {k.lower(): v for k, v in resp.headers.items()}
+            except Exception as e2:
+                return {"ok": False, "error": f"无法访问订阅链接（{e2}）"}
     except Exception as e:
         reason = str(e) or e.__class__.__name__
         hint = "；若该机场需经代理访问，首次添加可选择「仍要保存」"
