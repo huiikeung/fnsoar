@@ -826,14 +826,9 @@ _SUB_UA_OVERRIDE = None
 
 
 def _sub_user_agent():
-    global _SUB_UA_OVERRIDE
-    """订阅请求 UA。机场面板普遍按客户端白名单(前缀匹配)决定是否下发
-    名称/官网/流量(userinfo)/更新间隔等元数据头 —— 对齐 clash-verge-rev
-    的默认做法(它发送 clash-verge/v{version})。fnSoar 内核即 mihomo
-    (clash.meta)，故以 clash.meta/内核版本 开头并括号标注面板来源。
-    该 UA 同时写进每条 proxy-provider 的 header，保证内核自身更新订阅时
-    与面板使用同一身份(见 _provider_header_lines)。"""
-    return f"clash.meta/{_get_core_version_cached()} (fnSoar/{_get_app_version()})"
+    """订阅请求 UA，精确对齐 Clash Verge Rev 的 NetworkManager 默认值。
+    部分机场仅对白名单 UA 下发 profile-title、官网和流量等元数据头。"""
+    return _SUB_UA_OVERRIDE or f"clash-verge/v{_get_app_version()}"
 
 
 def _provider_header_lines():
@@ -1002,6 +997,39 @@ def _sub_name_from_yaml(text):
 
 _NODE_LINK_RE = re.compile(r'\b(?:vmess|vless|trojan|ss|ssr|hysteria2?|tuic|snell)://')
 
+# 机场常用普通节点伪装流量/到期/公告信息；这些条目无法作为稳定代理使用。
+_INFO_NODE_RE = re.compile(
+    r'(?:剩余(?:流量|可用)|流量(?:剩余|重置)|套餐(?:到期|过期|流量)|'
+    r'到期(?:时间|日期)?|过期(?:时间|日期)?|有效期|官网|网站|公告|通知|'
+    r'客服|工单|群组|频道|traffic\s*(?:left|remain|reset)|'
+    r'(?:expire|expiry|reset)\s*(?:at|date|time)?)', re.I)
+
+
+def _filter_subscription_info_nodes(body):
+    """从 Clash YAML 载荷删除流量、到期时间、官网/公告等伪装信息节点。"""
+    try:
+        text = body.decode("utf-8", "ignore") if isinstance(body, (bytes, bytearray)) else str(body)
+        doc = yaml.safe_load(text)
+        proxies = (doc or {}).get("proxies") if isinstance(doc, dict) else None
+        if not isinstance(proxies, list):
+            return body, 0
+        kept = []
+        removed = 0
+        for proxy in proxies:
+            name = str(proxy.get("name", "")) if isinstance(proxy, dict) else ""
+            if name and _INFO_NODE_RE.search(name):
+                removed += 1
+                continue
+            kept.append(proxy)
+        if not removed:
+            return body, 0
+        doc["proxies"] = kept
+        rendered = yaml.safe_dump(doc, allow_unicode=True, sort_keys=False,
+                                  default_flow_style=False, width=4096, indent=2)
+        return rendered.encode("utf-8"), removed
+    except Exception:
+        return body, 0
+
 
 def _looks_like_subscription(text):
     """判断内容是否像一份可用订阅。返回 (ok, node_count)。"""
@@ -1129,6 +1157,9 @@ def _download_sub_validated(name_hint, url, timeout=25):
                 last_err = RuntimeError("content missing proxies list"); continue
             if not n_p:
                 last_err = RuntimeError("proxies empty"); continue
+            body, removed = _filter_subscription_info_nodes(body)
+            if removed:
+                log(f"provider '{name_hint}' filtered {removed} info-only nodes")
             return body, hd
         except Exception as e1:
             last_err = e1; continue
@@ -1451,6 +1482,8 @@ def validate_subscription(url, timeout=6):
     if not ok:
         return {"ok": False,
                 "error": "内容不是有效的订阅格式（需要 Clash YAML、base64 或节点链接列表）；若确认无误可选择「仍要保存」"}
+    _filtered_data, removed_info_nodes = _filter_subscription_info_nodes(data)
+    nodes = max(0, nodes - removed_info_nodes)
     meta = _sub_meta_from_headers(hd)
     if not meta.get("name"):
         nm = _sub_name_from_yaml(text)
@@ -1458,24 +1491,29 @@ def validate_subscription(url, timeout=6):
             meta["name"] = nm
     meta["userInfo"] = _parse_userinfo(hd)
 
-    # 少数机场只认特定客户端：首个 UA 没拿到名称也没有 userinfo 时，换 clash-verge 重试一次
-    if not meta.get("name") and not meta.get("userInfo"):
-        try:
-            req2 = _ureq.Request(url, headers={"User-Agent": f"clash-verge/v{_get_app_version()}"})
-            with _ureq.urlopen(req2, timeout=timeout) as resp2:
-                hd2 = {k.lower(): v for k, v in resp2.headers.items()}
+    # 默认 UA 已与 Clash Verge Rev 一致。若仍缺名称，切换常见 Clash UA 重试并合并元数据；
+    # 不能以 userInfo 是否存在作为重试条件，因为有些机场只返回流量但不返回标题。
+    if not meta.get("name"):
+        for ua2 in (f"clash.meta/{_get_core_version_cached()}", "ClashforWindows/0.20.39"):
+            try:
+                data2, hd2, _via_proxy2 = _open_sub_with_proxy(url, timeout, ua2)
                 meta2 = _sub_meta_from_headers(hd2)
+                if not meta2.get("name"):
+                    nm2 = _sub_name_from_yaml(data2.decode("utf-8", "ignore"))
+                    if nm2:
+                        meta2["name"] = nm2
                 ui2 = _parse_userinfo(hd2)
-                if meta2.get("name") or ui2 or meta2.get("home") or meta2.get("updateInterval"):
-                    if not meta.get("name") and meta2.get("name"):
-                        meta["name"] = meta2["name"]
-                    if ui2 and not meta.get("userInfo"):
-                        meta["userInfo"] = ui2
-                    for k in ("home", "updateInterval"):
-                        if meta2.get(k) and not meta.get(k):
-                            meta[k] = meta2[k]
-        except Exception:
-            pass
+                if meta2.get("name") and not meta.get("name"):
+                    meta["name"] = meta2["name"]
+                if ui2 and not meta.get("userInfo"):
+                    meta["userInfo"] = ui2
+                for k in ("home", "updateInterval"):
+                    if meta2.get(k) and not meta.get(k):
+                        meta[k] = meta2[k]
+                if meta.get("name"):
+                    break
+            except Exception:
+                continue
     # 对齐 Clash Verge Rev：响应头/YAML 没有名称时，使用 URL 最后一段作为 profile name。
     # 这样正文没有 profile.name、且服务端没有 Content-Disposition 时仍会有稳定名称。
     if not meta.get("name"):
@@ -1484,20 +1522,16 @@ def validate_subscription(url, timeout=6):
 
 
 def probe_subscription_meta(url, timeout=7):
-    """探测订阅响应头，返回元数据 dict。失败返回 {} 不阻塞调用方。
-    验证场景请用 validate_subscription（一次请求同时验证+取元数据）。"""
-    import urllib.request as _ureq
+    """使用与保存订阅一致的 UA、直连/代理兜底探测名称和元数据。"""
     meta = {}
     try:
-        req = _ureq.Request(url, headers={"User-Agent": _sub_user_agent()})
-        with _ureq.urlopen(req, timeout=timeout) as resp:
-            hd = {k.lower(): v for k, v in resp.headers.items()}
-            meta = _sub_meta_from_headers(hd)
-            if not meta.get("name"):
-                # profile.name 常在文件末尾：封顶 3MB 探测正文
-                nm = _sub_name_from_yaml(resp.read(3 * 1024 * 1024).decode("utf-8", "ignore"))
-                if nm:
-                    meta["name"] = nm
+        body, hd, _via_proxy = _open_sub_with_proxy(url, timeout, _sub_user_agent())
+        meta = _sub_meta_from_headers(hd)
+        if not meta.get("name"):
+            nm = _sub_name_from_yaml(body.decode("utf-8", "ignore"))
+            if nm:
+                meta["name"] = nm
+        meta["userInfo"] = _parse_userinfo(hd)
     except Exception as e:
         log(f"probe subscription failed (ignored): {url}: {e}")
     return meta
@@ -2976,7 +3010,8 @@ class AdminHandler(BaseHTTPRequestHandler):
                     return self._send_json({"success": True,
                         "message": f"订阅已更新{node_hint}"})
                 # 统一走file架构新增:载荷落地+块形态file
-                eff_name = (pre_meta or {}).get("name") or name
+                # 用户显式填写名称优先；留空时才采用服务端 Content-Disposition/profile-title 名称。
+                eff_name = name or (pre_meta or {}).get("name")
                 if not eff_name:
                     # 与 Clash Verge Rev 一致：没有服务端名称时使用 URL 最后一段。
                     eff_name = fallback_provider_name(url)
