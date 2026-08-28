@@ -308,6 +308,7 @@ tbody tr:hover{background:var(--card2)}
 .mode-btn:hover{color:var(--text);background:rgba(255,255,255,.04)}
 .mode-btn.active{background:var(--accent);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .mode-btn svg{width:15px;height:15px;flex-shrink:0}
+.gview-seg .mode-btn{padding:7px 10px}
 
 /* ── 策略组页 ────────────────────── */
 .groups-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:nowrap}
@@ -1019,10 +1020,10 @@ tbody tr:hover{background:var(--card2)}
           </div>
       </div>
       <div class="gview-row" id="gviewRow">
-        <div class="mode-seg gview-seg" id="gviewSeg">
-          <button class="mode-btn" data-view="all" onclick="setGroupView('all')">全部</button>
-          <button class="mode-btn" data-view="strategy" onclick="setGroupView('strategy')">策略组</button>
-          <button class="mode-btn" data-view="region" onclick="setGroupView('region')">节点组</button>
+        <div class="mode-seg gview-seg" id="gviewSeg" title="切换视图">
+          <button class="mode-btn" data-view="all" onclick="setGroupView('all')" title="全部（策略组+节点组）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/></svg></button>
+          <button class="mode-btn" data-view="strategy" onclick="setGroupView('strategy')" title="策略组（业务分流）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 12 12 17 22 12"/><polyline points="2 17 12 22 22 17"/></svg></button>
+          <button class="mode-btn" data-view="region" onclick="setGroupView('region')" title="节点组（地域组）"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="5" y1="16" x2="7" y2="8"/><line x1="19" y1="16" x2="17" y2="8"/></svg></button>
         </div>
         <span class="gview-label" id="gviewLabel"></span>
       </div>
