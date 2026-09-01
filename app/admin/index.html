@@ -179,7 +179,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sub-dot{width:5px;height:5px;border-radius:50%;background:var(--border);transition:all .2s}
 .sub-dot.active{background:var(--accent);width:7px;height:7px}
 .cur-node{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;background:rgba(78,110,242,.06);border:1px solid rgba(78,110,242,.12);border-radius:12px;padding:12px 14px}
-.cur-node-left{display:flex;flex-direction:column;gap:4px}
+.cur-node-left{display:flex;flex-direction:column;gap:4px;min-width:0}
+.cur-node-right{display:flex;align-items:center;gap:6px;flex-shrink:0;margin-left:10px;cursor:pointer;user-select:none}
 .cur-strategy{font-size:16px;font-weight:600;color:var(--text);line-height:1.2}
 .cur-node-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .cur-type{font-size:11px;color:var(--dim);font-weight:400}
@@ -343,6 +344,8 @@ tbody tr:hover{background:var(--card2)}
 /* 右侧按钮组（定位/测速/排序/测速URL/详情/筛选） */
 .ghead-tools{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .ghead-tool{width:28px;height:28px;border-radius:7px;border:none;background:transparent;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;flex-shrink:0;padding:0}
+.ghead-tool.spin svg{animation:gtSpin .8s linear infinite}
+@keyframes gtSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 .ghead-tool:hover{color:var(--accent2);background:rgba(78,110,242,.14)}
 .ghead-tool.active{color:var(--accent2)}
 .ghead-tool.testing{width:auto;min-width:28px;padding:0 7px;gap:5px;color:var(--accent2);animation:pulse 1s infinite;white-space:nowrap}
@@ -881,6 +884,7 @@ tbody tr:hover{background:var(--card2)}
                 <span class="udp-tag" id="curUdp" style="display:none">UDP</span>
               </div>
             </div>
+            <div class="cur-node-right" id="curLat" title="点击重新测速当前节点" onclick="testCurGroupSpeed()"><span class="lat lat-na">-</span></div>
           </div>
           <div class="sel-row">
             <span class="sel-label">代理组</span>
@@ -1959,6 +1963,13 @@ function renderCurNode() {
   const udp = document.getElementById('curUdp');
   const nowNode = (info && info.now) ? proxiesData[info.now] : null;
   if (nowNode && nowNode.udp) { udp.style.display = 'inline-block'; } else { udp.style.display = 'none'; }
+  // 当前节点延迟徽章（右侧）
+  const latEl = document.getElementById('curLat');
+  if (latEl) {
+    const now = (info && info.now) ? resolveTestTarget(info.now) : null;
+    const lat = now ? latencyOf(now) : {text:'-', cls:'lat-na'};
+    latEl.innerHTML = '<span class="lat ' + lat.cls + '" title="' + (now ? esc(now).replace(/"/g,'&quot;') : '点击测速') + '">' + (lat.text || '-') + '</span>';
+  }
   const sel = document.getElementById('curNodeSel');
   if (info && info.all && info.all.length) {
     const prev = sel.value;
@@ -2116,7 +2127,31 @@ async function testCurGroupSpeed() {
   if (!proxiesData) { showToast('暂无策略组数据', 'warning'); return; }
   const group = curGroup || 'GLOBAL';
   if (group === 'GLOBAL') { await testAllGlobal(); return; }
-  await testGroup(group);
+  const info = proxiesData[group];
+  const now = (info && info.now) || null;
+  if (!now) { showToast('当前节点未知，请先选择节点', 'warning'); return; }
+  // 只测当前节点，结果即时显示在卡片右侧（不等整组批量测速）
+  const leaf = resolveTestTarget(now);
+  const btn = document.querySelector('#home-node .ghead-tool[title="测速"]');
+  if (btn) { btn.classList.add('spin'); }
+  try {
+    const delay = await testOneNode(leaf, 5000, 'http://connect.rom.miui.com/generate_204');
+    if (delay > 0) {
+      nodeDelay[leaf] = delay;
+      const p = proxiesData[leaf];
+      if (p) { p.history = p.history || []; p.history.push({delay, time: Date.now()}); if (p.history.length > 10) p.history.shift(); }
+      showToast('当前节点延迟: ' + delay + ' ms', 'success');
+    } else {
+      nodeDelay[leaf] = -1;
+      showToast('当前节点测速超时', 'warning');
+    }
+  } catch (e) {
+    showToast('测速失败: ' + e, 'error');
+  } finally {
+    if (btn) { btn.classList.remove('spin'); }
+    renderCurNode();
+    saveDelayCache();
+  }
 }
 
 // ── 首页模块显隐设置 ──────────────────────────
@@ -3620,6 +3655,7 @@ async function testSingleNode(group, name) {
   }
   saveDelayCache();
   renderGroups();
+  renderCurNode();
 }
 function selectNode(group, node) {
   // 全局模式下 GLOBAL 组只包含策略组，不包含真实订阅节点：
@@ -3934,6 +3970,7 @@ async function testGroup(groupName) {
   }
   saveDelayCache();
   renderGroups();
+  renderCurNode();
   }
   if (switched.length) {
     const msg = switched.length <= 3 ? switched.join('；') : switched.slice(0, 3).join('；') + ' 等 ' + switched.length + ' 个';
