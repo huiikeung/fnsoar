@@ -344,8 +344,6 @@ tbody tr:hover{background:var(--card2)}
 /* 右侧按钮组（定位/测速/排序/测速URL/详情/筛选） */
 .ghead-tools{display:flex;align-items:center;gap:2px;flex-shrink:0}
 .ghead-tool{width:28px;height:28px;border-radius:7px;border:none;background:transparent;color:var(--dim);display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;flex-shrink:0;padding:0}
-.ghead-tool.spin svg{animation:gtSpin .8s linear infinite}
-@keyframes gtSpin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
 .ghead-tool:hover{color:var(--accent2);background:rgba(78,110,242,.14)}
 .ghead-tool.active{color:var(--accent2)}
 .ghead-tool.testing{width:auto;min-width:28px;padding:0 7px;gap:5px;color:var(--accent2);animation:pulse 1s infinite;white-space:nowrap}
@@ -2133,7 +2131,7 @@ async function testCurGroupSpeed() {
   // 只测当前节点，结果即时显示在卡片右侧（不等整组批量测速）
   const leaf = resolveTestTarget(now);
   const btn = document.querySelector('#home-node .ghead-tool[title="测速"]');
-  if (btn) { btn.classList.add('spin'); }
+  if (btn) { btn.classList.add('testing'); }
   try {
     const delay = await testOneNode(leaf, 5000, 'http://connect.rom.miui.com/generate_204');
     if (delay > 0) {
@@ -2148,7 +2146,7 @@ async function testCurGroupSpeed() {
   } catch (e) {
     showToast('测速失败: ' + e, 'error');
   } finally {
-    if (btn) { btn.classList.remove('spin'); }
+    if (btn) { btn.classList.remove('testing'); }
     renderCurNode();
     saveDelayCache();
   }
