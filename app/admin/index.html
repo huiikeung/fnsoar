@@ -338,6 +338,7 @@ tbody tr:hover{background:var(--card2)}
 .gview-row .gview-seg{margin-bottom:0}
 .gview-label{margin-left:auto;font-size:13px;font-weight:600;color:var(--dim);white-space:nowrap}
 .gview-test-all{margin-left:10px;flex-shrink:0}
+.gview-expand-all{margin-left:6px;flex-shrink:0}
 @media(max-width:880px){.groups-toolbar{flex-wrap:wrap}.groups-tools{flex-wrap:wrap;flex-shrink:1}}
 .gcard-info .gcard-now{font-size:11px;color:var(--dim);font-weight:400;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex-shrink:1;min-width:0;max-width:26ch}
 .gcard-head-spacer{flex:1;min-width:0}
@@ -1033,6 +1034,7 @@ tbody tr:hover{background:var(--card2)}
         </div>
         <span class="gview-label" id="gviewLabel"></span>
         <button class="ghead-tool gview-test-all" id="gviewTestAll" onclick="testAllGroups()" title="一键测速全部策略组"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M15.9 5c-.17 0-.32.09-.41.23l-.07.15-5.18 11.65c-.16.29-.26.61-.26.96 0 1.11.9 2.01 2.01 2.01.96 0 1.77-.68 1.96-1.59l.01-.03L16.4 5.5c0-.28-.22-.5-.5-.5M2.06 10.06c.51.51 1.33.55 1.89.09 2.76-2.26 6.24-3.18 9.58-2.76l1.19-2.68c-4.35-.78-8.96.3-12.57 3.25-.64.53-.68 1.51-.09 2.1m19.88 0c.59-.59.55-1.57-.1-2.1-1.36-1.11-2.86-1.95-4.44-2.53l-.53 2.82c1.13.47 2.19 1.09 3.17 1.89.58.46 1.39.43 1.9-.08m-4.03 4.03c.6-.6.56-1.63-.14-2.12-.46-.33-.94-.61-1.44-.86l-.55 2.92c.11.07.22.14.32.22.57.4 1.33.32 1.81-.16m-11.83-.01c.5.5 1.27.54 1.85.13.94-.66 2.01-1.06 3.1-1.22l1.28-2.88c-2.13-.06-4.28.54-6.09 1.84-.69.51-.74 1.53-.14 2.13"/></svg></button>
+        <button class="ghead-tool gview-expand-all" id="gviewExpandAll" onclick="toggleAllGroupCards()" title="展开全部主卡片"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M12,18.17L8.83,15L7.42,16.41L12,21L16.59,16.41L15.17,15M12,5.83L15.17,9L16.58,7.59L12,3L7.41,7.59L8.83,9L12,5.83Z"/></svg></button>
       </div>
       <div class="gwrap" id="groupsWrap"></div>
     </section>
@@ -3225,6 +3227,7 @@ function toggleGroupCard(el) {
     const h = (groupHead[gname] = groupHead[gname] || defaultGroupHead());
     h.collapsed = card.classList.contains('collapsed');
   }
+  updateExpandAllBtn();
 }
 function renderGroups() {
   updateBackTopVisibility();
@@ -3458,6 +3461,7 @@ function renderGroups() {
   }).join('');
   wrap.innerHTML = cards;
   restoreGroupInputFocus();
+  updateExpandAllBtn();
 }
 // ── 策略组头部状态（排序/详情/筛选/测速URL） ──
 let groupHead = {};                 // 组名 -> {sortType, showType, filterText, filterOpen, urlOpen, testUrl}
@@ -3570,6 +3574,8 @@ const GT = {
   tether: 'M12,3C6.5,3 2,6.58 2,11C2,13.13 3.04,15.06 4.74,16.5C5.07,16.79 5.56,16.79 5.89,16.5C6.22,16.21 6.22,15.72 5.89,15.39C4.53,14.27 3.67,12.7 3.67,11C3.67,7.59 7.4,4.83 12,4.83C16.6,4.83 20.33,7.59 20.33,11C20.33,12.7 19.47,14.27 18.11,15.39C17.78,15.72 17.78,16.21 18.11,16.5C18.44,16.79 18.93,16.79 19.26,16.5C20.96,15.06 22,13.13 22,11C22,6.58 17.5,3 12,3M12,7.3C9.39,7.3 7.3,8.9 7.3,11C7.3,12.08 7.79,13.06 8.53,13.81C8.87,14.16 9.42,14.16 9.76,13.81C10.09,13.48 10.09,12.93 9.76,12.6C9.3,12.13 9,11.59 9,11C9,9.2 10.34,7.73 12,7.3M12,9.83C10.75,9.83 9.75,10.88 9.75,12.25C9.75,12.83 9.99,13.34 10.36,13.69C10.67,14 10.9,14.36 12,15.33C13.1,14.36 13.33,14 13.64,13.69C14.01,13.34 14.25,12.83 14.25,12.25C14.25,10.88 13.25,9.83 12,9.83M12,11.5A0.75,0.75 0 0,0 11.25,12.25A0.75,0.75 0 0,0 12,13A0.75,0.75 0 0,0 12.75,12.25A0.75,0.75 0 0,0 12,11.5Z',
   eye: 'M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z',
   filter: 'M14,12V19.88C14,20.5 13.5,21 12.88,21C12.64,21 12.41,20.92 12.22,20.76L8.53,17.93C8.19,17.67 8,17.27 8,16.83V12L2.21,4.62C1.89,4.19 1.96,3.68 2.2,3.36C2.42,3.09 2.78,3 3.13,3H20.87C21.22,3 21.58,3.09 21.8,3.36C22.04,3.68 22.11,4.19 21.79,4.62L14,12Z',
+  unfoldMore: 'M12,18.17L8.83,15L7.42,16.41L12,21L16.59,16.41L15.17,15M12,5.83L15.17,9L16.58,7.59L12,3L7.41,7.59L8.83,9L12,5.83Z',
+  unfoldLess: 'M16.59,5.41L15.17,4L12,7.17L8.83,4L7.41,5.41L12,10M7.41,18.59L8.83,20L12,16.83L15.17,20L16.58,18.59L12,14L7.41,18.59Z',
 };
 function toolSvg(p, stroke) { return stroke
     ? `<svg viewBox="0 0 24 24" style="width:16px;height:16px" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${p}"/></svg>`
@@ -3809,6 +3815,7 @@ function updateNodeCardLatency(name) {
 
 const groupTestingSet = new Set();
 let testProgressText = {};   // 组名 -> 'x/y' 测速进度(renderGroups 重渲染时恢复呼吸态+进度)
+let suppressGroupAutoExpand = false;   // 一键测速时禁止自动展开卡片
 async function testGroup(groupName) {
   if (groupTestingSet.has(groupName)) { showToast('该组测速进行中，请稍候', 'info'); return; }
   if (!proxiesData) { showToast('暂无策略组数据', 'warning'); return; }
@@ -3865,9 +3872,9 @@ async function testGroup(groupName) {
   if (!allLeaves.size) return;
   groupTestingSet.add(groupName);
   try {
-  // 卡片默认展开；若被折叠，点击测速时自动展开以便立即看到结果
+  // 卡片默认展开；若被折叠，点击测速时自动展开以便立即看到结果（一键测速不展开）
   const card = document.getElementById(gcardId(groupName));
-  if (card && card.classList.contains('collapsed')) {
+  if (!suppressGroupAutoExpand && card && card.classList.contains('collapsed')) {
     card.classList.remove('collapsed');
     const gh = (groupHead[groupName] = groupHead[groupName] || defaultGroupHead());
     gh.collapsed = false;
@@ -4052,14 +4059,48 @@ async function testAllGroups() {
     btn.innerHTML = toolSvg(GT.speed) + '<span class="test-progress">测速中 ' + done + '/' + total + '</span>';
   };
   paint();
-  for (const g of groups) {
-    try { await testGroup(g); } catch (e) {}
-    done++;
-    paint();
+  suppressGroupAutoExpand = true;
+  try {
+    for (const g of groups) {
+      try { await testGroup(g); } catch (e) {}
+      done++;
+      paint();
+    }
+  } finally {
+    suppressGroupAutoExpand = false;
   }
   allGroupsTesting = false;
   if (btn) { btn.classList.remove('testing'); btn.innerHTML = toolSvg(GT.speed); }
+  updateExpandAllBtn();
   showToast('全部策略组测速完成', 'success');
+}
+
+// ── 展开 / 折叠全部主卡片 ────────────────────
+function updateExpandAllBtn() {
+  const btn = document.getElementById('gviewExpandAll');
+  if (!btn) return;
+  const cards = document.querySelectorAll('#groupsWrap .gcard');
+  let anyCollapsed = false;
+  cards.forEach(c => { if (c.classList.contains('collapsed')) anyCollapsed = true; });
+  const expanded = cards.length > 0 && !anyCollapsed;
+  btn.classList.toggle('active', expanded);
+  btn.title = expanded ? '折叠全部主卡片' : '展开全部主卡片';
+  btn.innerHTML = toolSvg(expanded ? GT.unfoldLess : GT.unfoldMore);
+}
+function toggleAllGroupCards() {
+  const cards = document.querySelectorAll('#groupsWrap .gcard');
+  if (!cards.length) return;
+  let anyCollapsed = false;
+  cards.forEach(c => { if (c.classList.contains('collapsed')) anyCollapsed = true; });
+  const expand = anyCollapsed;   // 只要还有折叠的 → 统一展开；全部已展开 → 统一折叠
+  cards.forEach(card => {
+    const gname = card.getAttribute('data-group');
+    if (!gname) return;
+    card.classList.toggle('collapsed', !expand);
+    const h = (groupHead[gname] = groupHead[gname] || defaultGroupHead());
+    h.collapsed = !expand;
+  });
+  updateExpandAllBtn();
 }
 
 // ── 全局模式：定位当前节点 ──────────────────
