@@ -67,6 +67,26 @@ MIHOMO_BIN    = f"{TRIM_APPDEST}/bin/mihomo"
 # bin/engine-start which applies host-transparent rules and drops privileges.
 ENGINE_START  = f"{TRIM_APPDEST}/bin/engine-start"
 ADMIN_DIR     = os.path.dirname(os.path.abspath(__file__))
+
+
+def _resolve_ui_dir():
+    """Locate the admin panel static assets (index.html / ui.html / ...).
+
+    Installed layout: they ship next to this file (app/admin/).
+    Source-tree layout (2025-09 repo reorg): the Python service lives in
+    backend/admin/ while the static UI lives in frontend/admin/.
+    """
+    if os.path.exists(os.path.join(ADMIN_DIR, "index.html")):
+        return ADMIN_DIR
+    _base = os.path.dirname(ADMIN_DIR)
+    for _up in range(1, 4):
+        _cand = os.path.abspath(os.path.join(_base, *([".."] * _up), "frontend", "admin"))
+        if os.path.exists(os.path.join(_cand, "index.html")):
+            return _cand
+    return ADMIN_DIR
+
+
+ADMIN_UI_DIR  = _resolve_ui_dir()
 DASHBOARD_DIR = f"{TRIM_PKGVAR}/dashboard"
 HOST_TRANSPARENT_SCRIPT = os.path.join(ADMIN_DIR, "host_transparent.sh")
 HOST_TRANSPARENT_PORT = int(os.environ.get("MIHOMO_REDIR_PORT", "7892"))
@@ -205,7 +225,8 @@ def _get_app_version():
     1. $TRIM_APPDEST/VERSION            (plain text file)
     2. $TRIM_APPDEST/app.json           (JSON "version")
     3. $TRIM_APPDEST/manifest          (fnOS package metadata)
-    4. <admin dir>/../app.json          (source-tree fallback)
+    4. source-tree fallback: walk up from the admin dir looking for
+       app.json / manifest, incl. the fnpack/ packaging dir
     Returns "unknown" if none is found."""
     env_ver = os.environ.get("TRIM_APPVER", "").strip()
     if env_ver:
@@ -214,9 +235,18 @@ def _get_app_version():
         os.path.join(TRIM_APPDEST, "VERSION"),
         os.path.join(TRIM_APPDEST, "app.json"),
         os.path.join(TRIM_APPDEST, "manifest"),
-        os.path.join(os.path.dirname(ADMIN_DIR), "app.json"),
-        os.path.join(os.path.dirname(ADMIN_DIR), "manifest"),
     ]
+    # Source-tree fallback (2025-09 reorg): admin_server.py now lives in
+    # backend/admin/, packaging metadata in fnpack/ — search both upward.
+    _admin_parent = os.path.dirname(ADMIN_DIR)
+    for _up in range(0, 4):
+        _root = os.path.abspath(os.path.join(_admin_parent, *([".."] * _up))) if _up else _admin_parent
+        candidates += [
+            os.path.join(_root, "app.json"),
+            os.path.join(_root, "manifest"),
+            os.path.join(_root, "fnpack", "app.json"),
+            os.path.join(_root, "fnpack", "manifest"),
+        ]
     for c in candidates:
         try:
             if not os.path.exists(c):
@@ -2874,7 +2904,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             return served
         # Admin panel static files
         if path == "/" or path == "":
-            return self._send_file(f"{ADMIN_DIR}/index.html", "text/html")
+            return self._send_file(f"{ADMIN_UI_DIR}/index.html", "text/html")
         if path == "/ui" or path == "/ui/" or path.startswith("/ui/"):
             # Web UI: redirect to admin panel root
             self.send_response(302)
@@ -2882,13 +2912,13 @@ class AdminHandler(BaseHTTPRequestHandler):
             self.end_headers()
             return
         if path.endswith(".html"):
-            return self._send_file(f"{ADMIN_DIR}{path}", "text/html")
+            return self._send_file(f"{ADMIN_UI_DIR}{path}", "text/html")
         if path.endswith(".css"):
-            return self._send_file(f"{ADMIN_DIR}{path}", "text/css")
+            return self._send_file(f"{ADMIN_UI_DIR}{path}", "text/css")
         if path.endswith(".js"):
-            return self._send_file(f"{ADMIN_DIR}{path}", "application/javascript")
+            return self._send_file(f"{ADMIN_UI_DIR}{path}", "application/javascript")
         if path.endswith(".png"):
-            return self._send_file(f"{ADMIN_DIR}{path}", "image/png")
+            return self._send_file(f"{ADMIN_UI_DIR}{path}", "image/png")
         self.send_error(404)
 
     def do_POST(self):

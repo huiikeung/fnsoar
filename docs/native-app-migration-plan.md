@@ -38,6 +38,13 @@ fnSoar 当前已经符合规范的约 85%,真正要补的只有三类事:
 
 ## 三、目标目录结构(fnpack 严格布局)
 
+> ⚠️ 2025-09 仓库已按 [Clash-for-fnos](https://github.com/chenpingonline/Clash-for-fnos)
+> 分类重组为「后端 / 前端 / fnpack 打包源」布局(见下方「重组后结构」与 README)。
+> 安装包内运行目录布局(`app/{admin,bin,dashboard,default-config,ui}`)保持不变,
+> 由 `scripts/build_fpk.sh` 在打包时合并生成。
+
+### 重组前结构(历史记录)
+
 ```text
 fnsoar/                        # 仓库根即打包目录(fnpbuild --directory .)
 ├── manifest                   # 对齐 platform 等官方字段
@@ -68,6 +75,43 @@ fnsoar/                        # 仓库根即打包目录(fnpbuild --directory .
 └── wizard/
     └── install
 ```
+
+### 重组后结构(2025-09)
+
+```text
+fnsoar/
+├── backend/                   # 后端:Python admin 服务
+│   └── admin/                 # admin_server.py / media_unlock.py / server.js ...
+├── frontend/                  # 前端:管理界面 + 第三方面板(构建产物)
+│   ├── admin/                 # index.html / ui.html / icon
+│   └── dashboard/             # zashboard / metacubexd
+├── fnpack/                    # fnOS 打包源(fpbuild --directory 由脚本指向 stage)
+│   ├── app/
+│   │   ├── bin/               # 运行期脚本:mihomo 架构包装器 / engine-start
+│   │   └── default-config/    # 默认 config.yaml(geo 数据不入库)
+│   ├── cmd/                   # fnOS 生命周期脚本(同上,未动)
+│   ├── config/                # privilege / resource / clashmini.sc(同上,未动)
+│   ├── wizard/                # 安装向导(同上,未动)
+│   ├── ui/                    # 桌面入口 config + images(原 app/ui)
+│   ├── app.json
+│   ├── manifest
+│   ├── ICON.PNG
+│   └── ICON_256.PNG
+├── resources/
+│   └── core/                  # Mihomo 内核,按架构分放(不入库)
+│       ├── x86/mihomo-amd64.real
+│       └── arm/mihomo-arm64.real
+├── scripts/                   # build_fpk.sh / build.sh / release_v*.sh
+├── docs/                      # 文档 / 截图 / 发布说明
+├── dist/                      # 构建产物 *.fpk 与暂存目录(不入库)
+├── LICENSE
+├── THIRD_PARTY_NOTICES.md
+└── README.md
+```
+
+打包时 `scripts/build_fpk.sh` 将 backend + frontend + fnpack + resources
+合并为官方规范 stage(`manifest/cmd/config/wizard/ICON*` 在顶层,`app/` 为运行目录),
+因此**安装包内布局与重组前完全一致**,升级/回退无行为差异。
 
 ## 四、分阶段实施计划
 

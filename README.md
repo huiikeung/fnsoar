@@ -71,7 +71,7 @@ fnSoar 是运行于 [fnOS](https://www.fnnas.com) 应用商店的原生代理引
 ```bash
 git clone https://github.com/Huiikeung/fnsoar.git
 cd fnsoar
-./build_fpk.sh 1.0.53   # 或任意版本号
+./scripts/build_fpk.sh 1.0.81   # 或任意版本号（缺省取 fnpack/manifest）
 ```
 
 ## 🔧 使用
@@ -88,31 +88,53 @@ cd fnsoar
 ## 🛠️ 开发与构建
 
 ```bash
-# 构建 fpk 安装包（默认版本号取 build_fpk.sh 内 VERSION）
-./build_fpk.sh 1.0.53
+# 构建 fpk 安装包（缺省版本号取 fnpack/manifest 中的 version）
+./scripts/build_fpk.sh            # 或 ./scripts/build_fpk.sh 1.0.81
 
-# 产物位于 ./fnSoar1.0.53.fpk（含 -amd64 / -arm64 单独包）
+# 产物位于 dist/fnSoar1.0.81.fpk（含 -amd64 / -arm64 单独包）
 ```
 
 ### 目录结构
 
+仓库按「后端 / 前端 / fnOS 打包源」分类组织（参考 [Clash-for-fnos](https://github.com/chenpingonline/Clash-for-fnos)）：
+
 ```
 .
-├── app/
-│   ├── admin/          # Web 控制台后端与前端（admin_server.py / index.html）
-│   ├── bin/            # Mihomo 内核二进制
-│   ├── dashboard/      # Zashboard / Metacubexd 面板（dist 构建产物，不入库）
-│   └── default-config/ # 默认 config.yaml 与 icons.yaml
-├── cmd/                # fnOS 服务脚本
-├── config/             # fnOS 安装配置
-├── build.sh            # 源码 → 安装目录
-├── build_fpk.sh        # 源码 → .fpk 安装包
-├── app.json            # fnOS 应用清单
-├── manifest            # fnOS 包清单
-├── LICENSE             # MIT License
+├── backend/                # 后端：Python admin 服务
+│   └── admin/              #   admin_server.py / media_unlock.py / server.js 等
+├── frontend/               # 前端：管理界面 + 第三方面板静态资源
+│   ├── admin/              #   index.html / ui.html / icon
+│   └── dashboard/          #   Zashboard / Metacubexd（dist 构建产物，不入库）
+├── fnpack/                 # fnOS 打包源（对应安装后的运行目录布局）
+│   ├── app/
+│   │   ├── bin/            #   启动脚本：mihomo 架构包装器、engine-start
+│   │   └── default-config/ #   默认 config.yaml（geo 数据不入库）
+│   ├── cmd/                #   fnOS 服务脚本（生命周期）
+│   ├── config/             #   fnOS 安装配置（privilege / resource）
+│   ├── wizard/             #   fnOS 安装向导
+│   ├── ui/                 #   fnOS 桌面入口与图标
+│   ├── app.json            #   fnOS 应用清单
+│   ├── manifest            #   fnOS 包清单
+│   ├── ICON.PNG
+│   └── ICON_256.PNG
+├── resources/
+│   └── core/               # Mihomo 内核，按架构分放（不入库）
+│       ├── x86/            #   mihomo-amd64.real
+│       └── arm/            #   mihomo-arm64.real
+├── scripts/                # 构建与发布脚本
+│   ├── build_fpk.sh        #   源码 → .fpk 安装包（产物在 dist/）
+│   ├── build.sh            #   源码 → 本机安装目录（开发调试）
+│   └── release_v*.sh       #   GitHub Release 发布
+├── docs/                   # 文档、截图与发布说明
+├── dist/                   # 构建产物（*.fpk 与暂存目录，不入库）
+├── LICENSE                 # MIT License
 ├── THIRD_PARTY_NOTICES.md  # 第三方组件版权声明
 └── README.md
 ```
+
+> 打包时 `scripts/build_fpk.sh` 会把 backend + frontend + fnpack + resources
+> 合并成官方规范布局（`app/{admin,bin,dashboard,default-config,ui}`），
+> 安装后的运行目录与历史版本一致。
 
 ## 🔑 配置说明
 

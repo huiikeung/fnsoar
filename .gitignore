@@ -5,19 +5,24 @@
 *.bak
 
 # ── Compiled engine binaries (only the .real binaries; scripts stay in git) ──
-app/bin/*.real
+resources/core/*/*.real
 
 # ── Geo data (redownloaded / regenerated; not source) ──
-app/default-config/*
-!app/default-config/config.yaml
+fnpack/app/default-config/*
+!fnpack/app/default-config/config.yaml
 
 # ── Third-party dashboard bundles (dist build outputs) ──
-app/dashboard/
+frontend/dashboard/
+
+# ── Build outputs & scratch (dist/ holds *.fpk, app.tgz and tmp_build/) ──
+dist/
 
 # ── Python ──
 __pycache__/
 *.pyc
 
+# ── Agent harness local state ──
+.mnemon/
+
 # ── Tooling / transient ──
-tmp_build/
 *.log
