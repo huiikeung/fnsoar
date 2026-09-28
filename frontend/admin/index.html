@@ -2656,9 +2656,16 @@ function renderCurNode() {
 }
 
 // ── 自定义下拉框组件 ──────────────────────
-var _csOpen = null;  // 当前打开的自定义下拉
-function csCloseAll() { if (_csOpen) { _csOpen.classList.remove('open'); _csOpen.parentElement.querySelector('.custom-select-trigger').classList.remove('open'); _csOpen = null; } }
+var _csOpen = null;  // 当前打开的自定义下拉 {panel, trigger}
+function csCloseAll() { if (_csOpen) { _csOpen.panel.classList.remove('open'); _csOpen.trigger.classList.remove('open'); _csOpen = null; } }
 document.addEventListener('click', function(e) { if (_csOpen && !e.target.closest('.custom-select')) csCloseAll(); });
+// 点击非交互区域（卡片/空白处）时移除表单控件焦点，避免输入框蓝色聚焦边框常驻
+document.addEventListener('mousedown', function(e) {
+  var t = e.target;
+  if (t && t.closest && t.closest('input, textarea, select, button, a, label, [contenteditable], .custom-select, .pg-check, .toggle, .core-btn, .con-view-btn')) return;
+  var ae = document.activeElement;
+  if (ae && typeof ae.blur === 'function' && /^(INPUT|TEXTAREA|SELECT|BUTTON)$/.test(ae.tagName)) ae.blur();
+});
 
 function csBuild(selectEl) {
   var wrap = document.createElement('div'); wrap.className = 'custom-select';
@@ -2678,7 +2685,7 @@ function csBuild(selectEl) {
     panel.style.top = (rect.bottom + 4) + 'px';
     panel.style.minWidth = rect.width + 'px';
     // If panel goes off bottom, flip above
-    panel.classList.add('open'); trigger.classList.add('open'); _csOpen = panel;
+    panel.classList.add('open'); trigger.classList.add('open'); _csOpen = {panel: panel, trigger: trigger};
     var pRect = panel.getBoundingClientRect();
     if (pRect.bottom > window.innerHeight - 10) {
       panel.style.top = (rect.top - pRect.height - 4) + 'px';
