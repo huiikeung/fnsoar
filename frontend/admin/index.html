@@ -1541,7 +1541,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.extSecret">密钥</span><small data-i18n="vcfg.extSecretHint">secret · 访问管理 API 的密码</small></span><input class="dns-input" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
               </div>
               <div class="dns-grid">
-                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.extUi">外部 UI</span><small data-i18n="vcfg.extUiHint">external-ui · 面板目录名（如 zashboard）</small></span><input class="dns-input" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')"></div>
+                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.extUi">外部 UI</span><small data-i18n="vcfg.extUiHint">external-ui · 面板目录名（如 zashboard）</small></span><input class="dns-input" id="vcfgExtUi" placeholder="zashboard" onchange="saveVcfg('ext-ui')"></div>
               </div>
               <div class="tun-note">
                 <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
@@ -5965,7 +5965,7 @@ function resetConfigSection(section) {
   showConfirm('vcfg.resetConfirm', function() {
   // Sections with simple key-value pairs (not a config section)
   var simpleDefaults = {
-    'basic': {'mode':'rule','log-level':'info','tcp-concurrent':'true','find-process-mode':'off','external-controller':'0.0.0.0:9090','secret':'','external-ui':'dashboard'},
+    'basic': {'mode':'rule','log-level':'info','tcp-concurrent':'true','find-process-mode':'off','external-controller':'0.0.0.0:9090','secret':'','external-ui':'zashboard'},
     'inbound': {'mixed-port':'7890','socks-port':'7891','redir-port':'7892','tproxy-port':'7893','bind-address':'*','allow-lan':'true','ipv6':'true','unified-delay':'true','authentication':'[]'},
     'advanced': {'profile':'','geodata-mode':'true','geodata-loader':'memconservative','global-ua':'clash.meta','keep-alive-interval':'30'}
   };
