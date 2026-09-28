@@ -513,7 +513,7 @@ tbody tr:hover{background:var(--card2)}
 .set-col{display:flex;flex-direction:column;gap:14px;min-width:0}
 .set-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:80px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .set-title{font-size:15px;font-weight:600;color:var(--text);padding:18px 20px 10px;letter-spacing:-.1px}
-.set-item{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;margin:0 8px;gap:14px;border-radius:9px;transition:background .12s;font-size:14px;min-height:44px}
+.set-item{display:flex;align-items:center;justify-content:space-between;padding:8px 20px;margin:2px 0;gap:14px;border-radius:9px;transition:background .12s;font-size:14px;min-height:44px}
 .set-item:hover{background:var(--card2)}
 .set-item-chev{cursor:pointer}
 .set-item-left{flex:1;min-width:0}
@@ -1687,7 +1687,7 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 
           <!-- ═══ 内核管理 ═══ -->
           <div class="core-panel active" id="corePanelManage">
-            <div class="set-item" style="padding-top:10px;padding-bottom:10px">
+            <div class="set-item">
               <div class="set-item-left">
                 <span class="set-item-label">Mihomo Core</span>
                 <span style="display:block;font-size:11px;color:var(--faint);margin-top:2px" data-i18n="core.subTitle">核心版本与运行方式</span>
@@ -1726,7 +1726,7 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 
           <!-- ═══ 连接管理 ═══ -->
           <div class="core-panel" id="corePanelConn">
-            <div class="set-item" style="padding-top:10px;padding-bottom:10px">
+            <div class="set-item">
               <div class="set-item-left">
                 <span class="set-item-label" data-i18n="core.connSettings">连接设置</span>
                 <span style="display:block;font-size:11px;color:var(--faint);margin-top:2px" data-i18n="core.connSub">连接当前 Core 的 Controller API</span>
@@ -1761,11 +1761,11 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 
           <!-- ═══ GEO 数据 ═══ -->
           <div class="core-panel" id="corePanelGeo">
-            <div class="set-item" style="padding-top:6px;padding-bottom:6px">
+            <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="core.geoAuto">自动更新</span></div>
               <label class="toggle"><input type="checkbox" id="vcfgGeoAuto"><span class="toggle-track"></span></label>
             </div>
-            <div class="set-item" style="padding-top:6px;padding-bottom:6px">
+            <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="core.geoInterval">更新周期</span></div>
               <select class="set-select" id="vcfgGeoInterval"><option value="12">12 小时</option><option value="24">24 小时</option><option value="72">3 天</option><option value="168">7 天</option></select>
             </div>
