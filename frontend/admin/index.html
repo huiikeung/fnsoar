@@ -710,8 +710,9 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
 .dns-input:focus{border-color:var(--accent)}
 .dns-input:hover{border-color:var(--accent);border-style:dashed}
 select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
-.dns-ta-box{grid-column:1/-1;flex-direction:column;align-items:stretch;gap:7px;min-height:0}
-.dns-ta-box textarea{width:100%;min-height:96px;resize:vertical;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;color:var(--text);outline:none;transition:border-color .15s}
+.dns-ta-box{flex-direction:column;align-items:stretch;gap:7px;min-height:0}
+.dns-ta-box textarea{width:100%;min-height:88px;max-height:220px;resize:vertical;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;color:var(--text);outline:none;transition:border-color .15s}
+.dns-field.wide{grid-column:1/-1}
 .dns-ta-box textarea:focus{border-color:var(--accent)}
 .dns-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);font-size:10.5px;color:var(--faint)}
 .dns-foot .core-btn{padding:5px 12px;font-size:11px}
@@ -1563,14 +1564,14 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div class="dns-grid">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunStack">协议栈</span><small>tun.stack</small></span><select class="dns-input" id="vcfgTunStack" onchange="saveTunSettings()"><option value="mixed" data-i18n="vcfg.stackMixed">mixed（推荐）</option><option value="system" data-i18n="vcfg.stackSystem">system</option><option value="gvisor" data-i18n="vcfg.stackGvisor">gVisor</option></select></div>
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunMtu">MTU</span><small>tun.mtu</small></span><input class="dns-input" id="vcfgTunMtu" placeholder="1500" onchange="saveTunSettings()"></div>
-                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunDevice">设备名称</span><small>tun.device</small></span><input class="dns-input" id="vcfgTunDevice" placeholder="tun" onchange="saveTunSettings()"></div>
+                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.tunDevice">设备名称</span><small>tun.device</small></span><input class="dns-input" id="vcfgTunDevice" placeholder="tun" onchange="saveTunSettings()"></div>
               </div>
               <div class="dns-grid">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunAutoRoute">自动路由</span><small data-i18n="tun.autoRouteHint">自动把系统流量路由到 TUN</small></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
                 <div class="dns-field"><span class="dns-field-label"><span>Auto Redirect</span><small data-i18n="net.autoRedirectHint">Linux 自动配置 nftables/iptables TCP 重定向</small></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRedirect" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunAutoDetect">自动检测接口</span><small data-i18n="net.autoDetectHint">自动选择实际的外网出口接口</small></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoDetect" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunDnsHijack">DNS 劫持</span><small data-i18n="net.dnsHijackHint">劫持 UDP/TCP 53 到 Mihomo DNS 模块</small></span><label class="toggle"><input type="checkbox" id="vcfgTunDnsHijack" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
-                <div class="dns-field"><span class="dns-field-label"><span data-i18n="net.strictRoute">严格路由</span><small data-i18n="net.strictRouteHint">减少流量/DNS 泄漏；复杂网络可能影响其他虚拟网卡</small></span><label class="toggle"><input type="checkbox" id="vcfgTunStrictRoute" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
+                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="net.strictRoute">严格路由</span><small data-i18n="net.strictRouteHint">减少流量/DNS 泄漏；复杂网络可能影响其他虚拟网卡</small></span><label class="toggle"><input type="checkbox" id="vcfgTunStrictRoute" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
               </div>
               <div class="dns-grid">
                 <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="net.exclude">排除自定义网段</span><small>tun.route-exclude-address</small></span><textarea id="vcfgTunExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" onchange="saveTunSettings()"></textarea><div class="dns-ta-note" data-i18n="net.excludeHint">每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。</div></div>
@@ -1618,7 +1619,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                   <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.respectRules">DNS 遵循路由规则</span><small data-i18n="dns.respectRulesHint">需要配置代理节点 DNS，避免解析循环</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsRespect" onchange="saveVcfg('dns-respect-rules')"><span class="toggle-track"></span></label></div>
                   <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.useHosts">使用配置 Hosts</span><small data-i18n="dns.useHostsHint">使用 Mihomo 配置中的 hosts 映射</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsHosts" onchange="saveVcfg('dns-use-hosts')"><span class="toggle-track"></span></label></div>
                   <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.useSysHosts">使用系统 Hosts</span><small data-i18n="dns.useSysHostsHint">读取 fnOS 的系统 hosts 文件</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsSysHosts" onchange="saveVcfg('dns-use-sys-hosts')"><span class="toggle-track"></span></label></div>
-                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.followPolicy">直连 DNS 遵循策略</span><small data-i18n="dns.followPolicyHint">直连域名解析遵循 nameserver-policy</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsFollowPolicy" onchange="saveVcfg('dns-follow-policy')"><span class="toggle-track"></span></label></div>
+                  <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="dns.followPolicy">直连 DNS 遵循策略</span><small data-i18n="dns.followPolicyHint">直连域名解析遵循 nameserver-policy</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsFollowPolicy" onchange="saveVcfg('dns-follow-policy')"><span class="toggle-track"></span></label></div>
                 </div>
               </div>
 
@@ -1628,7 +1629,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                   <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.nameserver">域名服务器</span><small>dns.nameserver</small></span><textarea id="vcfgDnsNs" rows="3" placeholder="https://doh.pub/dns-query" onchange="saveDnsList('nameserver','vcfgDnsNs')"></textarea></div>
                   <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.fallback">回退服务器</span><small>dns.fallback</small></span><textarea id="vcfgDnsFb" rows="3" placeholder="https://dns.alidns.com/dns-query" onchange="saveDnsList('fallback','vcfgDnsFb')"></textarea></div>
                   <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.proxyNs">代理节点 DNS</span><small>dns.proxy-server-nameserver</small></span><textarea id="vcfgDnsProxyNs" rows="3" placeholder="https://doh.pub/dns-query&#10;tls://223.5.5.5" onchange="saveDnsList('proxy-server-nameserver','vcfgDnsProxyNs')"></textarea></div>
-                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.directNs">直连域名服务器</span><small>dns.direct-nameserver</small></span><textarea id="vcfgDnsDirectNs" rows="3" placeholder="system://223.5.5.5" onchange="saveDnsList('direct-nameserver','vcfgDnsDirectNs')"></textarea></div>
+                  <div class="dns-field dns-ta-box wide"><span class="dns-field-label"><span data-i18n="dns.directNs">直连域名服务器</span><small>dns.direct-nameserver</small></span><textarea id="vcfgDnsDirectNs" rows="3" placeholder="system://223.5.5.5" onchange="saveDnsList('direct-nameserver','vcfgDnsDirectNs')"></textarea></div>
                 </div>
               </div>
 
@@ -1652,7 +1653,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 
               <div class="core-panel dns-panel" id="dnsPanelHosts">
                 <div class="dns-grid">
-                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.hosts">Hosts 映射</span><small>dns.hosts</small></span><textarea id="vcfgDnsHosts" rows="6" placeholder="example.com = 1.1.1.1; 2.2.2.2" onchange="saveDnsMap('hosts','vcfgDnsHosts')"></textarea></div>
+                  <div class="dns-field dns-ta-box wide"><span class="dns-field-label"><span data-i18n="dns.hosts">Hosts 映射</span><small>dns.hosts</small></span><textarea id="vcfgDnsHosts" rows="6" placeholder="example.com = 1.1.1.1; 2.2.2.2" onchange="saveDnsMap('hosts','vcfgDnsHosts')"></textarea></div>
                 </div>
               </div>
 
