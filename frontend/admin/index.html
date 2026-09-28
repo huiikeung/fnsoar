@@ -808,6 +808,81 @@ tbody tr:hover{background:var(--card2)}
 </head>
 <body>
 <div class="toast-container" id="toastContainer"></div>
+      <!-- 系统代理设置弹窗 -->
+      <div class="modal-backdrop" id="sysProxyModal" style="display:none" onclick="if(event.target===this)closeSysProxyModal()">
+        <div class="modal-card" style="max-width:480px">
+          <div class="modal-title" data-i18n="net.sysProxySettings">系统代理设置</div>
+          <div class="modal-body net-modal-body">
+            <div class="net-sec-title" data-i18n="net.currentStatus">当前状态</div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.enabled">开启状态</span><span class="net-field-label" id="spStatus">-</span></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.serviceAddr">服务地址</span><span class="net-field-label" id="spAddr" style="font-family:monospace;font-size:12px">-</span></div>
+            <div class="net-sec-title" data-i18n="net.options">选项</div>
+            <div class="net-field">
+              <span class="net-field-label" data-i18n="net.enableEnv">启用代理环境变量<small data-i18n="net.enableEnvHint">关闭时仅移除本应用管理的配置</small></span>
+              <label class="toggle"><input type="checkbox" id="spEnabled"><span class="toggle-track"></span></label>
+            </div>
+            <div class="net-field">
+              <span class="net-field-label" data-i18n="net.followPort">自动跟随 Mixed Port<small data-i18n="net.followPortHint">端口变化后自动同步系统代理</small></span>
+              <label class="toggle"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked"><span class="toggle-track"></span></label>
+            </div>
+            <div class="net-field">
+              <span class="net-field-label" data-i18n="net.port">代理端口<small data-i18n="net.portHint">关闭跟随后可手动指定</small></span>
+              <input type="number" class="set-input" id="spPort" min="1" max="65535" value="7890">
+            </div>
+            <div>
+              <div class="net-sec-title" data-i18n="net.bypass">代理绕过设置（NO_PROXY）</div>
+              <div class="net-tags" id="spTags">
+                <input type="text" id="spTagInput" placeholder="输入域名 / IP / CIDR，回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addNoProxyTag()}">
+              </div>
+            </div>
+            <div>
+              <div class="net-sec-title" data-i18n="net.scope">应用范围</div>
+              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtEnv">系统登录环境<small>/etc/environment</small></span><label class="toggle"><input type="checkbox" id="spTgtEnv"><span class="toggle-track"></span></label></div>
+              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtProfile">登录 Shell<small>/etc/profile</small></span><label class="toggle"><input type="checkbox" id="spTgtProfile"><span class="toggle-track"></span></label></div>
+              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtBashrc">Bash 交互环境<small>/etc/bash.bashrc</small></span><label class="toggle"><input type="checkbox" id="spTgtBashrc"><span class="toggle-track"></span></label></div>
+            </div>
+            <div class="net-note" data-i18n="net.sysProxyNote">fnOS 上的系统代理通过 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY 环境变量生效，主要影响新启动的进程与新登录会话。</div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" onclick="closeSysProxyModal()" data-i18n="common.cancel">取消</button>
+            <button class="btn btn-primary" id="spSaveBtn" onclick="saveSysProxyModal()" data-i18n="common.save">保存</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUN 设置弹窗 -->
+      <div class="modal-backdrop" id="tunModal" style="display:none" onclick="if(event.target===this)closeTunModal()">
+        <div class="modal-card" style="max-width:480px">
+          <div class="modal-title" data-i18n="net.tunSettings">虚拟网卡（TUN）设置</div>
+          <div class="modal-body net-modal-body">
+            <div class="net-sec-title" data-i18n="net.protocol">协议</div>
+            <div class="net-field">
+              <span class="net-field-label">TUN Stack<small data-i18n="net.stackHint">mixed：TCP 走 system、UDP 走 gVisor（推荐）</small></span>
+              <select class="set-select" id="tmStack"><option value="mixed">mixed（推荐）</option><option value="system">system</option><option value="gvisor">gVisor</option></select>
+            </div>
+            <div class="net-field">
+              <span class="net-field-label">MTU<small data-i18n="net.mtuHint">默认 1500；VPN / PPPoE 环境异常可试 1400</small></span>
+              <input type="number" class="set-input" id="tmMtu" min="1280" max="65535" value="1500">
+            </div>
+            <div class="net-sec-title" data-i18n="net.routing">路由</div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.autoRoute">自动路由<small data-i18n="net.autoRouteHint">自动把系统流量路由到 TUN</small></span><label class="toggle"><input type="checkbox" id="tmAutoRoute"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label">Auto Redirect<small data-i18n="net.autoRedirectHint">自动配置 nftables / iptables TCP 重定向</small></span><label class="toggle"><input type="checkbox" id="tmAutoRedirect"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.autoDetect">自动检测出口网卡<small data-i18n="net.autoDetectHint">自动选择实际外网出口</small></span><label class="toggle"><input type="checkbox" id="tmAutoDetect"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.dnsHijack">DNS 劫持<small data-i18n="net.dnsHijackHint">劫持 53 端口到 Mihomo DNS</small></span><label class="toggle"><input type="checkbox" id="tmDnsHijack"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.strictRoute">严格路由<small data-i18n="net.strictRouteHint">减少泄漏；复杂网络可能影响其它虚拟网卡</small></span><label class="toggle"><input type="checkbox" id="tmStrictRoute"><span class="toggle-track"></span></label></div>
+            <div>
+              <div class="net-sec-title" data-i18n="net.exclude">排除自定义网段</div>
+              <textarea class="finput" id="tmExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" style="width:100%;resize:vertical;font-family:monospace;font-size:12px"></textarea>
+              <div class="net-note" style="margin-top:4px" data-i18n="net.excludeHint">每行一个 IPv4/IPv6 CIDR；仅在开启自动路由时生效。</div>
+            </div>
+            <div class="net-note" data-i18n="net.tunNote">TUN 会修改 fnOS 系统路由与 DNS 流向。保存后若 TUN 已开启将自动重启引擎生效。</div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" onclick="closeTunModal()" data-i18n="common.cancel">取消</button>
+            <button class="btn btn-primary" id="tmSaveBtn" onclick="saveTunModal()" data-i18n="common.save">保存</button>
+          </div>
+        </div>
+      </div>
 <div class="layout">
   <!-- 左侧栏（背景与右侧一致） -->
   <aside class="sidebar hidden">
@@ -1159,81 +1234,6 @@ tbody tr:hover{background:var(--card2)}
         </div>
       </div>
 
-      <!-- 系统代理设置弹窗 -->
-      <div class="modal-backdrop" id="sysProxyModal" style="display:none" onclick="if(event.target===this)closeSysProxyModal()">
-        <div class="modal-card" style="max-width:480px">
-          <div class="modal-title" data-i18n="net.sysProxySettings">系统代理设置</div>
-          <div class="modal-body net-modal-body">
-            <div class="net-sec-title" data-i18n="net.currentStatus">当前状态</div>
-            <div class="net-field"><span class="net-field-label" data-i18n="net.enabled">开启状态</span><span class="net-field-label" id="spStatus">-</span></div>
-            <div class="net-field"><span class="net-field-label" data-i18n="net.serviceAddr">服务地址</span><span class="net-field-label" id="spAddr" style="font-family:monospace;font-size:12px">-</span></div>
-            <div class="net-sec-title" data-i18n="net.options">选项</div>
-            <div class="net-field">
-              <span class="net-field-label" data-i18n="net.enableEnv">启用代理环境变量<small data-i18n="net.enableEnvHint">关闭时仅移除本应用管理的配置</small></span>
-              <label class="toggle"><input type="checkbox" id="spEnabled"><span class="toggle-track"></span></label>
-            </div>
-            <div class="net-field">
-              <span class="net-field-label" data-i18n="net.followPort">自动跟随 Mixed Port<small data-i18n="net.followPortHint">端口变化后自动同步系统代理</small></span>
-              <label class="toggle"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked"><span class="toggle-track"></span></label>
-            </div>
-            <div class="net-field">
-              <span class="net-field-label" data-i18n="net.port">代理端口<small data-i18n="net.portHint">关闭跟随后可手动指定</small></span>
-              <input type="number" class="set-input" id="spPort" min="1" max="65535" value="7890">
-            </div>
-            <div>
-              <div class="net-sec-title" data-i18n="net.bypass">代理绕过设置（NO_PROXY）</div>
-              <div class="net-tags" id="spTags">
-                <input type="text" id="spTagInput" placeholder="输入域名 / IP / CIDR，回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addNoProxyTag()}">
-              </div>
-            </div>
-            <div>
-              <div class="net-sec-title" data-i18n="net.scope">应用范围</div>
-              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtEnv">系统登录环境<small>/etc/environment</small></span><label class="toggle"><input type="checkbox" id="spTgtEnv"><span class="toggle-track"></span></label></div>
-              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtProfile">登录 Shell<small>/etc/profile</small></span><label class="toggle"><input type="checkbox" id="spTgtProfile"><span class="toggle-track"></span></label></div>
-              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtBashrc">Bash 交互环境<small>/etc/bash.bashrc</small></span><label class="toggle"><input type="checkbox" id="spTgtBashrc"><span class="toggle-track"></span></label></div>
-            </div>
-            <div class="net-note" data-i18n="net.sysProxyNote">fnOS 上的系统代理通过 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY 环境变量生效，主要影响新启动的进程与新登录会话。</div>
-          </div>
-          <div class="modal-foot">
-            <button class="btn btn-ghost" onclick="closeSysProxyModal()" data-i18n="common.cancel">取消</button>
-            <button class="btn btn-primary" id="spSaveBtn" onclick="saveSysProxyModal()" data-i18n="common.save">保存</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- TUN 设置弹窗 -->
-      <div class="modal-backdrop" id="tunModal" style="display:none" onclick="if(event.target===this)closeTunModal()">
-        <div class="modal-card" style="max-width:480px">
-          <div class="modal-title" data-i18n="net.tunSettings">虚拟网卡（TUN）设置</div>
-          <div class="modal-body net-modal-body">
-            <div class="net-sec-title" data-i18n="net.protocol">协议</div>
-            <div class="net-field">
-              <span class="net-field-label">TUN Stack<small data-i18n="net.stackHint">mixed：TCP 走 system、UDP 走 gVisor（推荐）</small></span>
-              <select class="set-select" id="tmStack"><option value="mixed">mixed（推荐）</option><option value="system">system</option><option value="gvisor">gVisor</option></select>
-            </div>
-            <div class="net-field">
-              <span class="net-field-label">MTU<small data-i18n="net.mtuHint">默认 1500；VPN / PPPoE 环境异常可试 1400</small></span>
-              <input type="number" class="set-input" id="tmMtu" min="1280" max="65535" value="1500">
-            </div>
-            <div class="net-sec-title" data-i18n="net.routing">路由</div>
-            <div class="net-field"><span class="net-field-label" data-i18n="net.autoRoute">自动路由<small data-i18n="net.autoRouteHint">自动把系统流量路由到 TUN</small></span><label class="toggle"><input type="checkbox" id="tmAutoRoute"><span class="toggle-track"></span></label></div>
-            <div class="net-field"><span class="net-field-label">Auto Redirect<small data-i18n="net.autoRedirectHint">自动配置 nftables / iptables TCP 重定向</small></span><label class="toggle"><input type="checkbox" id="tmAutoRedirect"><span class="toggle-track"></span></label></div>
-            <div class="net-field"><span class="net-field-label" data-i18n="net.autoDetect">自动检测出口网卡<small data-i18n="net.autoDetectHint">自动选择实际外网出口</small></span><label class="toggle"><input type="checkbox" id="tmAutoDetect"><span class="toggle-track"></span></label></div>
-            <div class="net-field"><span class="net-field-label" data-i18n="net.dnsHijack">DNS 劫持<small data-i18n="net.dnsHijackHint">劫持 53 端口到 Mihomo DNS</small></span><label class="toggle"><input type="checkbox" id="tmDnsHijack"><span class="toggle-track"></span></label></div>
-            <div class="net-field"><span class="net-field-label" data-i18n="net.strictRoute">严格路由<small data-i18n="net.strictRouteHint">减少泄漏；复杂网络可能影响其它虚拟网卡</small></span><label class="toggle"><input type="checkbox" id="tmStrictRoute"><span class="toggle-track"></span></label></div>
-            <div>
-              <div class="net-sec-title" data-i18n="net.exclude">排除自定义网段</div>
-              <textarea class="finput" id="tmExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" style="width:100%;resize:vertical;font-family:monospace;font-size:12px"></textarea>
-              <div class="net-note" style="margin-top:4px" data-i18n="net.excludeHint">每行一个 IPv4/IPv6 CIDR；仅在开启自动路由时生效。</div>
-            </div>
-            <div class="net-note" data-i18n="net.tunNote">TUN 会修改 fnOS 系统路由与 DNS 流向。保存后若 TUN 已开启将自动重启引擎生效。</div>
-          </div>
-          <div class="modal-foot">
-            <button class="btn btn-ghost" onclick="closeTunModal()" data-i18n="common.cancel">取消</button>
-            <button class="btn btn-primary" id="tmSaveBtn" onclick="saveTunModal()" data-i18n="common.save">保存</button>
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- 连接 -->
@@ -1326,25 +1326,31 @@ tbody tr:hover{background:var(--card2)}
             </div>
           </div>
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5m0 3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg></span><span data-i18n="vcfg.inbound">入站设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('inbound')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5m0 3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg></span><span data-i18n="vcfg.ports">网络端口</span><button class="vcfg-reset-btn" onclick="resetConfigSection('inbound')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><span class="vcfg-hint">mixed-port</span></span><input type="number" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.mixedPort">混合端口</span><span class="vcfg-hint">mixed-port</span></span><input type="number" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><span class="vcfg-hint">http-port</span></span><input type="number" id="vcfgHttpPort" placeholder="留空不启用" onchange="saveVcfg('http-port')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.socksPort">Socks 端口</span><span class="vcfg-hint">socks-port</span></span><input type="number" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.redirPort">Redir 端口</span><span class="vcfg-hint">redir-port</span></span><input type="number" id="vcfgRedirPort" placeholder="7892" onchange="saveVcfg('redir-port')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tproxyPort">TProxy 端口</span><span class="vcfg-hint">tproxy-port</span></span><input type="number" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.bindAddr">监听地址</span><span class="vcfg-hint">bind-address</span></span><input type="text" id="vcfgBindAddr" placeholder="*" onchange="saveVcfg('bind-address')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.allowLan">局域网连接</span><span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.auth">认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass" onchange="saveVcfg('auth')"></div>
             </div>
           </div>
           <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-tun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span><span data-i18n="vcfg.tun">TUN 设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('tun')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-tun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span><span data-i18n="vcfg.tun">TUN 设置</span><span class="flex-sp"></span><button class="mini-btn" style="padding:3px 12px;font-size:12px" onclick="saveTunSettings()" data-i18n="common.save">保存</button><button class="vcfg-reset-btn" onclick="resetConfigSection('tun')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunEnable">TUN 启用</span><span class="vcfg-hint">tun.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgTun" onchange="saveVcfg('tun')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDevice">设备名称</span><span class="vcfg-hint">tun.device</span></span><input type="text" id="vcfgTunDevice" placeholder="Mihomo" onchange="saveVcfg('tun-device')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunStack">协议栈</span><span class="vcfg-hint">tun.stack</span></span><select id="vcfgTunStack" onchange="saveVcfg('tun-stack')"><option value="gvisor">gvisor</option><option value="system">system</option><option value="mixed">mixed</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDnsHijack">DNS 劫持</span><span class="vcfg-hint">tun.dns-hijack</span></span><select id="vcfgTunDnsHijack" onchange="saveVcfg('tun-dns-hijack')"><option value="" data-i18n="vcfg.default">(默认)</option><option value="any:53">any:53</option><option value="tcp://any:53">tcp://any:53</option><option value="udp://any:53">udp://any:53</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunMtu">MTU</span><span class="vcfg-hint">tun.mtu</span></span><input type="number" id="vcfgTunMtu" placeholder="1500" min="1280" max="65535" onchange="saveTunSettings()"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDnsHijack">DNS 劫持</span><span class="vcfg-hint">tun.dns-hijack</span></span><label class="toggle"><input type="checkbox" id="vcfgTunDnsHijack" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunAutoRoute">自动路由</span><span class="vcfg-hint">tun.auto-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveVcfg('tun-auto-route')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.autoRedirect">Auto Redirect</span><span class="vcfg-hint">tun.auto-redirect</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRedirect" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunAutoDetect">自动检测接口</span><span class="vcfg-hint">tun.auto-detect-interface</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoDetect" onchange="saveVcfg('tun-auto-detect')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.strictRoute">严格路由</span><span class="vcfg-hint">tun.strict-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunStrictRoute" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="net.exclude">排除网段</span><span class="vcfg-hint">tun.route-exclude-address</span></span><textarea id="vcfgTunExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" onchange="saveTunSettings()"></textarea></div>
             </div>
           </div>
           <div class="vcfg-card">
@@ -1352,10 +1358,16 @@ tbody tr:hover{background:var(--card2)}
             <div class="vcfg-card-body">
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsEnable">DNS 启用</span><span class="vcfg-hint">dns.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsEnable" onchange="saveVcfg('dns-enable')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsEnhanced">增强模式</span><span class="vcfg-hint">dns.enhanced-mode</span></span><select id="vcfgDnsEnhanced" onchange="saveVcfg('dns-enhanced')"><option value="fake-ip">fake-ip</option><option value="redir-host">redir-host</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsListen">监听地址</span><span class="vcfg-hint">dns.listen</span></span><input type="text" id="vcfgDnsListen" placeholder="127.0.0.1:1053" onchange="saveVcfg('dns-listen')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.respectRules">遵循规则</span><span class="vcfg-hint">dns.respect-rules</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsRespect" onchange="saveVcfg('dns-respect-rules')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.fakeIpRange">Fake-IP 范围</span><span class="vcfg-hint">dns.fake-ip-range</span></span><input type="text" id="vcfgFakeIpRange" placeholder="198.18.0.1/16" onchange="saveVcfg('fake-ip-range')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsIpv6">IPv6 DNS</span><span class="vcfg-hint">dns.ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsIpv6" onchange="saveVcfg('dns-ipv6')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsUseHosts">使用 hosts</span><span class="vcfg-hint">dns.use-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsHosts" onchange="saveVcfg('dns-use-hosts')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsUseSysHosts">系统 hosts</span><span class="vcfg-hint">dns.use-system-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsSysHosts" onchange="saveVcfg('dns-use-sys-hosts')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.defaultNameserver">默认 DNS</span><span class="vcfg-hint">dns.default-nameserver</span></span><textarea id="vcfgDnsDefaultNs" rows="2" placeholder="223.5.5.5&#10;119.29.29.29" onchange="saveDnsList('default-nameserver','vcfgDnsDefaultNs')"></textarea></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsNameserver">nameserver</span><span class="vcfg-hint">dns.nameserver</span></span><textarea id="vcfgDnsNs" rows="2" onchange="saveDnsList('nameserver','vcfgDnsNs')"></textarea></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.proxyNameserver">代理服务器 DNS</span><span class="vcfg-hint">dns.proxy-server-nameserver</span></span><textarea id="vcfgDnsProxyNs" rows="2" placeholder="https://doh.pub/dns-query" onchange="saveDnsList('proxy-server-nameserver','vcfgDnsProxyNs')"></textarea></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.fakeIpFilter">Fake-IP 过滤</span><span class="vcfg-hint">dns.fake-ip-filter</span></span><textarea id="vcfgDnsFakeFilter" rows="3" placeholder="+.lan&#10;time.*.com" onchange="saveDnsList('fake-ip-filter','vcfgDnsFakeFilter')"></textarea></div>
             </div>
           </div>
           <div class="vcfg-card">
@@ -1389,10 +1401,22 @@ tbody tr:hover{background:var(--card2)}
           <div class="vcfg-card">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.dnsAdv">DNS 高级</span><button class="vcfg-reset-btn" onclick="resetConfigSection('dns')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsNameserver">nameserver</span></span><textarea id="vcfgDnsNs" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsFallback">fallback</span></span><textarea id="vcfgDnsFb" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsFallback">fallback</span><span class="vcfg-hint">dns.fallback</span></span><textarea id="vcfgDnsFb" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.fbGeoip">fallback-filter geoip</span></span><label class="toggle"><input type="checkbox" id="vcfgFbGeoip" onchange="saveDnsAdvSection()"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.fbDomain">fallback-filter domain</span></span><textarea id="vcfgFbDomain" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
+            </div>
+          </div>
+          <div class="vcfg-card">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-ctrl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></span><span data-i18n="vcfg.env">环境变量</span><span class="flex-sp"></span><button class="mini-btn" style="padding:3px 12px;font-size:12px" onclick="saveEnvVars()" data-i18n="common.save">保存</button></div>
+            <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.enableEnv">启用代理环境变量</span><span class="vcfg-hint">HTTP_PROXY / ALL_PROXY</span></span><label class="toggle"><input type="checkbox" id="envEnabled"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.followPort">自动跟随 Mixed Port</span></span><label class="toggle"><input type="checkbox" id="envFollow" onchange="document.getElementById('envPort').disabled=this.checked"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.port">代理端口</span></span><input type="number" id="envPort" min="1" max="65535" value="7890"></div>
+              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="net.bypass">代理绕过（NO_PROXY）</span></span><textarea id="envNoProxy" rows="2" placeholder="localhost,127.0.0.1,::1"></textarea></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.tgtEnv">系统登录环境</span><span class="vcfg-hint">/etc/environment</span></span><label class="toggle"><input type="checkbox" id="envTgtEnv"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.tgtProfile">登录 Shell</span><span class="vcfg-hint">/etc/profile</span></span><label class="toggle"><input type="checkbox" id="envTgtProfile"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.tgtBashrc">Bash 交互环境</span><span class="vcfg-hint">/etc/bash.bashrc</span></span><label class="toggle"><input type="checkbox" id="envTgtBashrc"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.currentStatus">当前状态</span></span><span class="vcfg-hint" id="envStatus">-</span></div>
             </div>
           </div>
           <div class="vcfg-card">
@@ -1496,6 +1520,18 @@ tbody tr:hover{background:var(--card2)}
                 <button class="mini-btn mini-btn-ic" onclick="openTunModal()" title="TUN 设置" aria-label="TUN 设置"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
                 <label class="toggle"><input type="checkbox" id="setTun" onchange="toggleSetting('tun')"><span class="toggle-track"></span></label>
               </div>
+            </div>
+            <div class="set-item set-item-chev" onclick="showSection('config')">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="vcfg.ports">网络端口</span></div>
+              <span class="set-chev">›</span>
+            </div>
+            <div class="set-item set-item-chev" onclick="showSection('config')">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="vcfg.dnsResolve">DNS 与解析</span></div>
+              <span class="set-chev">›</span>
+            </div>
+            <div class="set-item set-item-chev" onclick="showSection('config')">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="vcfg.env">环境变量</span></div>
+              <span class="set-chev">›</span>
             </div>
           </div>
           <div class="set-card">
@@ -2567,6 +2603,7 @@ async function refreshNetworkCard() {
   try {
     netProxyData = await fetchJSON('api/system-proxy');
     renderNetworkProxy();
+    renderEnvVars();
     const stp = document.getElementById('setSysProxy');
     if (stp) stp.checked = !!(netProxyData && netProxyData.enabled);
   } catch (e) { /* 保留上一次状态 */ }
@@ -4791,6 +4828,8 @@ function loadVcfg() {
     var vt = document.getElementById('vcfgTun'); if (vt) vt.checked = getBool('enable') && /tun:/.test(cfg);
     var vtd = document.getElementById('vcfgTunDevice'); if (vtd) vtd.value = getVal('device', 'Mihomo');
     var vts = document.getElementById('vcfgTunStack'); if (vts) vts.value = getVal('stack', 'gvisor');
+    var vhp = document.getElementById('vcfgHttpPort'); if (vhp) vhp.value = getVal('http-port', '');
+    var vba = document.getElementById('vcfgBindAddr'); if (vba) vba.value = getVal('bind-address', '*');
     var vde = document.getElementById('vcfgDnsEnable'); if (vde) vde.checked = /\bdns:/.test(cfg) && getBool('enable');
     var vdh = document.getElementById('vcfgDnsEnhanced'); if (vdh) vdh.value = getVal('enhanced-mode', 'fake-ip');
     var vfir = document.getElementById('vcfgFakeIpRange'); if (vfir) vfir.value = getVal('fake-ip-range', '198.18.0.1/16');
@@ -4805,10 +4844,11 @@ function saveVcfg(key) {
     'unified-delay':'vcfgUnifiedDelay','allow-lan':'vcfgAllowLan','ipv6':'vcfgIpv6',
     'tcp-concurrent':'vcfgTcpConcurrent','find-process':'vcfgFindProcess',
     'socks-port':'vcfgSocksPort','redir-port':'vcfgRedirPort','tproxy-port':'vcfgTproxyPort',
-    'auth':'vcfgAuth',
+    'auth':'vcfgAuth','http-port':'vcfgHttpPort','bind-address':'vcfgBindAddr',
     'tun':'vcfgTun','tun-device':'vcfgTunDevice','tun-stack':'vcfgTunStack',
     'tun-dns-hijack':'vcfgTunDnsHijack','tun-auto-route':'vcfgTunAutoRoute','tun-auto-detect':'vcfgTunAutoDetect',
     'dns-enable':'vcfgDnsEnable','dns-enhanced':'vcfgDnsEnhanced','fake-ip-range':'vcfgFakeIpRange',
+    'dns-listen':'vcfgDnsListen','dns-respect-rules':'vcfgDnsRespect',
     'dns-ipv6':'vcfgDnsIpv6','dns-use-hosts':'vcfgDnsHosts','dns-use-sys-hosts':'vcfgDnsSysHosts',
     'ext-addr':'vcfgExtAddr','ext-secret':'vcfgExtSecret','ext-ui':'vcfgExtUi',
     'profile':'vcfgProfile','geodata-mode':'vcfgGeodataMode','geo-loader':'vcfgGeoLoader',
@@ -4818,6 +4858,8 @@ function saveVcfg(key) {
   var el = document.getElementById(elId);
   var val = el.type === 'checkbox' ? (el.checked ? 'true' : 'false') : el.value;
   if (!val && val !== 'false') return;
+  // bind-address 的 * 是 YAML 别名指示符，必须加引号
+  if (key === 'bind-address' && val && !/^["']/.test(val)) val = "'" + val + "'";
   fetch('api/config').then(r => r.json()).then(d => {
     var raw = d.config || '';
     var lines = raw.split('\n');
@@ -4834,6 +4876,8 @@ function saveVcfg(key) {
     if (key === 'dns-enable') yamlKey = 'enable';
     if (key === 'dns-enhanced') yamlKey = 'enhanced-mode';
     if (key === 'fake-ip-range') yamlKey = 'fake-ip-range';
+    if (key === 'dns-listen') yamlKey = 'listen';
+    if (key === 'dns-respect-rules') yamlKey = 'respect-rules';
     if (key === 'dns-ipv6') yamlKey = 'ipv6';
     if (key === 'dns-use-hosts') yamlKey = 'use-hosts';
     if (key === 'dns-use-sys-hosts') yamlKey = 'use-system-hosts';
@@ -4907,6 +4951,26 @@ function loadVcfgSections(cfg) {
   if (fbg) { fbg.checked = /fallback-filter:/.test(dnsText) && /geoip:\s*true/.test(dnsText); }
   var fbd = document.getElementById('vcfgFbDomain');
   if (fbd) { var fdm = dnsText.match(/fallback-filter:[\s\S]*?domain:\s*\n([\s\S]*?)(?=\n  \S|\n\S|(?![\s\S]))/); fbd.value = fdm ? fdm[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
+
+  // DNS 设置（nameserver 系列 / fake-ip-filter / listen / respect-rules）
+  function dnsList(key) { var m = dnsText.match(new RegExp(key + ':\\s*\\n([\\s\\S]*?)(?=\\n  \\S|\\n\\S|(?!\\n[\\s\\S]))')); return m ? m[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
+  function dnsScalar(key, def) { var m = dnsText.match(new RegExp('\\n\\s*' + key + ':\\s*(.+)')); return m ? m[1].trim().replace(/^"|"$/g,'') : (def || ''); }
+  var vdln = document.getElementById('vcfgDnsListen'); if (vdln) vdln.value = dnsScalar('listen', '127.0.0.1:1053');
+  var vdrs = document.getElementById('vcfgDnsRespect'); if (vdrs) vdrs.checked = /respect-rules:\s*true/.test(dnsText);
+  var vddn = document.getElementById('vcfgDnsDefaultNs'); if (vddn) vddn.value = dnsList('default-nameserver');
+  var vdns = document.getElementById('vcfgDnsNs'); if (vdns) vdns.value = dnsList('nameserver');
+  var vdpn = document.getElementById('vcfgDnsProxyNs'); if (vdpn) vdpn.value = dnsList('proxy-server-nameserver');
+  var vdff = document.getElementById('vcfgDnsFakeFilter'); if (vdff) vdff.value = dnsList('fake-ip-filter');
+
+  // TUN 设置（mtu / auto-redirect / strict-route / dns-hijack / 排除网段）
+  var tunSection = cfg.match(/^tun:\s*\n([\s\S]*?)(?=^\S|(?![\s\S]))/m);
+  var tunText = tunSection ? tunSection[0] : '';
+  var vtm = document.getElementById('vcfgTunMtu'); if (vtm) { var mm = tunText.match(/mtu:\s*(\d+)/); vtm.value = mm ? mm[1] : '1500'; }
+  var vtar = document.getElementById('vcfgTunAutoRedirect'); if (vtar) vtar.checked = /auto-redirect:\s*true/.test(tunText);
+  var vtsr = document.getElementById('vcfgTunStrictRoute'); if (vtsr) vtsr.checked = /strict-route:\s*true/.test(tunText);
+  var vtdh = document.getElementById('vcfgTunDnsHijack'); if (vtdh) vtdh.checked = /dns-hijack:\s*\n(\s+-)/.test(tunText) || /dns-hijack:\s*\[[^\]]/.test(tunText);
+  var vte = document.getElementById('vcfgTunExclude');
+  if (vte) { var em = tunText.match(/route-exclude-address:\s*\n([\s\S]*?)(?=\n  \S|\n\S|(?![\s\S]))/); vte.value = em ? em[1].replace(/^\s+-\s+/gm,'').replace(/"/g,'').trim() : ''; }
 
   // Geo
   var geoSection = cfg.match(/^geox-url:\s*\n([\s\S]*?)(?=^\S|(?![\s\S]))/m);
@@ -4986,6 +5050,108 @@ function saveDnsAdvSection() {
     dnsText = dnsText.trimEnd() + '\n' + fft;
     saveSection('dns', dnsText);
   });
+}
+
+// ── DNS 列表字段通用保存（nameserver 系列 / fake-ip-filter） ────────────
+function saveDnsList(yamlKey, textareaId) {
+  fetch('api/config').then(r => r.json()).then(d => {
+    var cfg = d.config || '';
+    var items = document.getElementById(textareaId).value.trim().split('\n')
+      .map(function(s){return s.trim().replace(/^["']|["']$/g,'')}).filter(Boolean);
+    var block;
+    if (items.length) {
+      block = '  ' + yamlKey + ':\n' + items.map(function(s){
+        return '    - ' + (/["'\s:+*#{}]/.test(s) ? '"' + s.replace(/"/g,'') + '"' : s);
+      }).join('\n') + '\n';
+    } else {
+      block = '  ' + yamlKey + ' []\n';
+    }
+    var re = new RegExp('  ' + yamlKey.replace(/-/g,'\\-') + ':[\\s\\S]*?(?=\\n  \\S|\\n\\S|(?!\\n[\\s\\S]))');
+    var next;
+    if (re.test(cfg)) {
+      next = cfg.replace(re, block.trimEnd());
+    } else {
+      next = cfg.replace(/^dns:\s*\n/, 'dns:\n' + block);
+      if (next === cfg) { showToast('config.yaml 中未找到 dns 段', 'error'); return; }
+    }
+    if (next === cfg) { showToast('未发生变化', 'info'); return; }
+    fetch('api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({config: next}) })
+      .then(r => r.json()).then(d2 => {
+        if (d2.success) showToast('已保存: dns.' + yamlKey + '，服务正在重启...', 'success');
+        else showToast('保存失败: ' + (d2.error || ''), 'error');
+      }).catch(e => showToast('保存出错: ' + e, 'error'));
+  });
+}
+
+// ── TUN 设置（配置页卡片保存，走专用接口） ────────────
+function saveTunSettings() {
+  var mtu = parseInt(document.getElementById('vcfgTunMtu').value || '1500', 10);
+  if (!Number.isInteger(mtu) || mtu < 1280 || mtu > 65535) { showToast(t('net.mtuInvalid'), 'error'); return; }
+  var dnsOn = document.getElementById('vcfgTunDnsHijack').checked;
+  var prevDns = (netTunData && netTunData.settings && netTunData.settings['dns-hijack']) || [];
+  var body = { settings: {
+    device: document.getElementById('vcfgTunDevice').value || 'tun',
+    stack: document.getElementById('vcfgTunStack').value,
+    mtu: mtu,
+    'auto-route': document.getElementById('vcfgTunAutoRoute').checked,
+    'auto-redirect': document.getElementById('vcfgTunAutoRedirect').checked,
+    'auto-detect-interface': document.getElementById('vcfgTunAutoDetect').checked,
+    'strict-route': document.getElementById('vcfgTunStrictRoute').checked,
+    'dns-hijack': dnsOn ? (prevDns.length ? prevDns : ['any:53', 'tcp://any:53']) : [],
+    'route-exclude-address': document.getElementById('vcfgTunExclude').value.split(/[\n,]+/).map(function(s){return s.trim()}).filter(Boolean)
+  }};
+  fetch('api/tun-settings', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    .then(r => r.json()).then(d => {
+      if (!d.success) throw new Error(d.error || '');
+      showToast(d.message || t('net.toastTunSaved'), 'success');
+      refreshNetworkCard();
+    }).catch(e => showToast((e.message || t('net.saveFailed')), 'error'));
+}
+
+// ── 环境变量（配置页卡片保存 / 渲染） ────────────
+function saveEnvVars() {
+  var noProxy = document.getElementById('envNoProxy').value.split(/[\n,]/).map(function(s){return s.trim()}).filter(Boolean).join(',');
+  var body = {
+    enabled: document.getElementById('envEnabled').checked,
+    follow_mixed_port: document.getElementById('envFollow').checked,
+    port: parseInt(document.getElementById('envPort').value || '7890', 10),
+    no_proxy: noProxy,
+    targets: {
+      environment: document.getElementById('envTgtEnv').checked,
+      profile: document.getElementById('envTgtProfile').checked,
+      bashrc: document.getElementById('envTgtBashrc').checked
+    }
+  };
+  fetch('api/system-proxy', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
+    .then(r => r.json()).then(d => {
+      if (d.success === false && d.error) throw new Error(d.error);
+      showToast(d.message || t('net.toastProxySaved'), 'success');
+      refreshNetworkCard();
+    }).catch(e => showToast((e.message || t('net.saveFailed')), 'error'));
+}
+
+function renderEnvVars() {
+  const d = netProxyData;
+  if (!d) return;
+  const s = d.settings || {};
+  const tg = s.targets || {};
+  const set = function(id, v) { const el = document.getElementById(id); if (el) el.checked = v; };
+  set('envEnabled', !!d.enabled);
+  set('envFollow', s.follow_mixed_port !== false);
+  const p = document.getElementById('envPort');
+  if (p) { p.value = s.port || 7890; p.disabled = s.follow_mixed_port !== false; }
+  const np = document.getElementById('envNoProxy');
+  if (np) np.value = (s.no_proxy || '').split(',').join('\n');
+  set('envTgtEnv', tg.environment !== false);
+  set('envTgtProfile', tg.profile !== false);
+  set('envTgtBashrc', tg.bashrc !== false);
+  const st = document.getElementById('envStatus');
+  if (st) {
+    const scope = ['environment','profile','bashrc'].filter(k => tg[k] !== false).length;
+    st.textContent = (d.enabled ? t('net.enabledOn') : t('net.enabledOff'))
+      + ' · ' + (s.follow_mixed_port ? t('net.followPort') : ('127.0.0.1:' + (s.port || 7890)))
+      + ' · ' + t('net.scope') + ' ' + scope + '/3';
+  }
 }
 
 function buildGeoYaml() {
@@ -5289,7 +5455,7 @@ var I18N = {
     'config.visual':'可视化配置','config.visualTitle':'返回可视化配置',
     'config.reload':'重新加载','config.save':'保存并重启',
     'config.desc':'直接编辑 config.yaml。保存后服务将自动重启。',
-    'vcfg.basic':'基础设置','vcfg.inbound':'入站设置','vcfg.tun':'TUN 设置','vcfg.dns':'DNS 设置',
+    'vcfg.basic':'基础设置','vcfg.inbound':'入站设置','vcfg.ports':'网络端口','vcfg.mixedPort':'混合端口','vcfg.bindAddr':'监听地址','vcfg.tunMtu':'MTU','vcfg.dnsListen':'监听地址','vcfg.respectRules':'遵循规则','vcfg.defaultNameserver':'默认 DNS','vcfg.proxyNameserver':'代理服务器 DNS','vcfg.fakeIpFilter':'Fake-IP 过滤','vcfg.env':'环境变量','vcfg.dnsResolve':'DNS 与解析','vcfg.tun':'TUN 设置','vcfg.dns':'DNS 设置',
     'vcfg.external':'外部控制','vcfg.advanced':'高级设置',
     'vcfg.mode':'运行模式','vcfg.modeRule':'规则','vcfg.modeGlobal':'全局','vcfg.modeDirect':'直连',
     'vcfg.logLevel':'日志级别','vcfg.tcpConcurrent':'TCP 并发',
@@ -5448,7 +5614,7 @@ var I18N = {
     'config.visual':'Visual Config','config.visualTitle':'Back to Visual Config',
     'config.reload':'Reload','config.save':'Save & Restart',
     'config.desc':'Edit config.yaml directly. Service will restart after saving.',
-    'vcfg.basic':'Basic','vcfg.inbound':'Inbound','vcfg.tun':'TUN','vcfg.dns':'DNS',
+    'vcfg.basic':'Basic','vcfg.inbound':'Inbound','vcfg.ports':'Network Ports','vcfg.mixedPort':'Mixed Port','vcfg.bindAddr':'Bind Address','vcfg.tunMtu':'MTU','vcfg.dnsListen':'Listen','vcfg.respectRules':'Respect Rules','vcfg.defaultNameserver':'Default DNS','vcfg.proxyNameserver':'Proxy Server DNS','vcfg.fakeIpFilter':'Fake-IP Filter','vcfg.env':'Environment Variables','vcfg.dnsResolve':'DNS & Resolution','vcfg.tun':'TUN','vcfg.dns':'DNS',
     'vcfg.external':'External','vcfg.advanced':'Advanced',
     'vcfg.mode':'Mode','vcfg.modeRule':'Rule','vcfg.modeGlobal':'Global','vcfg.modeDirect':'Direct',
     'vcfg.logLevel':'Log Level','vcfg.tcpConcurrent':'TCP Concurrent',

@@ -26,3 +26,6 @@ __pycache__/
 
 # ── Tooling / transient ──
 *.log
+
+# ── 本地新增的图标文件（未定用途，暂不入库） ──
+fnpack/icon*-512x512.png
