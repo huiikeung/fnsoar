@@ -1749,11 +1749,11 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
             <div style="border-top:1px solid var(--border-soft);margin-top:12px;padding-top:12px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px">
               <div>
                 <label style="display:block;font-size:11.5px;font-weight:600;color:var(--dim);margin-bottom:5px" data-i18n="core.delayUrl">延迟测试 URL</label>
-                <input class="set-input" style="width:100%;text-align:left" id="coreHcUrl" placeholder="https://www.gstatic.com/generate_204" onchange="saveHealthcheck()">
+                <input class="set-input" style="width:100%;max-width:none;text-align:left" id="coreHcUrl" placeholder="https://www.gstatic.com/generate_204" onchange="saveHealthcheck()">
               </div>
               <div>
                 <label style="display:block;font-size:11.5px;font-weight:600;color:var(--dim);margin-bottom:5px" data-i18n="core.delayTimeout">超时（毫秒）</label>
-                <input class="set-input" style="width:100%;text-align:left" type="number" id="coreHcTimeout" min="1000" max="30000" placeholder="3000" onchange="saveHealthcheck()">
+                <input class="set-input" style="width:100%;max-width:none;text-align:left" type="number" id="coreHcTimeout" min="1000" max="30000" placeholder="3000" onchange="saveHealthcheck()">
               </div>
             </div>
             <p style="font-size:11px;color:var(--faint);line-height:1.6;margin:8px 0 0" data-i18n="core.delayHint">用于节点延迟测速的请求地址与超时；修改后自动保存。</p>
