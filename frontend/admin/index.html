@@ -5261,6 +5261,91 @@ function switchDnsTab(tab) {
   });
 }
 
+// ── DNS 块保存（统一实现：保持原配置的缩进与不加引号风格） ────────────
+// YAML 纯标量：与模板风格一致，能不加引号就不加
+function _yamlPlain(v) {
+  v = String(v);
+  var q = '"' + v.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+  if (v === '') return q;
+  if (/^[\s]|[\s]$/.test(v)) return q;                    // 首尾空白
+  if (/^[-?:,\[\]{}#&*!|>'"%@`]/.test(v)) return q;        // YAML 指示符开头
+  if (/:\s|\s#/.test(v)) return q;                         // ": " 或 " #"
+  return v;
+}
+
+// 在 dns 段内定位键；返回 {dnsStart, dnsEnd, keyLine(-1=不存在)}
+function _dnsFindKey(lines, key) {
+  var dnsStart = -1;
+  for (var i = 0; i < lines.length; i++) { if (/^dns:\s*$/.test(lines[i])) { dnsStart = i; break; } }
+  if (dnsStart === -1) return null;
+  var dnsEnd = lines.length;
+  for (var j = dnsStart + 1; j < lines.length; j++) { if (/^\S/.test(lines[j])) { dnsEnd = j; break; } }
+  var keyRe = new RegExp('^  ' + key.replace(/-/g, '\\-') + ':[ \\t]*');
+  var keyLine = -1;
+  for (var j = dnsStart + 1; j < dnsEnd; j++) { if (keyRe.test(lines[j])) { keyLine = j; break; } }
+  return { dnsStart: dnsStart, dnsEnd: dnsEnd, keyLine: keyLine };
+}
+
+// 键块结束行：keyLine 之后第一个「缩进 ≤2 且非列表项」的非空行
+// （与键同缩进的列表项属于块内，不会被误判为下一个键）
+function _dnsBlockEnd(lines, pos) {
+  for (var j = pos.keyLine + 1; j < pos.dnsEnd; j++) {
+    var ln = lines[j];
+    if (!ln.trim()) continue;
+    var li = ln.match(/^(\s*)/)[1].length;
+    if (li <= 2 && !/^\s*-/.test(ln)) return j;
+  }
+  return pos.dnsEnd;
+}
+
+// 探测原块首个列表项的缩进（保持原格式）；无则 null
+function _dnsItemIndent(lines, pos) {
+  if (pos.keyLine === -1) return null;
+  for (var j = pos.keyLine + 1; j < pos.dnsEnd; j++) {
+    var ln = lines[j];
+    if (!ln.trim()) continue;
+    var im = ln.match(/^(\s*)-\s+/);
+    if (im) return im[1];
+    var li = ln.match(/^(\s*)/)[1].length;
+    if (li <= 2 && !/^\s*-/.test(ln)) return null;
+  }
+  return null;
+}
+
+// 统一保存入口：buildLines(lines, pos) 返回新块行数组
+function _dnsSaveBlock(key, buildLines, okMsg) {
+  fetch('api/config').then(r => r.json()).then(d => {
+    var lines = (d.config || '').split('\n');
+    var pos = _dnsFindKey(lines, key);
+    if (!pos) throw new Error('config.yaml 中未找到 dns 段');
+    var newLines = buildLines(lines, pos);
+    if (pos.keyLine === -1) {
+      lines.splice(pos.dnsStart + 1, 0, ...newLines);
+    } else {
+      var stop = _dnsBlockEnd(lines, pos);
+      lines.splice(pos.keyLine, stop - pos.keyLine, ...newLines);
+    }
+    return lines.join('\n');
+  }).then(cfg =>
+    fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: cfg }) })
+  ).then(r => r.json()).then(d2 => {
+    if (d2.success) showToast(okMsg, 'success');
+    else showToast('保存失败: ' + (d2.error || ''), 'error');
+  }).catch(e => showToast('保存出错: ' + e.message, 'error'));
+}
+
+// 列表字段（nameserver 系列 / fake-ip-filter / ipcidr / domain）
+function saveDnsList(key, textareaId) {
+  var items = (document.getElementById(textareaId).value || '').trim().split('\n')
+    .map(function(s) { return s.trim().replace(/^["']|["']$/g, ''); }).filter(Boolean);
+  _dnsSaveBlock(key, function(lines, pos) {
+    var itemIndent = _dnsItemIndent(lines, pos) || '  ';   // 新建键：项与键同缩进（模板风格）
+    if (!items.length) return ['  ' + key + ': []'];
+    return ['  ' + key + ':'].concat(items.map(function(v) { return itemIndent + '- ' + _yamlPlain(v); }));
+  }, '已保存: dns.' + key);
+}
+
+// 映射字段（nameserver-policy / hosts）：每行「键 = 值1; 值2」
 function saveDnsMap(key, textareaId) {
   var raw = (document.getElementById(textareaId).value || '').trim();
   var items = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
@@ -5273,53 +5358,60 @@ function saveDnsMap(key, textareaId) {
     if (!k || !vals.length || /["'\r\n]/.test(k)) { showToast('每行必须使用「键 = 值1; 值2」格式', 'error'); return; }
     pairs.push([k, vals]);
   }
-  var block;
-  if (!pairs.length) {
-    block = '  ' + key + ': {}\n';
-  } else {
-    block = '  ' + key + ':\n' + pairs.map(function(pr) {
-      return '    ' + pr[0] + ':\n' + pr[1].map(function(v) { return '      - ' + v; }).join('\n');
-    }).join('\n') + '\n';
-  }
-  _replaceDnsKeyBlock(key, block, '已保存: dns.' + key);
+  _dnsSaveBlock(key, function(lines, pos) {
+    var subIndent = '    ', itemIndent = null;
+    if (pos.keyLine !== -1) {
+      for (var j = pos.keyLine + 1; j < pos.dnsEnd; j++) {
+        var ln = lines[j];
+        if (!ln.trim()) continue;
+        var im = ln.match(/^(\s*)-\s+/);
+        if (im) { itemIndent = im[1]; break; }
+        var km = ln.match(/^(\s*)(\S.*?):\s*$/);
+        if (km) subIndent = km[1];
+        if (ln.match(/^(\s*)/)[1].length <= 2) break;
+      }
+    }
+    if (itemIndent === null) itemIndent = subIndent;   // 项与子键同缩进（模板风格）
+    if (!pairs.length) return ['  ' + key + ': {}'];
+    var out = ['  ' + key + ':'];
+    pairs.forEach(function(pr) {
+      out.push(subIndent + pr[0] + ':');
+      pr[1].forEach(function(v) { out.push(itemIndent + '- ' + _yamlPlain(v)); });
+    });
+    return out;
+  }, '已保存: dns.' + key);
 }
 
+// fallback-filter 嵌套块整体重建（保持模板的子键/项缩进风格）
 function saveFallbackFilter() {
   var geoip = document.getElementById('vcfgFbGeoip').checked;
   var code = (document.getElementById('vcfgDnsGeoipCode').value || '').trim().toUpperCase() || 'CN';
   var ipcidr = (document.getElementById('vcfgFbIpcidr').value || '').trim().split('\n').map(function(x){return x.trim()}).filter(Boolean);
   var domain = (document.getElementById('vcfgFbDomain').value || '').trim().split('\n').map(function(x){return x.trim()}).filter(Boolean);
-  var block = '  fallback-filter:\n    geoip: ' + (geoip ? 'true' : 'false') + '\n    geoip-code: ' + code + '\n';
-  block += '    ipcidr: ' + (ipcidr.length ? '\n' + ipcidr.map(function(x){return '      - ' + x}).join('\n') : '[]') + '\n';
-  block += '    domain: ' + (domain.length ? '\n' + domain.map(function(x){return '      - ' + x}).join('\n') : '[]') + '\n';
-  _replaceDnsKeyBlock('fallback-filter', block, '已保存: dns.fallback-filter');
-}
-
-// 在 dns 段内替换/插入一个键块（块以 2 空格缩进的 key: 开头到下一个 2 空格键或段尾）
-function _replaceDnsKeyBlock(key, block, okMsg) {
-  fetch('api/config').then(r => r.json()).then(d => {
-    var lines = (d.config || '').split('\n');
-    var inDns = false, start = -1, end = -1;
-    for (var i = 0; i < lines.length; i++) {
-      if (/^dns:\s*$/.test(lines[i])) { inDns = true; continue; }
-      if (inDns && /^\S/.test(lines[i])) { break; }
-      if (inDns && new RegExp('^  ' + key.replace(/-/g,'\\-') + ':').test(lines[i])) { start = i; continue; }
-      if (inDns && start !== -1 && /^  \S/.test(lines[i])) { end = i; break; }
-    }
-    if (start === -1) {
-      // 插到 dns: 行之后
-      for (var j = 0; j < lines.length; j++) {
-        if (/^dns:\s*$/.test(lines[j])) { lines.splice(j + 1, 0, block.replace(/\n$/, '')); break; }
+  _dnsSaveBlock('fallback-filter', function(lines, pos) {
+    var subIndent = '    ', itemIndent = null;
+    if (pos.keyLine !== -1) {
+      for (var j = pos.keyLine + 1; j < pos.dnsEnd; j++) {
+        var ln = lines[j];
+        if (!ln.trim()) continue;
+        var im = ln.match(/^(\s*)-\s+/);
+        if (im) { itemIndent = im[1]; break; }
+        var km = ln.match(/^(\s*)(\S.*?):\s*$/);
+        if (km) subIndent = km[1];
+        if (ln.match(/^(\s*)/)[1].length <= 2) break;
       }
-    } else {
-      var stop = (end === -1) ? lines.length : end;
-      lines.splice(start, stop - start, block.replace(/\n$/, ''));
     }
-    return fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: lines.join('\n') }) });
-  }).then(r => r.json()).then(d2 => {
-    if (d2.success) showToast(okMsg, 'success');
-    else showToast('保存失败: ' + (d2.error || ''), 'error');
-  }).catch(e => showToast('保存出错: ' + e, 'error'));
+    if (itemIndent === null) itemIndent = subIndent;
+    function listBlock(k, vals) {
+      if (!vals.length) return [subIndent + k + ': []'];
+      return [subIndent + k + ':'].concat(vals.map(function(v){ return itemIndent + '- ' + _yamlPlain(v); }));
+    }
+    return ['  fallback-filter:',
+            subIndent + 'geoip: ' + (geoip ? 'true' : 'false'),
+            subIndent + 'geoip-code: ' + code]
+           .concat(listBlock('ipcidr', ipcidr))
+           .concat(listBlock('domain', domain));
+  }, '已保存: dns.fallback-filter');
 }
 
 function saveCtrlPort() {
@@ -5634,37 +5726,6 @@ function saveDnsAdvSection() {
 }
 
 // ── DNS 列表字段通用保存（nameserver 系列 / fake-ip-filter） ────────────
-function saveDnsList(yamlKey, textareaId) {
-  fetch('api/config').then(r => r.json()).then(d => {
-    var cfg = d.config || '';
-    var items = document.getElementById(textareaId).value.trim().split('\n')
-      .map(function(s){return s.trim().replace(/^["']|["']$/g,'')}).filter(Boolean);
-    var block;
-    if (items.length) {
-      block = '  ' + yamlKey + ':\n' + items.map(function(s){
-        return '    - ' + (/["'\s:+*#{}]/.test(s) ? '"' + s.replace(/"/g,'') + '"' : s);
-      }).join('\n') + '\n';
-    } else {
-      block = '  ' + yamlKey + ' []\n';
-    }
-    var re = new RegExp('  ' + yamlKey.replace(/-/g,'\\-') + ':[\\s\\S]*?(?=\\n  \\S|\\n\\S|(?!\\n[\\s\\S]))');
-    var next;
-    if (re.test(cfg)) {
-      next = cfg.replace(re, block.trimEnd());
-    } else {
-      next = cfg.replace(/^dns:\s*\n/, 'dns:\n' + block);
-      if (next === cfg) { showToast('config.yaml 中未找到 dns 段', 'error'); return; }
-    }
-    if (next === cfg) { showToast('未发生变化', 'info'); return; }
-    fetch('api/config', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({config: next}) })
-      .then(r => r.json()).then(d2 => {
-        if (d2.success) showToast('已保存: dns.' + yamlKey + '，服务正在重启...', 'success');
-        else showToast('保存失败: ' + (d2.error || ''), 'error');
-      }).catch(e => showToast('保存出错: ' + e, 'error'));
-  });
-}
-
-// ── TUN 设置（配置页卡片保存，走专用接口） ────────────
 function saveTunSettings() {
   var mtu = parseInt(document.getElementById('vcfgTunMtu').value || '1500', 10);
   if (!Number.isInteger(mtu) || mtu < 1280 || mtu > 65535) { showToast(t('net.mtuInvalid'), 'error'); return; }
