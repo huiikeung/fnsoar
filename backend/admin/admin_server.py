@@ -3224,6 +3224,53 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json({"mode": cfg.get("mode", "rule")})
             except Exception:
                 return self._send_json({"mode": "rule"})
+        if path == "/api/core-status":
+            # 内核状态：运行状态、版本、控制器端口占用（引擎未跑但端口被占=冲突）
+            try:
+                running, pid = is_running()
+                core_ver = "unknown"
+                try:
+                    import urllib.request as _ureq
+                    url = f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/version"
+                    with _ureq.urlopen(_ureq.Request(url, headers={"Accept": "application/json"}), timeout=2) as resp:
+                        core_ver = json.loads(resp.read()).get("version", "unknown")
+                except Exception:
+                    pass
+                port_conflict = (not running) and (not _port_free(MIHOMO_CTRL_PORT))
+                return self._send_json({
+                    "success": True,
+                    "running": running,
+                    "pid": pid,
+                    "core_version": core_ver,
+                    "app_version": _get_app_version(),
+                    "controller": f"{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}",
+                    "controller_port": MIHOMO_CTRL_PORT,
+                    "port_conflict": port_conflict,
+                })
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/geo-status":
+            # 数据目录 GEO 文件清单（大小/修改时间/是否存在）
+            try:
+                files = []
+                for key, label, fname in (
+                    ("geoip", "GeoIP", "geoip.dat"),
+                    ("geosite", "GeoSite", "geosite.dat"),
+                    ("mmdb", "Country MMDB", "Country.mmdb"),
+                    ("asn", "ASN MMDB", "ASN.mmdb"),
+                ):
+                    fpath = os.path.join(TRIM_PKGVAR, fname)
+                    entry = {"key": key, "label": label, "filename": fname,
+                             "exists": False, "size": 0, "mtime": ""}
+                    if os.path.exists(fpath):
+                        st = os.stat(fpath)
+                        entry["exists"] = True
+                        entry["size"] = st.st_size
+                        entry["mtime"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(st.st_mtime))
+                    files.append(entry)
+                return self._send_json({"success": True, "files": files, "data_dir": TRIM_PKGVAR})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/version":
             try:
                 import urllib.request as _ureq

@@ -631,6 +631,34 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .mx-note-accent{margin:0;padding:9px 11px;border:1px solid rgba(98,127,230,.18);border-radius:9px;background:rgba(98,127,230,.05);color:var(--mx-muted);font-size:10.5px;line-height:1.55}
 @media(max-width:640px){.mx-grid2,.mx-grid3{grid-template-columns:1fr}.mx-grid3>.mx-tgl{min-height:62px}}
 
+/* 设置页 - 内核设置 */
+.core-card{margin-top:16px}
+.core-tabs{display:flex;gap:7px;margin:0 0 14px}
+.core-tab{flex:1;padding:9px 12px;border:1px solid var(--border);background:var(--card2);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;transition:all .14s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px}
+.core-tab svg{width:15px;height:15px;fill:currentColor;opacity:.85;flex-shrink:0}
+.core-tab:hover{color:var(--text);border-color:var(--dim)}
+.core-tab.active{color:#fff;border-color:var(--accent);background:var(--accent)}
+.core-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
+.core-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .13s;font-family:inherit}
+.core-btn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0}
+.core-btn:hover{border-color:var(--accent);color:var(--accent2)}
+.core-btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.core-btn.primary:hover{filter:brightness(1.12);color:#fff}
+.core-btn:disabled{opacity:.5;cursor:not-allowed}
+.core-warn{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;background:rgba(248,81,73,.07);border:1px solid rgba(248,81,73,.25);color:#f0a3a0;font-size:11.5px;line-height:1.6;margin:10px 0}
+.core-warn svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;margin-top:1px}
+.core-warn b{color:var(--red)}
+.core-note{font-size:11px;color:var(--faint);line-height:1.6;margin:8px 0 0}
+.geo-file{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card2);margin-bottom:7px}
+.geo-file-name{min-width:150px;font-size:12.5px;font-weight:600;color:var(--text)}
+.geo-file-name small{display:block;font-size:10.5px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:1px}
+.geo-file-meta{flex:1;font-size:11px;color:var(--dim);text-align:right}
+.geo-file-meta span{display:block}
+.geo-status{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;flex-shrink:0}
+.geo-status.ok{color:var(--green);background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3)}
+.geo-status.missing{color:var(--red);background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3)}
+.core-panel{display:none}
+.core-panel.active{display:block}
 /* 连接详情弹窗 */
 .con-detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center}
 .con-detail-overlay.hidden{display:none}
@@ -1792,6 +1820,83 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
           </div>
         </div>
       </div>
+      <div class="set-card core-card">
+        <div class="set-title" data-i18n="core.title">内核设置</div>
+        <div style="padding:14px 16px">
+          <div class="core-tabs">
+            <button class="core-tab active" id="coreTabManage" onclick="switchCoreTab('manage')">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              <span data-i18n="core.tabManage">内核管理</span>
+            </button>
+            <button class="core-tab" id="coreTabConn" onclick="switchCoreTab('conn')">
+              <svg viewBox="0 0 24 24"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5z"/></svg>
+              <span data-i18n="core.tabConn">连接管理</span>
+            </button>
+            <button class="core-tab" id="coreTabGeo" onclick="switchCoreTab('geo')">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg>
+              <span data-i18n="core.tabGeo">GEO 数据</span>
+            </button>
+          </div>
+
+          <!-- 内核管理 -->
+          <div class="core-panel active" id="corePanelManage">
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="core.version">内核版本</span></div>
+              <span class="set-val" id="coreVersion" style="font-size:12px">-</span>
+              <span class="geo-status ok" id="coreRunStatus" style="margin-left:8px">-</span>
+            </div>
+            <div class="core-actions">
+              <button class="core-btn primary" id="coreStartBtn" onclick="coreStart()"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg><span data-i18n="core.start">启动内核</span></button>
+              <button class="core-btn" id="coreRestartBtn" onclick="coreRestart()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span data-i18n="core.restart">重启内核</span></button>
+              <button class="core-btn" onclick="checkUpdates()"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg><span data-i18n="core.checkUpdate">检查更新</span></button>
+            </div>
+            <div class="core-warn" id="corePortWarn" style="display:none">
+              <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
+              <span id="corePortWarnText"></span>
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="core.manageMode">管理方式</span></div>
+              <span class="set-val" style="font-size:12px" data-i18n="core.selfManaged">面板托管</span>
+            </div>
+            <p class="core-note" data-i18n="core.manageHint">引擎由面板守护进程（bin/mihomo 架构包装器）管理：引擎作为子进程启停，开关状态跨重启保留；升级内核请使用「检查更新」。</p>
+          </div>
+
+          <!-- 连接管理 -->
+          <div class="core-panel" id="corePanelConn">
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label">Controller</span></div>
+              <span class="set-val" id="connController" style="font-size:12px">-</span>
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="core.secret">Secret</span></div>
+              <span class="set-val" id="connSecret" style="font-size:12px">-</span>
+              <button class="core-btn" style="padding:4px 10px;font-size:11px" onclick="showSection('config')" data-i18n="core.goConfig">前往配置</button>
+            </div>
+            <div class="core-actions">
+              <button class="core-btn primary" id="connTestBtn" onclick="testConnection()"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg><span data-i18n="core.test">测试连接</span></button>
+            </div>
+            <p class="core-note" data-i18n="core.connHint">Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。</p>
+          </div>
+
+          <!-- GEO 数据 -->
+          <div class="core-panel" id="corePanelGeo">
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="core.geoAuto">自动更新</span></div>
+              <label class="toggle"><input type="checkbox" id="vcfgGeoAuto"><span class="toggle-track"></span></label>
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="core.geoInterval">更新周期</span></div>
+              <select class="set-select" id="vcfgGeoInterval"><option value="24">24 小时</option><option value="48">48 小时</option><option value="72">72 小时</option><option value="168">7 天</option></select>
+            </div>
+            <div class="core-actions">
+              <button class="core-btn" onclick="saveGeoSettings()" data-i18n="core.saveSettings">保存设置</button>
+              <button class="core-btn primary" id="geoUpdateBtn" onclick="updateGeoData()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span data-i18n="core.updateNow">立即更新</span></button>
+            </div>
+            <div id="geoFileList" style="margin-top:10px"></div>
+            <p class="core-note" data-i18n="core.geoHint">GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。</p>
+          </div>
+        </div>
+      </div>
     </section>
   </main>
 </div>
@@ -1981,6 +2086,7 @@ function showSection(name) {
   if (nav) nav.classList.add('active');
   autoHideSidebar();
   if (name === 'home') { loadDashboard(); refreshTun(); refreshNetworkCard(); }
+  if (name === 'settings') { loadCoreStatus(); }
   if (name === 'groups') {
     // 秒开：优先恢复上次渲染快照（内存 > localStorage），数据后台刷新后原位重绘
     const gw = document.getElementById('groupsWrap');
@@ -4969,6 +5075,8 @@ function loadVcfg() {
     var vfir = document.getElementById('vcfgFakeIpRange'); if (vfir) vfir.value = getVal('fake-ip-range', '198.18.0.1/16');
     var vea = document.getElementById('vcfgExtAddr'); if (vea) vea.value = getVal('external-controller', '0.0.0.0:9090');
     var ves = document.getElementById('vcfgExtSecret'); if (ves) ves.value = getVal('secret', '');
+    var vga = document.getElementById('vcfgGeoAuto'); if (vga) vga.checked = getBool('geo-auto-update');
+    var vgi = document.getElementById('vcfgGeoInterval'); if (vgi) vgi.value = getVal('geo-update-interval', '24');
     loadVcfgSections(cfg);
   });
 }
@@ -5633,7 +5741,7 @@ var I18N = {
     'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
-    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动',
+    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动','core.title':'内核设置','core.tabManage':'内核管理','core.tabConn':'连接管理','core.tabGeo':'GEO 数据','core.version':'内核版本','core.start':'启动内核','core.restart':'重启内核','core.checkUpdate':'检查更新','core.started':'内核已启动','core.restarted':'内核已重启','core.startFail':'启动失败: ','core.restartFail':'重启失败: ','core.portConflict':'控制器端口 {port} 被其他进程占用，内核可能无法启动。可前往「配置 → 外部控制」修改监听端口。','core.manageMode':'管理方式','core.selfManaged':'面板托管','core.manageHint':'引擎由面板守护进程（bin/mihomo 架构包装器）管理：引擎作为子进程启停，开关状态跨重启保留；升级内核请使用「检查更新」。','core.secret':'Secret','core.secretSet':'已设置','core.secretUnset':'未设置','core.goConfig':'前往配置','core.test':'测试连接','core.testOk':'连接成功','core.testFail':'连接失败，引擎未响应','core.geoAuto':'自动更新','core.geoInterval':'更新周期','core.saveSettings':'保存设置','core.geoSaved':'GEO 设置已保存，服务正在重启...','core.geoOk':'可用','core.geoMissing':'缺失','core.updateNow':'立即更新','core.saveFailed':'保存失败: ','core.geoHint':'GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。','core.connHint':'Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。',
     'net.title':'网络设置','net.tabProxy':'系统代理','net.tabTun':'虚拟网卡模式',
     'net.sysProxy':'系统代理','net.tun':'虚拟网卡模式',
     'net.bannerProxyOn':'系统代理已启用，读取代理环境变量的程序将通过 127.0.0.1 端口走代理。',
@@ -5792,7 +5900,7 @@ var I18N = {
     'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
-    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start',
+    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start','core.title':'Core Settings','core.tabManage':'Core','core.tabConn':'Connection','core.tabGeo':'GEO Data','core.version':'Core Version','core.start':'Start Core','core.restart':'Restart Core','core.checkUpdate':'Check Updates','core.started':'Core started','core.restarted':'Core restarted','core.startFail':'Start failed: ','core.restartFail':'Restart failed: ','core.portConflict':'Controller port {port} is used by another process; the core may fail to start. Change the listen port in Config → External Controller.','core.manageMode':'Management','core.selfManaged':'Managed by panel','core.manageHint':'The engine is managed by the panel daemon (bin/mihomo arch wrapper): it runs as a child process and its on/off state persists across restarts. Use Check Updates to upgrade the core.','core.secret':'Secret','core.secretSet':'Set','core.secretUnset':'Not set','core.goConfig':'Go to Config','core.test':'Test Connection','core.testOk':'Connected','core.testFail':'Connection failed, engine not responding','core.geoAuto':'Auto Update','core.geoInterval':'Interval','core.saveSettings':'Save Settings','core.geoSaved':'GEO settings saved, restarting service...','core.geoOk':'Available','core.geoMissing':'Missing','core.updateNow':'Update Now','core.saveFailed':'Save failed: ','core.geoHint':'GEO files live in /vol1/@appdata/fnnas.fnsoar/; restart the core after updating. Download sources can be edited in Config → Geo Data.','core.connHint':'Controller is the API endpoint the panel uses to talk to the engine. Edit the listen port or Secret in Config → External Controller.',
     'net.title':'Network','net.tabProxy':'System Proxy','net.tabTun':'TUN Mode',
     'net.sysProxy':'System Proxy','net.tun':'TUN Mode',
     'net.bannerProxyOn':'System proxy is on. Programs that read proxy env vars will route through 127.0.0.1.',
@@ -5979,6 +6087,7 @@ function updateGeoData() {
   showToast('toast.geoUpdating', 'info');
   fetch('api/update-geo', { method: 'POST' }).then(function(r) { return r.json(); }).then(function(d) {
     showToast(d.message || 'toast.geoUpdated', d.success ? 'success' : 'error');
+    if (d.success) setTimeout(loadGeoStatus, 800);
   }).catch(function() { showToast('toast.geoFailed', 'error'); });
 }
 
@@ -6022,6 +6131,136 @@ function checkUpdates() {
     if (uv) { uv.textContent = '检查失败'; uv.style.color = 'var(--red)'; }
     showToast('检查更新失败' + (e && e.message ? ': ' + e.message : ''), 'error');
   });
+}
+
+// ── 设置页 - 内核设置 ────────────────────
+function switchCoreTab(tab) {
+  document.getElementById('coreTabManage').classList.toggle('active', tab === 'manage');
+  document.getElementById('coreTabConn').classList.toggle('active', tab === 'conn');
+  document.getElementById('coreTabGeo').classList.toggle('active', tab === 'geo');
+  document.getElementById('corePanelManage').classList.toggle('active', tab === 'manage');
+  document.getElementById('corePanelConn').classList.toggle('active', tab === 'conn');
+  document.getElementById('corePanelGeo').classList.toggle('active', tab === 'geo');
+  if (tab === 'conn') loadConnInfo();
+  if (tab === 'geo') loadGeoStatus();
+}
+
+async function loadCoreStatus() {
+  try {
+    const d = await fetchJSON('api/core-status');
+    if (!d) return;
+    const ver = document.getElementById('coreVersion');
+    if (ver) ver.textContent = (d.core_version && d.core_version !== 'unknown') ? d.core_version : '-';
+    const st = document.getElementById('coreRunStatus');
+    if (st) {
+      st.textContent = d.running ? t('svc.on') : t('svc.off');
+      st.className = 'geo-status ' + (d.running ? 'ok' : 'missing');
+    }
+    const warn = document.getElementById('corePortWarn');
+    if (warn) {
+      if (d.port_conflict) {
+        warn.style.display = 'flex';
+        document.getElementById('corePortWarnText').innerHTML =
+          t('core.portConflict').replace('{port}', '<b>' + (d.controller_port || 9090) + '</b>');
+      } else {
+        warn.style.display = 'none';
+      }
+    }
+  } catch (e) { /* 忽略 */ }
+}
+
+async function loadConnInfo() {
+  try {
+    const d = await fetchJSON('api/config');
+    const cfg = (d && d.config) || '';
+    const m = cfg.match(/^external-controller:\s*(.+)$/m);
+    const el = document.getElementById('connController');
+    if (el) el.textContent = m ? m[1].trim() : '-';
+    const sm = cfg.match(/^secret:\s*(.+)$/m);
+    const se = document.getElementById('connSecret');
+    if (se) se.textContent = sm ? t('core.secretSet') : t('core.secretUnset');
+  } catch (e) { /* 忽略 */ }
+}
+
+async function testConnection() {
+  const btn = document.getElementById('connTestBtn');
+  if (btn) btn.disabled = true;
+  try {
+    const d = await fetchJSON('api/version');
+    if (d && d.core && d.core !== 'unknown') {
+      showToast(t('core.testOk') + ' ' + d.core, 'success');
+    } else {
+      showToast(t('core.testFail'), 'error');
+    }
+  } catch (e) { showToast(t('core.testFail'), 'error'); }
+  if (btn) btn.disabled = false;
+}
+
+function coreStart() {
+  const btn = document.getElementById('coreStartBtn');
+  if (btn) btn.disabled = true;
+  fetch('api/service', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enable: true }) })
+    .then(r => r.json()).then(d => {
+      showToast(d.success ? t('core.started') : (t('core.startFail') + (d.error || '')), d.success ? 'success' : 'error');
+      setTimeout(loadCoreStatus, 2500);
+    })
+    .catch(e => showToast(t('core.startFail') + e, 'error'))
+    .finally(() => { if (btn) btn.disabled = false; });
+}
+
+function coreRestart() {
+  const btn = document.getElementById('coreRestartBtn');
+  if (btn) btn.disabled = true;
+  fetch('api/service', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enable: false }) })
+    .then(r => r.json())
+    .then(() => new Promise(r => setTimeout(r, 1200)))
+    .then(() => fetch('api/service', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enable: true }) }))
+    .then(r => r.json()).then(d => {
+      showToast(d.success ? t('core.restarted') : (t('core.restartFail') + (d.error || '')), d.success ? 'success' : 'error');
+      setTimeout(loadCoreStatus, 2500);
+    })
+    .catch(e => showToast(t('core.restartFail') + e, 'error'))
+    .finally(() => { if (btn) btn.disabled = false; });
+}
+
+function _fmtFileSize(n) {
+  if (n >= 1048576) return (n / 1048576).toFixed(1) + ' MB';
+  if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+  return n + ' B';
+}
+
+async function loadGeoStatus() {
+  try {
+    const d = await fetchJSON('api/geo-status');
+    if (!d || !d.files) return;
+    const box = document.getElementById('geoFileList');
+    if (!box) return;
+    box.innerHTML = d.files.map(function(f) {
+      return '<div class="geo-file"><div class="geo-file-name">' + f.label + '<small>' + f.filename + '</small></div>'
+        + '<div class="geo-file-meta"><span>' + (f.exists ? _fmtFileSize(f.size) : '--') + '</span><span>' + (f.exists ? f.mtime : '') + '</span></div>'
+        + '<span class="geo-status ' + (f.exists ? 'ok' : 'missing') + '">' + (f.exists ? t('core.geoOk') : t('core.geoMissing')) + '</span></div>';
+    }).join('');
+  } catch (e) { /* 忽略 */ }
+}
+
+function saveGeoSettings() {
+  const autoOn = document.getElementById('vcfgGeoAuto').checked;
+  const interval = document.getElementById('vcfgGeoInterval').value;
+  fetch('api/config').then(r => r.json()).then(d => {
+    var lines = ((d && d.config) || '').split('\n');
+    function setKey(key, val) {
+      var re = new RegExp('^' + key + ':');
+      for (var i = 0; i < lines.length; i++) {
+        if (re.test(lines[i])) { lines[i] = key + ': ' + val; return; }
+      }
+      lines.push(key + ': ' + val);
+    }
+    setKey('geo-auto-update', autoOn ? 'true' : 'false');
+    setKey('geo-update-interval', interval);
+    return fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: lines.join('\n') }) });
+  }).then(r => r.json()).then(d2 => {
+    showToast(d2.success ? t('core.geoSaved') : (t('core.saveFailed') + (d2.error || '')), d2.success ? 'success' : 'error');
+  }).catch(e => showToast(t('core.saveFailed') + e, 'error'));
 }
 
 async function copyPath(type) {
