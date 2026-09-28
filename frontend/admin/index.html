@@ -681,6 +681,11 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .geo-src{display:block;font-size:11px;color:var(--accent2);text-decoration:none;line-height:1.45;word-break:break-all;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
 .geo-src:hover{text-decoration:underline;color:var(--accent)}
 .geo-src.none{color:var(--faint);font-family:inherit}
+.geo-src-btn{flex:none;padding:4px 10px;font-size:11px;gap:5px}
+.geo-src-btn svg{width:11px;height:11px;fill:currentColor;transition:transform .15s;flex-shrink:0}
+.geo-src-btn.active svg{transform:rotate(180deg)}
+.geo-src-btn:disabled{opacity:.45;cursor:not-allowed}
+.geo-src-wrap{margin-top:2px}
 /* 连接详情弹窗 */
 .con-detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center}
 .con-detail-overlay.hidden{display:none}
@@ -6445,16 +6450,27 @@ async function loadGeoStatus() {
     box.innerHTML = d.files.map(function(f) {
       const src = _geoxUrls[f.key] || '';
       const urlHtml = src
-        ? '<a class="geo-src" href="' + esc(src) + '" target="_blank" rel="noopener" title="' + esc(src) + '">' + esc(src) + '</a>'
-        : '<span class="geo-src none">' + t('core.geoNoSource') + '</span>';
-      const dlBtn = f.exists ? '' : '<button class="core-btn" style="padding:3px 10px;font-size:11px;flex:none" onclick="geoDownload(\'' + f.key + '\', this)">' + t('core.geoDownload') + '</button>';
+        ? '<div class="geo-src-wrap" style="display:none"><a class="geo-src" href="' + esc(src) + '" target="_blank" rel="noopener" title="' + esc(src) + '">' + esc(src) + '</a></div>'
+        : '';
+      const srcBtn = '<button class="core-btn geo-src-btn" ' + (src ? '' : 'disabled') + ' onclick="toggleGeoSrc(this)" title="' + (src ? esc(src) : t('core.geoNoSource')) + '"><svg viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>' + t('core.geoSource') + '</button>';
+      const dlBtn = f.exists ? '' : '<button class="core-btn" style="padding:4px 10px;font-size:11px;flex:none" onclick="geoDownload(\'' + f.key + '\', this)">' + t('core.geoDownload') + '</button>';
       return '<div class="geo-file"><div class="geo-file-main"><div class="geo-file-name">' + f.label + '<small>' + f.filename + '</small></div>'
         + '<div class="geo-file-meta"><span>' + (f.exists ? _fmtFileSize(f.size) : t('core.geoNoDownload')) + '</span><span>' + (f.exists ? f.mtime : '--') + '</span></div>'
         + '<span class="geo-status ' + (f.exists ? 'ok' : 'missing') + '">' + (f.exists ? t('core.geoOk') : t('core.geoMissing')) + '</span>'
-        + dlBtn + '</div>'
+        + srcBtn + dlBtn + '</div>'
         + urlHtml + '</div>';
     }).join('');
   } catch (e) { /* 忽略 */ }
+}
+
+function toggleGeoSrc(btn) {
+  const row = btn.closest('.geo-file');
+  if (!row) return;
+  const wrap = row.querySelector('.geo-src-wrap');
+  if (!wrap) return;
+  const show = wrap.style.display === 'none';
+  wrap.style.display = show ? 'block' : 'none';
+  btn.classList.toggle('active', show);
 }
 
 async function geoDownload(key, btn) {
