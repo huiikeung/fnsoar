@@ -534,6 +534,39 @@ tbody tr:hover{background:var(--card2)}
 .toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:transform .2s,box-shadow .2s;box-shadow:0 1px 3px rgba(0,0,0,.15),0 0 0 1px rgba(0,0,0,.04)}
 .toggle input:checked+.toggle-track{background:var(--accent)}
 .toggle input:checked+.toggle-track::after{transform:translateX(18px);box-shadow:0 1px 3px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.06)}
+/* ── 网络设置卡片（系统代理 / 虚拟网卡 TUN） ── */
+.net-tabs{display:flex;gap:8px;margin:0 0 12px}
+.net-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border:1px solid var(--border);background:var(--card2);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;transition:all .14s;white-space:nowrap}
+.net-tab svg{width:15px;height:15px;fill:currentColor;flex-shrink:0}
+.net-tab:hover{color:var(--text);border-color:var(--dim)}
+.net-tab.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.net-banner{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.5;color:var(--dim);background:var(--card2);border:1px solid var(--border-soft);margin-bottom:12px}
+.net-banner svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;margin-top:2px}
+.net-banner.ok{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.25);color:var(--green)}
+.net-banner.warn{background:rgba(210,153,34,.1);border-color:rgba(210,153,34,.25);color:var(--yellow)}
+.net-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2)}
+.net-dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex-shrink:0;transition:background .2s,box-shadow .2s}
+.net-dot.on{background:var(--green);box-shadow:0 0 0 3px rgba(63,185,80,.18)}
+.net-dot.busy{background:var(--yellow);box-shadow:0 0 0 3px rgba(210,153,34,.18);animation:netPulse 1s ease-in-out infinite}
+@keyframes netPulse{50%{opacity:.4}}
+.net-row-name{font-size:13px;font-weight:600;color:var(--text)}
+.net-row .mini-btn-ic{width:28px;height:28px}
+.net-row .mini-btn-ic svg{width:14px;height:14px}
+.net-meta{margin-top:10px;font-size:11.5px;color:var(--faint);line-height:1.6}
+.net-meta b{color:var(--dim);font-weight:600}
+/* 设置弹窗（系统代理 / TUN） */
+.net-modal-body{display:flex;flex-direction:column;gap:14px;max-height:66vh;overflow-y:auto}
+.net-sec-title{font-size:12px;font-weight:700;color:var(--dim);text-transform:uppercase;letter-spacing:.4px;margin-top:2px}
+.net-field{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.net-field-label{font-size:13px;font-weight:600;color:var(--text)}
+.net-field-label small{display:block;font-size:11px;color:var(--faint);font-weight:400;margin-top:2px}
+.net-field .set-input,.net-field .set-select{max-width:170px}
+.net-tags{display:flex;flex-wrap:wrap;gap:6px;padding:8px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);min-height:40px;align-items:center}
+.net-tag{display:inline-flex;align-items:center;gap:5px;padding:3px 8px;background:var(--card2);border:1px solid var(--border);border-radius:7px;font-size:12px;color:var(--text)}
+.net-tag button{border:none;background:transparent;color:var(--dim);cursor:pointer;font-size:13px;line-height:1;padding:0}
+.net-tag button:hover{color:var(--red)}
+.net-tags input{flex:1;min-width:120px;border:none;background:transparent;outline:none;color:var(--text);font-size:12.5px;padding:4px}
+.net-note{font-size:11.5px;color:var(--faint);line-height:1.6}
 @media(max-width:900px){.set-grid{grid-template-columns:1fr}.set-input,.set-select{max-width:110px;font-size:13px;padding:6px 8px}}
 /* 连接详情弹窗 */
 .con-detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center}
@@ -839,6 +872,7 @@ tbody tr:hover{background:var(--card2)}
               <label class="home-settings-item"><span>订阅信息</span><input type="checkbox" checked onchange="toggleHomeModule('sub',this.checked)"></label>
               <label class="home-settings-item"><span>当前节点</span><input type="checkbox" checked onchange="toggleHomeModule('node',this.checked)"></label>
               <label class="home-settings-item"><span>代理模式</span><input type="checkbox" checked onchange="toggleHomeModule('mode',this.checked)"></label>
+              <label class="home-settings-item"><span>网络设置</span><input type="checkbox" checked onchange="toggleHomeModule('network',this.checked)"></label>
               <label class="home-settings-item"><span>网站测试</span><input type="checkbox" checked onchange="toggleHomeModule('test',this.checked)"></label>
               <label class="home-settings-item"><span>IP 信息</span><input type="checkbox" checked onchange="toggleHomeModule('ip',this.checked)"></label>
               <label class="home-settings-item"><span>Clash 信息</span><input type="checkbox" checked onchange="toggleHomeModule('clash',this.checked)"></label>
@@ -915,6 +949,56 @@ tbody tr:hover{background:var(--card2)}
             </button>
           </div>
           <div class="mode-desc" id="modeDesc">基于预设规则智能判断流量走向，提供灵活的代理策略</div>
+        </div>
+
+        <!-- 网络设置（系统代理 / 虚拟网卡 TUN） -->
+        <div class="hcard" id="home-network">
+          <div class="hcard-title">
+            <span class="hcard-ic signal"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span>
+            <span class="hcard-name" data-i18n="net.title">网络设置</span>
+            <span class="flex-sp"></span>
+            <button class="mini-btn mini-btn-ic" onclick="refreshNetworkCard()" title="刷新" aria-label="刷新"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z"/></svg></button>
+          </div>
+          <div class="net-tabs">
+            <button class="net-tab active" id="netTabProxy" onclick="switchNetTab('proxy')">
+              <svg viewBox="0 0 24 24"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/></svg>
+              <span data-i18n="net.tabProxy">系统代理</span>
+            </button>
+            <button class="net-tab" id="netTabTun" onclick="switchNetTab('tun')">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              <span data-i18n="net.tabTun">虚拟网卡模式</span>
+            </button>
+          </div>
+          <div id="netPanelProxy">
+            <div class="net-banner" id="netProxyBanner">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <span id="netProxyBannerText">…</span>
+            </div>
+            <div class="net-row">
+              <span class="net-dot" id="netProxyDot"></span>
+              <span class="net-row-name" data-i18n="net.sysProxy">系统代理</span>
+              <span class="flex-sp"></span>
+              <button class="mini-btn mini-btn-ic" onclick="openSysProxyModal()" title="系统代理设置" aria-label="系统代理设置"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+              <button class="mini-btn mini-btn-ic" onclick="disableSysProxy()" title="关闭并清理" aria-label="关闭并清理"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+              <label class="toggle"><input type="checkbox" id="netProxyToggle" onchange="toggleSysProxy(this.checked)"><span class="toggle-track"></span></label>
+            </div>
+            <div class="net-meta" id="netProxyMeta"></div>
+          </div>
+          <div id="netPanelTun" style="display:none">
+            <div class="net-banner" id="netTunBanner">
+              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <span id="netTunBannerText">…</span>
+            </div>
+            <div class="net-row">
+              <span class="net-dot" id="netTunDot"></span>
+              <span class="net-row-name" data-i18n="net.tun">虚拟网卡模式</span>
+              <span class="flex-sp"></span>
+              <button class="mini-btn mini-btn-ic" onclick="openTunModal()" title="TUN 设置" aria-label="TUN 设置"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+              <button class="mini-btn mini-btn-ic" onclick="disableTun()" title="关闭 TUN" aria-label="关闭 TUN"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg></button>
+              <label class="toggle"><input type="checkbox" id="netTunToggle" onchange="toggleTunMode(this.checked)"><span class="toggle-track"></span></label>
+            </div>
+            <div class="net-meta" id="netTunMeta"></div>
+          </div>
         </div>
 
         <!-- 网站测试 -->
@@ -1071,6 +1155,82 @@ tbody tr:hover{background:var(--card2)}
           <div class="modal-foot">
             <button class="btn btn-ghost" onclick="closeProvModal()">取消</button>
             <button class="btn btn-primary" id="providerSubmitBtn" onclick="submitProvider()">保存</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 系统代理设置弹窗 -->
+      <div class="modal-backdrop" id="sysProxyModal" style="display:none" onclick="if(event.target===this)closeSysProxyModal()">
+        <div class="modal-card" style="max-width:480px">
+          <div class="modal-title" data-i18n="net.sysProxySettings">系统代理设置</div>
+          <div class="modal-body net-modal-body">
+            <div class="net-sec-title" data-i18n="net.currentStatus">当前状态</div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.enabled">开启状态</span><span class="net-field-label" id="spStatus">-</span></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.serviceAddr">服务地址</span><span class="net-field-label" id="spAddr" style="font-family:monospace;font-size:12px">-</span></div>
+            <div class="net-sec-title" data-i18n="net.options">选项</div>
+            <div class="net-field">
+              <span class="net-field-label" data-i18n="net.enableEnv">启用代理环境变量<small data-i18n="net.enableEnvHint">关闭时仅移除本应用管理的配置</small></span>
+              <label class="toggle"><input type="checkbox" id="spEnabled"><span class="toggle-track"></span></label>
+            </div>
+            <div class="net-field">
+              <span class="net-field-label" data-i18n="net.followPort">自动跟随 Mixed Port<small data-i18n="net.followPortHint">端口变化后自动同步系统代理</small></span>
+              <label class="toggle"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked"><span class="toggle-track"></span></label>
+            </div>
+            <div class="net-field">
+              <span class="net-field-label" data-i18n="net.port">代理端口<small data-i18n="net.portHint">关闭跟随后可手动指定</small></span>
+              <input type="number" class="set-input" id="spPort" min="1" max="65535" value="7890">
+            </div>
+            <div>
+              <div class="net-sec-title" data-i18n="net.bypass">代理绕过设置（NO_PROXY）</div>
+              <div class="net-tags" id="spTags">
+                <input type="text" id="spTagInput" placeholder="输入域名 / IP / CIDR，回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addNoProxyTag()}">
+              </div>
+            </div>
+            <div>
+              <div class="net-sec-title" data-i18n="net.scope">应用范围</div>
+              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtEnv">系统登录环境<small>/etc/environment</small></span><label class="toggle"><input type="checkbox" id="spTgtEnv"><span class="toggle-track"></span></label></div>
+              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtProfile">登录 Shell<small>/etc/profile</small></span><label class="toggle"><input type="checkbox" id="spTgtProfile"><span class="toggle-track"></span></label></div>
+              <div class="net-field"><span class="net-field-label" data-i18n="net.tgtBashrc">Bash 交互环境<small>/etc/bash.bashrc</small></span><label class="toggle"><input type="checkbox" id="spTgtBashrc"><span class="toggle-track"></span></label></div>
+            </div>
+            <div class="net-note" data-i18n="net.sysProxyNote">fnOS 上的系统代理通过 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY 环境变量生效，主要影响新启动的进程与新登录会话。</div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" onclick="closeSysProxyModal()" data-i18n="common.cancel">取消</button>
+            <button class="btn btn-primary" id="spSaveBtn" onclick="saveSysProxyModal()" data-i18n="common.save">保存</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TUN 设置弹窗 -->
+      <div class="modal-backdrop" id="tunModal" style="display:none" onclick="if(event.target===this)closeTunModal()">
+        <div class="modal-card" style="max-width:480px">
+          <div class="modal-title" data-i18n="net.tunSettings">虚拟网卡（TUN）设置</div>
+          <div class="modal-body net-modal-body">
+            <div class="net-sec-title" data-i18n="net.protocol">协议</div>
+            <div class="net-field">
+              <span class="net-field-label">TUN Stack<small data-i18n="net.stackHint">mixed：TCP 走 system、UDP 走 gVisor（推荐）</small></span>
+              <select class="set-select" id="tmStack"><option value="mixed">mixed（推荐）</option><option value="system">system</option><option value="gvisor">gVisor</option></select>
+            </div>
+            <div class="net-field">
+              <span class="net-field-label">MTU<small data-i18n="net.mtuHint">默认 1500；VPN / PPPoE 环境异常可试 1400</small></span>
+              <input type="number" class="set-input" id="tmMtu" min="1280" max="65535" value="1500">
+            </div>
+            <div class="net-sec-title" data-i18n="net.routing">路由</div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.autoRoute">自动路由<small data-i18n="net.autoRouteHint">自动把系统流量路由到 TUN</small></span><label class="toggle"><input type="checkbox" id="tmAutoRoute"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label">Auto Redirect<small data-i18n="net.autoRedirectHint">自动配置 nftables / iptables TCP 重定向</small></span><label class="toggle"><input type="checkbox" id="tmAutoRedirect"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.autoDetect">自动检测出口网卡<small data-i18n="net.autoDetectHint">自动选择实际外网出口</small></span><label class="toggle"><input type="checkbox" id="tmAutoDetect"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.dnsHijack">DNS 劫持<small data-i18n="net.dnsHijackHint">劫持 53 端口到 Mihomo DNS</small></span><label class="toggle"><input type="checkbox" id="tmDnsHijack"><span class="toggle-track"></span></label></div>
+            <div class="net-field"><span class="net-field-label" data-i18n="net.strictRoute">严格路由<small data-i18n="net.strictRouteHint">减少泄漏；复杂网络可能影响其它虚拟网卡</small></span><label class="toggle"><input type="checkbox" id="tmStrictRoute"><span class="toggle-track"></span></label></div>
+            <div>
+              <div class="net-sec-title" data-i18n="net.exclude">排除自定义网段</div>
+              <textarea class="finput" id="tmExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" style="width:100%;resize:vertical;font-family:monospace;font-size:12px"></textarea>
+              <div class="net-note" style="margin-top:4px" data-i18n="net.excludeHint">每行一个 IPv4/IPv6 CIDR；仅在开启自动路由时生效。</div>
+            </div>
+            <div class="net-note" data-i18n="net.tunNote">TUN 会修改 fnOS 系统路由与 DNS 流向。保存后若 TUN 已开启将自动重启引擎生效。</div>
+          </div>
+          <div class="modal-foot">
+            <button class="btn btn-ghost" onclick="closeTunModal()" data-i18n="common.cancel">取消</button>
+            <button class="btn btn-primary" id="tmSaveBtn" onclick="saveTunModal()" data-i18n="common.save">保存</button>
           </div>
         </div>
       </div>
@@ -1320,9 +1480,22 @@ tbody tr:hover{background:var(--card2)}
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.service">系统服务</span></div>
               <label class="toggle"><input type="checkbox" id="setService" onchange="toggleSetting('service')"><span class="toggle-track"></span></label>
             </div>
+          </div>
+          <div class="set-card">
+            <div class="set-title" data-i18n="net.title">网络设置</div>
             <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.tun">TUN 模式</span></div>
-              <label class="toggle"><input type="checkbox" id="setTun" onchange="toggleSetting('tun')"><span class="toggle-track"></span></label>
+              <div class="set-item-left"><span class="set-item-label" data-i18n="net.sysProxy">系统代理</span></div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button class="mini-btn mini-btn-ic" onclick="openSysProxyModal()" title="系统代理设置" aria-label="系统代理设置"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+                <label class="toggle"><input type="checkbox" id="setSysProxy" onchange="toggleSysProxy(this.checked)"><span class="toggle-track"></span></label>
+              </div>
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="net.tun">虚拟网卡模式</span></div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <button class="mini-btn mini-btn-ic" onclick="openTunModal()" title="TUN 设置" aria-label="TUN 设置"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+                <label class="toggle"><input type="checkbox" id="setTun" onchange="toggleSetting('tun')"><span class="toggle-track"></span></label>
+              </div>
             </div>
           </div>
           <div class="set-card">
@@ -1655,7 +1828,7 @@ function showSection(name) {
   const nav = document.getElementById('nav-' + name);
   if (nav) nav.classList.add('active');
   autoHideSidebar();
-  if (name === 'home') { loadDashboard(); refreshTun(); }
+  if (name === 'home') { loadDashboard(); refreshTun(); refreshNetworkCard(); }
   if (name === 'groups') {
     // 秒开：优先恢复上次渲染快照（内存 > localStorage），数据后台刷新后原位重绘
     const gw = document.getElementById('groupsWrap');
@@ -1856,6 +2029,7 @@ async function loadDashboard() {
   renderSubCardAsync();
   renderGroupsSelAsync();
   refreshTun();
+  refreshNetworkCard();
   loadIpInfo();
   renderTestItems();
   loadClashInfo();
@@ -2158,7 +2332,7 @@ async function testCurGroupSpeed() {
 }
 
 // ── 首页模块显隐设置 ──────────────────────────
-const HOME_MODULES = ['sub','node','mode','test','ip','clash','sys','traffic'];
+const HOME_MODULES = ['sub','node','mode','network','test','ip','clash','sys','traffic'];
 function loadHomeModuleSettings() {
   try { return JSON.parse(localStorage.getItem('home_modules') || '{}'); } catch(e) { return {}; }
 }
@@ -2280,6 +2454,7 @@ async function loadServiceStatus() {
   // 引擎状态就绪后刷新策略组视图（组卡显示由 groupView 分类决定，不受引擎状态覆盖）
   if (document.getElementById('section-groups').style.display !== 'none') renderGroups();
   refreshTun();
+  refreshNetworkCard();
 }
 function toggleService() {
   const btn = document.getElementById('svcToggleBtn');
@@ -2355,6 +2530,264 @@ function toggleTun() {
       return refreshTun();
     }).catch(e => showToast('TUN 切换失败: ' + e, 'error'))
     .finally(() => { if (btn) btn.classList.remove('busy'); });
+}
+
+// ── 网络设置卡片（系统代理 / 虚拟网卡 TUN） ────────────────────
+let netTab = 'proxy';
+let netProxyData = null;   // /api/system-proxy 响应
+let netTunData = null;     // /api/tun 响应
+let _noProxyTags = [];
+
+function switchNetTab(tab) {
+  netTab = tab;
+  document.getElementById('netTabProxy').classList.toggle('active', tab === 'proxy');
+  document.getElementById('netTabTun').classList.toggle('active', tab === 'tun');
+  document.getElementById('netPanelProxy').style.display = tab === 'proxy' ? '' : 'none';
+  document.getElementById('netPanelTun').style.display = tab === 'tun' ? '' : 'none';
+}
+
+function _netDot(id, state) {   // state: 'on' | 'off' | 'busy'
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.toggle('on', state === 'on');
+  el.classList.toggle('busy', state === 'busy');
+}
+
+function _netBanner(bannerId, textId, text, tone) {   // tone: '' | 'ok' | 'warn'
+  const b = document.getElementById(bannerId);
+  const tx = document.getElementById(textId);
+  if (tx) tx.textContent = text;
+  if (b) {
+    b.classList.toggle('ok', tone === 'ok');
+    b.classList.toggle('warn', tone === 'warn');
+  }
+}
+
+async function refreshNetworkCard() {
+  try {
+    netProxyData = await fetchJSON('api/system-proxy');
+    renderNetworkProxy();
+    const stp = document.getElementById('setSysProxy');
+    if (stp) stp.checked = !!(netProxyData && netProxyData.enabled);
+  } catch (e) { /* 保留上一次状态 */ }
+  try {
+    netTunData = await fetchJSON('api/tun');
+    renderNetworkTun();
+  } catch (e) { /* 保留上一次状态 */ }
+}
+
+function renderNetworkProxy() {
+  const d = netProxyData;
+  if (!d) return;
+  const s = d.settings || {};
+  const on = !!d.enabled;
+  const tg = s.targets || {};
+  _netDot('netProxyDot', on ? 'on' : 'off');
+  const tgEl = document.getElementById('netProxyToggle');
+  if (tgEl) tgEl.checked = on;
+  if (on) {
+    _netBanner('netProxyBanner', 'netProxyBannerText', t('net.bannerProxyOn'), 'ok');
+  } else {
+    _netBanner('netProxyBanner', 'netProxyBannerText', t('net.bannerProxyOff'), '');
+  }
+  const scopeCount = ['environment', 'profile', 'bashrc'].filter(k => tg[k] !== false).length;
+  const addr = s.follow_mixed_port ? t('net.followPort') : '127.0.0.1:' + (s.port || 7890);
+  const meta = document.getElementById('netProxyMeta');
+  if (meta) meta.innerHTML = t('net.metaProxy')
+    .replace('{addr}', '<b>' + addr + '</b>')
+    .replace('{scope}', '<b>' + scopeCount + '</b>');
+}
+
+function renderNetworkTun() {
+  const d = netTunData;
+  if (!d) return;
+  const s = d.settings || {};
+  const on = !!d.enable;
+  _netDot('netTunDot', on ? 'on' : 'off');
+  const tgEl = document.getElementById('netTunToggle');
+  if (tgEl) tgEl.checked = on;
+  const st = document.getElementById('setTun');
+  if (st) st.checked = on;
+  const ciTun = document.getElementById('ciTun');
+  if (ciTun) ciTun.textContent = on ? t('tun.on') : t('tun.off');
+  if (on) {
+    _netBanner('netTunBanner', 'netTunBannerText', t('net.bannerTunOn'), 'ok');
+  } else {
+    _netBanner('netTunBanner', 'netTunBannerText', t('net.bannerTunOff'), 'warn');
+  }
+  const meta = document.getElementById('netTunMeta');
+  if (meta) meta.innerHTML = t('net.metaTun')
+    .replace('{stack}', '<b>' + (s.stack || 'mixed') + '</b>')
+    .replace('{mtu}', '<b>' + (s.mtu || 1500) + '</b>');
+}
+
+async function toggleSysProxy(on) {
+  _netDot('netProxyDot', 'busy');
+  try {
+    const r = await fetch('api/system-proxy', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enabled: on })
+    });
+    const d = await r.json();
+    if (d.success === false && d.error) throw new Error(d.error);
+    showToast(on ? t('net.toastProxyOn') : t('net.toastProxyOff'), on ? 'success' : 'info');
+    await refreshNetworkCard();
+  } catch (e) {
+    showToast(t('net.toastProxyFail') + (e.message || ''), 'error');
+    const tgEl = document.getElementById('netProxyToggle');
+    if (tgEl) tgEl.checked = !on;
+    renderNetworkProxy();
+  }
+}
+
+function disableSysProxy() {
+  if (!confirm(t('net.confirmProxyOff'))) return;
+  toggleSysProxy(false);
+}
+
+async function toggleTunMode(on) {
+  _netDot('netTunDot', 'busy');
+  try {
+    const r = await fetch('api/tun', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ enable: on })
+    });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || '');
+    showToast(d.message || (on ? t('net.bannerTunOn') : t('net.bannerTunOff')), 'success');
+    await refreshNetworkCard();
+  } catch (e) {
+    showToast('TUN 切换失败: ' + (e.message || ''), 'error');
+    const tgEl = document.getElementById('netTunToggle');
+    if (tgEl) tgEl.checked = !on;
+    renderNetworkTun();
+  }
+}
+
+function disableTun() {
+  if (!confirm(t('net.confirmTunOff'))) return;
+  toggleTunMode(false);
+}
+
+// ── 系统代理设置弹窗 ────────────────────
+function openSysProxyModal() {
+  const d = netProxyData || {};
+  const s = d.settings || {};
+  const tg = s.targets || {};
+  document.getElementById('spEnabled').checked = !!d.enabled;
+  document.getElementById('spFollow').checked = s.follow_mixed_port !== false;
+  document.getElementById('spPort').value = s.port || 7890;
+  document.getElementById('spPort').disabled = s.follow_mixed_port !== false;
+  _noProxyTags = (s.no_proxy || '').split(',').map(x => x.trim()).filter(Boolean);
+  renderNoProxyTags();
+  document.getElementById('spTgtEnv').checked = tg.environment !== false;
+  document.getElementById('spTgtProfile').checked = tg.profile !== false;
+  document.getElementById('spTgtBashrc').checked = tg.bashrc !== false;
+  document.getElementById('spStatus').textContent = d.enabled ? t('net.enabledOn') : t('net.enabledOff');
+  document.getElementById('spAddr').textContent = s.follow_mixed_port
+    ? (t('net.followPort') + ' (' + (s.port || 7890) + ')')
+    : ('http://127.0.0.1:' + (s.port || 7890));
+  document.getElementById('sysProxyModal').style.display = 'flex';
+}
+function closeSysProxyModal() { document.getElementById('sysProxyModal').style.display = 'none'; }
+
+function renderNoProxyTags() {
+  const box = document.getElementById('spTags');
+  const input = document.getElementById('spTagInput');
+  box.querySelectorAll('.net-tag').forEach(n => n.remove());
+  _noProxyTags.forEach((tag, i) => {
+    const span = document.createElement('span');
+    span.className = 'net-tag';
+    span.textContent = tag;
+    const btn = document.createElement('button');
+    btn.textContent = '×';
+    btn.onclick = () => { _noProxyTags.splice(i, 1); renderNoProxyTags(); };
+    span.appendChild(btn);
+    box.insertBefore(span, input);
+  });
+}
+function addNoProxyTag() {
+  const input = document.getElementById('spTagInput');
+  const v = input.value.trim();
+  if (!v) return;
+  if (/["'\r\n]/.test(v) || v.length > 200) { showToast(t('net.tagInvalid'), 'error'); return; }
+  if (!_noProxyTags.includes(v)) _noProxyTags.push(v);
+  input.value = '';
+  renderNoProxyTags();
+}
+
+function saveSysProxyModal() {
+  const body = {
+    enabled: document.getElementById('spEnabled').checked,
+    follow_mixed_port: document.getElementById('spFollow').checked,
+    port: parseInt(document.getElementById('spPort').value || '7890', 10),
+    no_proxy: _noProxyTags.join(','),
+    targets: {
+      environment: document.getElementById('spTgtEnv').checked,
+      profile: document.getElementById('spTgtProfile').checked,
+      bashrc: document.getElementById('spTgtBashrc').checked
+    }
+  };
+  const btn = document.getElementById('spSaveBtn');
+  btn.disabled = true;
+  fetch('api/system-proxy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => r.json())
+    .then(d => {
+      if (d.success === false && d.error) throw new Error(d.error);
+      showToast(t('net.toastProxySaved'), 'success');
+      closeSysProxyModal();
+      refreshNetworkCard();
+    })
+    .catch(e => showToast((e.message || t('net.saveFailed')), 'error'))
+    .finally(() => { btn.disabled = false; });
+}
+
+// ── TUN 设置弹窗 ────────────────────
+function openTunModal() {
+  const s = (netTunData && netTunData.settings) || {};
+  document.getElementById('tmStack').value = s.stack || 'mixed';
+  document.getElementById('tmMtu').value = s.mtu || 1500;
+  document.getElementById('tmAutoRoute').checked = !!s['auto-route'];
+  document.getElementById('tmAutoRedirect').checked = !!s['auto-redirect'];
+  document.getElementById('tmAutoDetect').checked = !!s['auto-detect-interface'];
+  document.getElementById('tmDnsHijack').checked = !!(s['dns-hijack'] && s['dns-hijack'].length);
+  document.getElementById('tmStrictRoute').checked = !!s['strict-route'];
+  document.getElementById('tmExclude').value = (s['route-exclude-address'] || []).join('\n');
+  document.getElementById('tunModal').style.display = 'flex';
+}
+function closeTunModal() { document.getElementById('tunModal').style.display = 'none'; }
+
+function saveTunModal() {
+  const mtu = parseInt(document.getElementById('tmMtu').value || '1500', 10);
+  if (!Number.isInteger(mtu) || mtu < 1280 || mtu > 65535) {
+    showToast(t('net.mtuInvalid'), 'error'); return;
+  }
+  const dnsOn = document.getElementById('tmDnsHijack').checked;
+  const prevDns = (netTunData && netTunData.settings && netTunData.settings['dns-hijack']) || [];
+  const exclude = document.getElementById('tmExclude').value
+    .split(/[\n,]+/).map(x => x.trim()).filter(Boolean);
+  const body = { settings: {
+    stack: document.getElementById('tmStack').value,
+    mtu: mtu,
+    'auto-route': document.getElementById('tmAutoRoute').checked,
+    'auto-redirect': document.getElementById('tmAutoRedirect').checked,
+    'auto-detect-interface': document.getElementById('tmAutoDetect').checked,
+    'dns-hijack': dnsOn ? (prevDns.length ? prevDns : ['any:53', 'tcp://any:53']) : [],
+    'strict-route': document.getElementById('tmStrictRoute').checked,
+    'route-exclude-address': exclude
+  }};
+  const btn = document.getElementById('tmSaveBtn');
+  btn.disabled = true;
+  fetch('api/tun-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+    .then(r => r.json())
+    .then(d => {
+      if (!d.success) throw new Error(d.error || '');
+      showToast(d.message || t('net.toastTunSaved'), 'success');
+      closeTunModal();
+      refreshNetworkCard();
+    })
+    .catch(e => showToast((e.message || t('net.saveFailed')), 'error'))
+    .finally(() => { btn.disabled = false; });
 }
 
 // ── 流量统计（/traffic WebSocket + 实时曲线图） ──
@@ -4750,6 +5183,7 @@ function toggleSetting(key) {
       .then(r => r.json()).then(d => {
         showToast(d.message || 'TUN 已切换', 'success');
         refreshTun();
+        refreshNetworkCard();
       });
   } else if (key === 'service') {
     var on = document.getElementById('setService').checked;
@@ -4900,6 +5334,37 @@ var I18N = {
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
     'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动',
+    'net.title':'网络设置','net.tabProxy':'系统代理','net.tabTun':'虚拟网卡模式',
+    'net.sysProxy':'系统代理','net.tun':'虚拟网卡模式',
+    'net.bannerProxyOn':'系统代理已启用，读取代理环境变量的程序将通过 127.0.0.1 端口走代理。',
+    'net.bannerProxyOff':'系统代理已关闭，建议大多数用户打开此选项。',
+    'net.bannerTunOn':'TUN 模式已启用，应用将通过虚拟网卡访问网络。',
+    'net.bannerTunOff':'TUN 模式已关闭，当前仅代理遵循规则的应用流量。',
+    'net.metaProxy':'服务地址 {addr} · 应用范围 {scope} 个文件',
+    'net.metaTun':'协议栈 {stack} · MTU {mtu}',
+    'net.followPort':'跟随 Mixed Port',
+    'net.sysProxySettings':'系统代理设置','net.tunSettings':'虚拟网卡（TUN）设置',
+    'net.currentStatus':'当前状态','net.options':'选项','net.bypass':'代理绕过设置（NO_PROXY）','net.scope':'应用范围',
+    'net.enabled':'开启状态','net.enabledOn':'已开启','net.enabledOff':'已关闭','net.serviceAddr':'服务地址',
+    'net.enableEnv':'启用代理环境变量','net.enableEnvHint':'关闭时仅移除本应用管理的配置',
+    'net.followPortHint':'端口变化后自动同步系统代理','net.port':'代理端口','net.portHint':'关闭跟随后可手动指定',
+    'net.tgtEnv':'系统登录环境','net.tgtProfile':'登录 Shell','net.tgtBashrc':'Bash 交互环境',
+    'net.sysProxyNote':'fnOS 上的系统代理通过 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY 环境变量生效，主要影响新启动的进程与新登录会话。',
+    'net.toastProxyOn':'系统代理已开启','net.toastProxyOff':'系统代理已关闭',
+    'net.toastProxyFail':'系统代理操作失败: ','net.toastProxySaved':'系统代理设置已保存',
+    'net.confirmProxyOff':'确定要关闭系统代理吗？将移除本应用写入的环境变量托管块。',
+    'net.confirmTunOff':'确定要关闭虚拟网卡（TUN）模式吗？',
+    'net.tagInvalid':'绕过条目含非法字符','net.saveFailed':'保存失败','net.mtuInvalid':'MTU 必须是 1280–65535 之间的整数',
+    'net.toastTunSaved':'TUN 设置已保存','net.protocol':'协议','net.routing':'路由',
+    'net.stackHint':'mixed：TCP 走 system、UDP 走 gVisor（推荐）','net.mtuHint':'默认 1500；VPN / PPPoE 环境异常可试 1400',
+    'net.autoRoute':'自动路由','net.autoRouteHint':'自动把系统流量路由到 TUN',
+    'net.autoRedirect':'Auto Redirect','net.autoRedirectHint':'自动配置 nftables / iptables TCP 重定向',
+    'net.autoDetect':'自动检测出口网卡','net.autoDetectHint':'自动选择实际外网出口',
+    'net.dnsHijack':'DNS 劫持','net.dnsHijackHint':'劫持 53 端口到 Mihomo DNS',
+    'net.strictRoute':'严格路由','net.strictRouteHint':'减少泄漏；复杂网络可能影响其它虚拟网卡',
+    'net.exclude':'排除自定义网段','net.excludeHint':'每行一个 IPv4/IPv6 CIDR；仅在开启自动路由时生效。',
+    'net.tunNote':'TUN 会修改 fnOS 系统路由与 DNS 流向。保存后若 TUN 已开启将自动重启引擎生效。',
+    'common.cancel':'取消','common.save':'保存',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
     'toast.tunSwitched':'TUN 已切换','toast.latestVersion':'已是最新版本',
@@ -5028,6 +5493,37 @@ var I18N = {
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
     'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start',
+    'net.title':'Network','net.tabProxy':'System Proxy','net.tabTun':'TUN Mode',
+    'net.sysProxy':'System Proxy','net.tun':'TUN Mode',
+    'net.bannerProxyOn':'System proxy is on. Programs that read proxy env vars will route through 127.0.0.1.',
+    'net.bannerProxyOff':'System proxy is off. Enabling it is recommended for most users.',
+    'net.bannerTunOn':'TUN mode is on. Apps will reach the network through the virtual NIC.',
+    'net.bannerTunOff':'TUN mode is off. Only rule-following app traffic is proxied.',
+    'net.metaProxy':'Address {addr} · {scope} target file(s)',
+    'net.metaTun':'Stack {stack} · MTU {mtu}',
+    'net.followPort':'Follow Mixed Port',
+    'net.sysProxySettings':'System Proxy Settings','net.tunSettings':'TUN Settings',
+    'net.currentStatus':'Status','net.options':'Options','net.bypass':'Bypass (NO_PROXY)','net.scope':'Scope',
+    'net.enabled':'State','net.enabledOn':'Enabled','net.enabledOff':'Disabled','net.serviceAddr':'Service address',
+    'net.enableEnv':'Enable proxy env vars','net.enableEnvHint':'When off, only this app’s managed block is removed',
+    'net.followPortHint':'Auto-sync when the port changes','net.port':'Proxy port','net.portHint':'Manual port when follow is off',
+    'net.tgtEnv':'Login environment','net.tgtProfile':'Login shell','net.tgtBashrc':'Bash interactive',
+    'net.sysProxyNote':'On fnOS the system proxy works via HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY env vars, affecting newly started processes and login sessions.',
+    'net.toastProxyOn':'System proxy enabled','net.toastProxyOff':'System proxy disabled',
+    'net.toastProxyFail':'System proxy failed: ','net.toastProxySaved':'System proxy settings saved',
+    'net.confirmProxyOff':'Turn off the system proxy? This removes the managed env-var block written by this app.',
+    'net.confirmTunOff':'Turn off TUN mode?',
+    'net.tagInvalid':'Invalid bypass entry','net.saveFailed':'Save failed','net.mtuInvalid':'MTU must be an integer between 1280 and 65535',
+    'net.toastTunSaved':'TUN settings saved','net.protocol':'Protocol','net.routing':'Routing',
+    'net.stackHint':'mixed: TCP via system, UDP via gVisor (recommended)','net.mtuHint':'Default 1500; try 1400 on VPN/PPPoE',
+    'net.autoRoute':'Auto route','net.autoRouteHint':'Route system traffic into TUN automatically',
+    'net.autoRedirect':'Auto Redirect','net.autoRedirectHint':'Auto-configure nftables/iptables TCP redirect',
+    'net.autoDetect':'Auto-detect egress NIC','net.autoDetectHint':'Pick the real outbound interface automatically',
+    'net.dnsHijack':'DNS hijack','net.dnsHijackHint':'Hijack port 53 to the Mihomo DNS module',
+    'net.strictRoute':'Strict route','net.strictRouteHint':'Reduces leaks; may affect other virtual NICs',
+    'net.exclude':'Excluded CIDRs','net.excludeHint':'One IPv4/IPv6 CIDR per line; only active with auto route.',
+    'net.tunNote':'TUN modifies fnOS system routes and DNS flow. If TUN is on, saving restarts the engine.',
+    'common.cancel':'Cancel','common.save':'Save',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
     'toast.tunSwitched':'TUN toggled','toast.latestVersion':'Already up to date',
@@ -5548,6 +6044,7 @@ loadDelayCache();
   showSection(vs.start_page || 'home');
   loadServiceStatus();
   refreshTun();
+  refreshNetworkCard();
   fetchVersionInfo();
   initHamburgerDrag();
   startTraffic();
@@ -5948,6 +6445,7 @@ setInterval(() => {
   if (document.getElementById('section-webui').style.display === 'none') {
     loadServiceStatus();
     refreshTun();
+    refreshNetworkCard();
     loadClashInfo();
   }
 }, 10000);

@@ -15,6 +15,7 @@ fnSoar 是运行于 [fnOS](https://www.fnnas.com) 应用商店的原生代理引
 - ⚡ **订阅管理**：支持订阅链接 / 本地上传，切换订阅即时热加载（PUT /configs，约 100ms），无需重启内核
 - 📡 **规则引擎**：内置常用分流规则集（Google、Netflix、Telegram、OpenAI 等），支持自定义
 - 🧩 **TUN 模式**：一键开启系统级透明代理
+- ⚙️ **网络设置**：首页「网络设置」卡片提供系统代理（HTTP_PROXY/ALL_PROXY 环境变量托管，端口自动跟随 Mixed Port，可配 NO_PROXY 与应用范围）与虚拟网卡 TUN 模式快捷开关，齿轮入口可设置 Stack / MTU / 自动路由 / DNS 劫持 / 严格路由 / 排除网段
 - 🔒 **IPv6 防泄露提示**：关闭 TUN 且检测到 IPv6 时，控制台右上角提示；IPv6 UDP/QUIC 在主机透明模式下阻断，需完整 IPv6 UDP 时开启 TUN
 - 🛡️ **DNS 分流**：内置 DNS 配置（enhanced-mode、fake-ip、国内/国外 DNS 分离）
 - 🌍 **解锁检测**：一键测试流媒体（Netflix / Disney+ / YouTube 等）解锁状态

@@ -565,6 +565,400 @@ def _replace_tun_enable(txt, enable):
         return None
     return "".join(lines)
 
+
+# ── 系统代理（代理环境变量托管，参考 Clash-for-fnos 实现） ─────────────────
+# fnOS 没有桌面意义上的"系统代理"，这里的系统代理 = 往 /etc/environment、
+# /etc/profile、/etc/bash.bashrc 写入带标记的托管块（HTTP_PROXY 等），
+# 对读取环境变量的新进程/新登录会话生效；关闭时只移除本应用的管理块。
+PROXY_BLOCK_BEGIN = "# BEGIN FNSOAR MANAGED PROXY"
+PROXY_BLOCK_END   = "# END FNSOAR MANAGED PROXY"
+PROXY_TARGETS = (
+    ("environment", "/etc/environment", False),
+    ("profile",     "/etc/profile",     True),
+    ("bashrc",      "/etc/bash.bashrc", True),
+)
+SYSTEM_PROXY_SETTINGS_FILE = f"{TRIM_PKGVAR}/system-proxy.json"
+PROXY_BACKUP_DIR = f"{TRIM_PKGVAR}/backups/proxy-environment"
+DEFAULT_NO_PROXY = "localhost,127.0.0.1,::1"
+
+
+def _default_proxy_settings():
+    return {
+        "enabled": False,
+        "explicit": False,          # 用户是否明确设置过（未明确则启动时自动关闭，防误启）
+        "follow_mixed_port": True,  # 端口跟随 mihomo mixed-port
+        "port": 7890,
+        "no_proxy": DEFAULT_NO_PROXY,
+        "targets": {"environment": True, "profile": True, "bashrc": True},
+    }
+
+
+def _read_proxy_settings():
+    settings = _default_proxy_settings()
+    try:
+        with open(SYSTEM_PROXY_SETTINGS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f) or {}
+    except Exception:
+        data = {}
+    for k in ("enabled", "explicit", "follow_mixed_port", "no_proxy"):
+        if k in data:
+            settings[k] = data[k]
+    if isinstance(data.get("targets"), dict):
+        for k in ("environment", "profile", "bashrc"):
+            if k in data["targets"]:
+                settings["targets"][k] = bool(data["targets"][k])
+    try:
+        settings["port"] = int(data.get("port", settings["port"]))
+    except Exception:
+        settings["port"] = 7890
+    if not (1 <= settings["port"] <= 65535):
+        settings["port"] = 7890
+    if not isinstance(settings["no_proxy"], str):
+        settings["no_proxy"] = DEFAULT_NO_PROXY
+    return settings
+
+
+def _sanitize_no_proxy(value):
+    value = (value or "").strip()
+    if len(value) > 2048 or any(c in value for c in "\r\n\x00\"'"):
+        return None, "NO_PROXY 格式无效"
+    return value, None
+
+
+def _proxy_block_text(settings, shell):
+    """Render the managed proxy block. shell=True → export 前缀（profile/bashrc）。"""
+    port = settings["port"]
+    http_url = f"http://127.0.0.1:{port}"
+    socks_url = f"socks5h://127.0.0.1:{port}"
+    pairs = [
+        ("HTTP_PROXY", http_url), ("HTTPS_PROXY", http_url),
+        ("ALL_PROXY", socks_url), ("NO_PROXY", settings["no_proxy"]),
+        ("http_proxy", http_url), ("https_proxy", http_url),
+        ("all_proxy", socks_url), ("no_proxy", settings["no_proxy"]),
+    ]
+    lines = [PROXY_BLOCK_BEGIN]
+    for key, val in pairs:
+        lines.append(f'export {key}="{val}"' if shell else f'{key}="{val}"')
+    lines.append(PROXY_BLOCK_END)
+    return "\n".join(lines)
+
+
+def _strip_proxy_block(raw):
+    """Remove our managed block only. Refuse on nested/orphan/unclosed markers."""
+    active = False
+    kept = []
+    for chunk in raw.splitlines(keepends=True):
+        marker = chunk.strip()
+        if marker == PROXY_BLOCK_BEGIN:
+            if active:
+                return None, "检测到嵌套的系统代理管理块，拒绝自动覆盖"
+            active = True
+            continue
+        if marker == PROXY_BLOCK_END:
+            if not active:
+                return None, "检测到孤立的系统代理管理块结束标记，拒绝自动覆盖"
+            active = False
+            continue
+        if not active:
+            kept.append(chunk)
+    if active:
+        return None, "系统代理管理块未闭合，拒绝自动覆盖"
+    return "".join(kept), None
+
+
+def _insert_proxy_block(raw, block):
+    clean, err = _strip_proxy_block(raw)
+    if err:
+        return None, err
+    clean = clean.rstrip("\n")
+    if clean:
+        clean += "\n\n"
+    return clean + block + "\n", None
+
+
+def _atomic_write_path(path, text):
+    mode = 0o644
+    try:
+        mode = os.stat(path).st_mode & 0o777
+    except Exception:
+        pass
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    tmp = path + ".fnsoar.tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        f.write(text)
+    os.chmod(tmp, mode)
+    os.replace(tmp, path)
+
+
+def _backup_proxy_target(path):
+    """备份前保留一份原始文件（仅在有内容时）。"""
+    try:
+        if not os.path.exists(path) or os.path.getsize(path) == 0:
+            return
+        os.makedirs(PROXY_BACKUP_DIR, exist_ok=True)
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        name = path.strip("/").replace("/", "_") + "-" + stamp
+        shutil.copy2(path, os.path.join(PROXY_BACKUP_DIR, name))
+    except Exception:
+        pass
+
+
+def _apply_proxy_settings(settings):
+    """把托管块写入/移出三个目标文件。返回 (changed_paths, error)。"""
+    changed = []
+    for key, path, shell in PROXY_TARGETS:
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                raw = f.read()
+        except FileNotFoundError:
+            raw = ""
+        except Exception as e:
+            return changed, f"读取 {path} 失败: {e}"
+        if settings["enabled"] and settings["targets"].get(key):
+            nxt, err = _insert_proxy_block(raw, _proxy_block_text(settings, shell))
+        else:
+            nxt, err = _strip_proxy_block(raw)
+        if err:
+            return changed, err
+        if nxt == raw:
+            continue
+        _backup_proxy_target(path)
+        try:
+            _atomic_write_path(path, nxt)
+        except Exception as e:
+            return changed, f"写入 {path} 失败: {e}"
+        changed.append(path)
+    return changed, None
+
+
+def _parse_proxy_env_lines(raw):
+    out = []
+    rx = re.compile(r'(?i)^(?:export\s+)?(https?_proxy|all_proxy|no_proxy)\s*=\s*(.+)$')
+    for i, line in enumerate(raw.split("\n")):
+        m = rx.match(line.strip())
+        if not m:
+            continue
+        value = m.group(2).strip().strip("\"'")
+        out.append({"key": m.group(1), "value": value, "line": i + 1})
+    return out
+
+
+def _proxy_status_data(settings=None):
+    if settings is None:
+        settings = _read_proxy_settings()
+    files = []
+    for key, path, shell in PROXY_TARGETS:
+        entry = {"key": key, "path": path, "shell": shell, "exists": False, "variables": []}
+        try:
+            with open(path, "r", encoding="utf-8", errors="replace") as f:
+                entry["exists"] = True
+                entry["variables"] = _parse_proxy_env_lines(f.read())
+        except Exception:
+            pass
+        files.append(entry)
+    return {"enabled": settings["enabled"], "settings": settings, "files": files}
+
+
+def _write_proxy_settings(settings, changed):
+    try:
+        os.makedirs(os.path.dirname(SYSTEM_PROXY_SETTINGS_FILE), exist_ok=True)
+        tmp = SYSTEM_PROXY_SETTINGS_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, SYSTEM_PROXY_SETTINGS_FILE)
+    except Exception:
+        pass
+    status = _proxy_status_data(settings)
+    status["changed"] = changed
+    return status
+
+
+def update_proxy_settings(body):
+    """API 入口：更新并应用系统代理设置。返回 (status, error)。"""
+    settings = _read_proxy_settings()
+    if "enabled" in body:
+        settings["enabled"] = bool(body["enabled"])
+        settings["explicit"] = True
+    if "follow_mixed_port" in body:
+        settings["follow_mixed_port"] = bool(body["follow_mixed_port"])
+    if "port" in body:
+        try:
+            settings["port"] = int(body["port"])
+        except Exception:
+            return None, "代理端口无效"
+    if not (1 <= settings["port"] <= 65535):
+        return None, "代理端口无效"
+    if "no_proxy" in body:
+        clean, err = _sanitize_no_proxy(body["no_proxy"])
+        if err:
+            return None, err
+        settings["no_proxy"] = clean
+    if isinstance(body.get("targets"), dict):
+        for k in ("environment", "profile", "bashrc"):
+            if k in body["targets"]:
+                settings["targets"][k] = bool(body["targets"][k])
+    # 跟随 mixed-port 时，端口始终以当前 engine 配置为准
+    if settings["follow_mixed_port"]:
+        settings["port"] = _mixed_port_from_config()
+    changed, err = _apply_proxy_settings(settings)
+    if err:
+        return None, err
+    return _write_proxy_settings(settings, changed), None
+
+
+def reconcile_proxy_on_start():
+    """启动对账：历史上可能因保存其它网络设置而意外生成 enabled 的托管块，
+    未明确开启过的（explicit=false）一律关闭，仅移除本应用管理块。"""
+    settings = _read_proxy_settings()
+    if settings["enabled"] and not settings["explicit"]:
+        settings["enabled"] = False
+        changed, err = _apply_proxy_settings(settings)
+        if not err:
+            _write_proxy_settings(settings, changed)
+
+
+# ── TUN 设置（虚拟网卡模式，读取/保存 tun: 段全部参数） ────────────────────
+_TUN_DEFAULTS = {
+    "enable": False, "device": "tun", "stack": "mixed", "mtu": 1500,
+    "dns-hijack": [], "auto-route": True, "auto-redirect": True,
+    "auto-detect-interface": True, "strict-route": False,
+    "route-exclude-address": [],
+}
+_TUN_SCALAR_KEYS = ("device", "stack", "mtu")
+_TUN_BOOL_KEYS = ("auto-route", "auto-redirect", "auto-detect-interface", "strict-route")
+_TUN_LIST_KEYS = ("dns-hijack", "route-exclude-address")
+_TUN_ALLOWED = set(_TUN_DEFAULTS)
+
+
+def _read_tun_settings():
+    """当前 config.yaml 的 tun: 段（套默认值）。"""
+    out = dict(_TUN_DEFAULTS)
+    try:
+        cfg = yaml.safe_load(read_config()) or {}
+        tun = cfg.get("tun") or {}
+        for k in _TUN_DEFAULTS:
+            if k in tun and tun[k] is not None:
+                out[k] = tun[k]
+    except Exception:
+        pass
+    return out
+
+
+def _format_tun_yaml_value(key, value):
+    if key in _TUN_BOOL_KEYS:
+        return "true" if value else "false"
+    if key in _TUN_LIST_KEYS:
+        items = [str(v) for v in (value or []) if str(v).strip()]
+        if not items:
+            return "[]"
+        return "\n" + "".join(f'    - "{v}"\n' for v in items)
+    return str(value)
+
+
+def set_tun_settings_in_config(patch):
+    """行级合并 tun 设置（保留文件其余字节与注释）。返回 (ok, msg)。"""
+    if not isinstance(patch, dict):
+        return False, "参数错误"
+    clean = {}
+    for k, v in patch.items():
+        if k not in _TUN_ALLOWED:
+            continue
+        if k in _TUN_BOOL_KEYS:
+            clean[k] = bool(v)
+        elif k in _TUN_LIST_KEYS:
+            if not isinstance(v, list):
+                return False, f"{k} 必须是数组"
+            items = [str(x) for x in v if str(x).strip()]
+            if any(any(c in x for c in "\r\n\"'") for x in items):
+                return False, f"{k} 含非法字符"
+            clean[k] = items
+        elif k == "mtu":
+            try:
+                mtu = int(v)
+            except Exception:
+                return False, "MTU 必须是整数"
+            if not (1280 <= mtu <= 65535):
+                return False, "MTU 必须在 1280–65535 之间"
+            clean[k] = mtu
+        elif k == "stack":
+            if v not in ("mixed", "system", "gvisor"):
+                return False, "stack 仅支持 mixed/system/gvisor"
+            clean[k] = v
+        else:
+            clean[k] = str(v)
+    if not clean:
+        return True, "ok"
+    txt = read_config()
+    if not txt.strip():
+        return False, "config 为空"
+    new_txt = _merge_tun_section(txt, clean)
+    if new_txt is None:
+        return False, "config.yaml 中未找到 tun: 段"
+    if write_config(new_txt):
+        return True, "ok"
+    return False, "写入失败"
+
+
+def _merge_tun_section(txt, patch):
+    """在 tun: 段内行级替换/插入 patch 中的键；列表键整块替换。"""
+    lines = txt.splitlines(keepends=True)
+    tun_idx = None
+    for i, ln in enumerate(lines):
+        if re.match(r"^tun:\s*$", ln):
+            tun_idx = i
+            break
+    if tun_idx is None:
+        return None
+    indent0 = len(lines[tun_idx]) - len(lines[tun_idx].lstrip())
+    pad = " " * (indent0 + 2)
+    # 段结束行（第一个缩进 <= indent0 的非空行）
+    end = len(lines)
+    for j in range(tun_idx + 1, len(lines)):
+        ln = lines[j]
+        if not ln.strip():
+            continue
+        if len(ln) - len(ln.lstrip()) <= indent0:
+            end = j
+            break
+    for key, value in patch.items():
+        rendered = _format_tun_yaml_value(key, value)
+        replaced = False
+        j = tun_idx + 1
+        while j < end:
+            ln = lines[j]
+            if re.match(rf"^{re.escape(pad)}{re.escape(key)}:\s*", ln):
+                if key in _TUN_LIST_KEYS:
+                    # 列表键：连同后续列表项整块替换（空列表写成 []）
+                    k = j + 1
+                    while k < end and re.match(rf"^{re.escape(pad)}\s*-\s", lines[k]):
+                        k += 1
+                    if rendered == "[]":
+                        lines[j:k] = [f"{pad}{key}: []\n"]
+                    else:
+                        lines[j:k] = [f"{pad}{key}:{rendered}"]
+                    end += (j + 1) - k
+                else:
+                    lines[j] = f"{pad}{key}: {rendered}\n"
+                replaced = True
+                break
+            j += 1
+        if not replaced:
+            lines.insert(tun_idx + 1, f"{pad}{key}: {rendered}\n")
+            end += 1
+    return "".join(lines)
+
+
+def _mixed_port_from_config():
+    """从 config.yaml 读取 mixed-port（系统代理端口跟随用）。"""
+    try:
+        cfg = yaml.safe_load(read_config()) or {}
+        port = int(cfg.get("mixed-port", 7890))
+        return port if 1 <= port <= 65535 else 7890
+    except Exception:
+        return 7890
+
 def is_running():
     """Return the real engine state, not only the wrapper PID file.
     fnOS can briefly leave a stale/missing PID during reinstall or wrapper
@@ -2799,13 +3193,20 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self._send_json(default_unlock_items())
         if path == "/api/tun":
             # 真实 TUN 状态：读 config.yaml 的 tun.enable（mihomo GET /configs 返回
-            # 的是静态快照，动态 PUT 不生效，故以配置文件为准）
+            # 的是静态快照，动态 PUT 不生效，故以配置文件为准）；
+            # settings 附带 tun: 段全部参数，供设置弹窗使用。
             try:
-                cfg = yaml.safe_load(read_config()) or {}
-                tun = cfg.get("tun") or {}
-                return self._send_json({"enable": bool(tun.get("enable", False))})
+                settings = _read_tun_settings()
+                return self._send_json({"enable": bool(settings.get("enable", False)),
+                                        "settings": settings})
             except Exception:
-                return self._send_json({"enable": False})
+                return self._send_json({"enable": False, "settings": dict(_TUN_DEFAULTS)})
+        if path == "/api/system-proxy":
+            # 系统代理（代理环境变量托管）状态
+            try:
+                return self._send_json(_proxy_status_data())
+            except Exception as e:
+                return self._send_json({"error": str(e)}, 500)
         if path == "/api/mode":
             # 真实代理模式：优先读引擎实时 mode（热切换后立即生效），
             # 引擎不可用时回退到 config.yaml 的 mode。
@@ -2977,6 +3378,54 @@ class AdminHandler(BaseHTTPRequestHandler):
                                             "message": "TUN 已" + ("开启" if enable else "关闭") + "，服务已重启"})
                 return self._send_json({"success": True,
                                         "message": "TUN 已" + ("开启" if enable else "关闭") + "，下次启动服务时生效"})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/tun-settings":
+            # 保存 TUN（虚拟网卡）参数：stack/device/mtu/自动路由/自动重定向/
+            # 出口网卡检测/DNS 劫持/严格路由/排除网段。TUN 已开启且服务运行中时
+            # 立即重启引擎生效；否则仅保存，下次启动时生效。
+            try:
+                data = json.loads(body) if body else {}
+                patch = data.get("settings") or {}
+            except Exception:
+                return self._send_json({"success": False, "error": "参数错误"}, 400)
+            try:
+                ok, msg = set_tun_settings_in_config(patch)
+                if not ok:
+                    return self._send_json({"success": False, "error": msg}, 400)
+                settings = _read_tun_settings()
+                running, _ = is_running()
+                restarted = False
+                if running and bool(settings.get("enable")):
+                    stopped = stop_service()
+                    if not stopped.get("success"):
+                        return self._send_json({"success": False,
+                                                "error": "TUN 设置已保存，但停止旧服务失败: " + str(stopped.get("error", ""))}, 500)
+                    started = start_service()
+                    if not started.get("success"):
+                        return self._send_json({"success": False,
+                                                "error": "TUN 设置已保存，但重启服务失败: " + str(started.get("error", ""))}, 500)
+                    restarted = True
+                return self._send_json({
+                    "success": True,
+                    "settings": settings,
+                    "restarted": restarted,
+                    "message": "TUN 设置已保存" + ("，服务已重启" if restarted else "，开启 TUN 后生效")})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/system-proxy":
+            # 系统代理（代理环境变量托管）：开启/关闭与设置
+            try:
+                data = json.loads(body) if body else {}
+            except Exception:
+                return self._send_json({"success": False, "error": "参数错误"}, 400)
+            try:
+                status, err = update_proxy_settings(data)
+                if err:
+                    return self._send_json({"success": False, "error": err}, 400)
+                status["success"] = True
+                status["message"] = "系统代理已" + ("开启" if status.get("enabled") else "关闭")
+                return self._send_json(status)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/update-geo":
@@ -3406,6 +3855,12 @@ def main():
     # 确保 config.yaml 存在（重装/首装后自动初始化），否则引擎无法加载配置
     ensure_config_initialized()
     _migrate_to_file_providers()
+
+    # 系统代理启动对账：未明确开启过的托管块一律关闭（仅移除本应用管理块）
+    try:
+        reconcile_proxy_on_start()
+    except Exception as e:
+        log(f"proxy reconcile skipped: {e}")
 
     # Start Unix socket server (for fnOS iframe integration) — non-fatal if it fails
     start_unix_socket_server()
