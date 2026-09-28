@@ -586,7 +586,6 @@ CORE_SETTINGS_FILE = f"{TRIM_PKGVAR}/core-settings.json"
 
 def _default_core_settings():
     return {
-        "mode": "managed",                 # managed=面板托管 | external=外部 Mihomo
         "healthcheck_url": "https://www.gstatic.com/generate_204",
         "healthcheck_timeout": 3000,
     }
@@ -599,8 +598,6 @@ def _read_core_settings():
             data = json.load(f) or {}
     except Exception:
         data = {}
-    if data.get("mode") in ("managed", "external"):
-        st["mode"] = data["mode"]
     if isinstance(data.get("healthcheck_url"), str) and data["healthcheck_url"].strip():
         st["healthcheck_url"] = data["healthcheck_url"].strip()
     try:
@@ -622,19 +619,7 @@ def _write_core_settings(settings):
 
 
 def _ctrl_endpoint():
-    """面板→引擎 API 的 (host, port)。
-    external 模式跟随 config.yaml 的 external-controller；managed 用包装器环境变量。"""
-    st = _read_core_settings()
-    if st.get("mode") == "external":
-        try:
-            cfg = yaml.safe_load(read_config()) or {}
-            addr = str(cfg.get("external-controller", "")).strip()
-            addr = addr.replace("http://", "").replace("https://", "")
-            if ":" in addr:
-                h, pt = addr.rsplit(":", 1)
-                return (h or "127.0.0.1"), int(pt)
-        except Exception:
-            pass
+    """面板→引擎 API 的 (host, port)（由包装器环境变量提供）。"""
     return (MIHOMO_CTRL_HOST, MIHOMO_CTRL_PORT)
 DEFAULT_NO_PROXY = "localhost,127.0.0.1,::1"
 
@@ -1183,10 +1168,6 @@ def request_provider_restart():
     return True
 
 def start_service():
-    # external 模式：引擎由用户自有服务管理，面板不启停
-    if _read_core_settings().get("mode") == "external":
-        return {"success": True, "skipped": True,
-                "message": "外部 Mihomo 模式：引擎由本机服务管理，面板不执行启停"}
     running, pid = is_running()
     if running:
         if pid and not _find_engine_pids():
@@ -1236,10 +1217,6 @@ def start_service():
         return {"success": False, "error": str(e)}
 
 def stop_service():
-    # external 模式：引擎由用户自有服务管理，面板不启停
-    if _read_core_settings().get("mode") == "external":
-        return {"success": True, "skipped": True,
-                "message": "外部 Mihomo 模式：引擎由本机服务管理，面板不执行启停"}
     # Remove host interception before stopping the listener, otherwise a failed
     # connection can be redirected to a dead redir-port.
     _cleanup_host_transparent()
@@ -3316,7 +3293,6 @@ class AdminHandler(BaseHTTPRequestHandler):
                     "pid": pid,
                     "core_version": core_ver,
                     "app_version": _get_app_version(),
-                    "mode": _cst.get("mode", "managed"),
                     "controller": f"{_ch}:{_cp}",
                     "controller_port": _cp,
                     "port_conflict": port_conflict,
@@ -3481,7 +3457,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 if isinstance(result, dict) and not result.get("success", True):
                     return self._send_json({"success": False, "error": result.get("error", "操作失败")}, 500)
                 if isinstance(result, dict) and result.get("skipped"):
-                    # external 模式等被门控：透传原因，不改变持久化的开关状态
+                    # 操作被跳过（如 skipped）：透传原因，不改变持久化的开关状态
                     return self._send_json({"success": True, "skipped": True,
                                             "message": result.get("message", "操作被跳过")})
                 # persist the user's choice; restored next time the panel daemon starts
@@ -3575,8 +3551,6 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json({"success": False, "error": "参数错误"}, 400)
             try:
                 st = _read_core_settings()
-                if "mode" in data and data["mode"] in ("managed", "external"):
-                    st["mode"] = data["mode"]
                 if "healthcheck_url" in data:
                     u = str(data["healthcheck_url"] or "").strip()
                     if not u.startswith(("http://", "https://")) or len(u) > 500:
@@ -3998,9 +3972,6 @@ def start_unix_socket_server():
         return None
 
 def _auto_restore_service():
-    # external 模式：不自动恢复托管引擎
-    if _read_core_settings().get("mode") == "external":
-        return
     """Restore the last saved engine state when the panel daemon starts."""
     if not _read_service_state():
         log("service.state=off, engine stays stopped")
