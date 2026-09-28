@@ -1501,7 +1501,6 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.mode">运行模式</span><span class="vcfg-hint">mode</span></span><select id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule" data-i18n="vcfg.modeRule">规则</option><option value="global" data-i18n="vcfg.modeGlobal">全局</option><option value="direct" data-i18n="vcfg.modeDirect">直连</option></select></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.logLevel">日志级别</span><span class="vcfg-hint">log-level</span></span><select id="vcfgLogLevel" onchange="saveVcfg('log-level')"><option value="silent">silent</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option><option value="debug">debug</option></select></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.ipv6">IPv6</span><span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tcpConcurrent">TCP 并发</span><span class="vcfg-hint">tcp-concurrent</span></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.findProcess">查找进程</span><span class="vcfg-hint">find-process-mode</span></span><select id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
             </div>
@@ -1509,6 +1508,7 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
           <div class="vcfg-card">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5m0 3c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z"/></svg></span><span data-i18n="vcfg.ports">网络端口</span><button class="vcfg-reset-btn" onclick="resetConfigSection('inbound')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.ctrlPort">控制器端口</span><span class="vcfg-hint">external-controller</span></span><input type="number" id="vcfgCtrlPort" placeholder="9090" onchange="saveCtrlPort()"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.mixedPort">混合端口</span><span class="vcfg-hint">mixed-port</span></span><input type="number" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><span class="vcfg-hint">http-port</span></span><input type="number" id="vcfgHttpPort" placeholder="留空不启用" onchange="saveVcfg('http-port')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.socksPort">Socks 端口</span><span class="vcfg-hint">socks-port</span></span><input type="number" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
@@ -1516,6 +1516,7 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tproxyPort">TProxy 端口</span><span class="vcfg-hint">tproxy-port</span></span><input type="number" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.bindAddr">监听地址</span><span class="vcfg-hint">bind-address</span></span><input type="text" id="vcfgBindAddr" placeholder="*" onchange="saveVcfg('bind-address')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.allowLan">局域网连接</span><span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.auth">认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass" onchange="saveVcfg('auth')"></div>
             </div>
           </div>
@@ -1554,7 +1555,6 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
           <div class="vcfg-card">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-ctrl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8H5v2h4V8zm0 3H5v2h4v-2zm0 3H5v2h4v-2zm3-6h7v2h-7V8zm0 3h7v2h-7v-2zm0 3h7v2h-7v-2z"/></svg></span><span data-i18n="vcfg.external">外部控制</span><button class="vcfg-reset-btn" onclick="resetConfigSection('external')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
             <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.extAddr">监听地址</span><span class="vcfg-hint">external-controller</span></span><input type="text" id="vcfgExtAddr" placeholder="0.0.0.0:9090" onchange="saveVcfg('ext-addr')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.extSecret">密钥</span><span class="vcfg-hint">secret</span></span><input type="text" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.extUi">外部 UI</span><span class="vcfg-hint">external-ui</span></span><input type="text" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')"></div>
             </div>
@@ -5149,13 +5149,42 @@ function loadVcfg() {
     var vde = document.getElementById('vcfgDnsEnable'); if (vde) vde.checked = /\bdns:/.test(cfg) && getBool('enable');
     var vdh = document.getElementById('vcfgDnsEnhanced'); if (vdh) vdh.value = getVal('enhanced-mode', 'fake-ip');
     var vfir = document.getElementById('vcfgFakeIpRange'); if (vfir) vfir.value = getVal('fake-ip-range', '198.18.0.1/16');
-    var vea = document.getElementById('vcfgExtAddr'); if (vea) vea.value = getVal('external-controller', '0.0.0.0:9090');
+    var vcp = document.getElementById('vcfgCtrlPort'); if (vcp) { var ec0 = getVal('external-controller', '0.0.0.0:9090'); vcp.value = ec0.indexOf(':') !== -1 ? ec0.split(':').pop() : '9090'; }
     var ves = document.getElementById('vcfgExtSecret'); if (ves) ves.value = getVal('secret', '');
     var vga = document.getElementById('vcfgGeoAuto'); if (vga) vga.checked = getBool('geo-auto-update');
     var vgi = document.getElementById('vcfgGeoInterval'); if (vgi) vgi.value = getVal('geo-update-interval', '24');
     loadVcfgSections(cfg);
   });
 }
+function saveCtrlPort() {
+  var el = document.getElementById('vcfgCtrlPort');
+  var port = (el.value || '').trim();
+  if (!port) return;
+  if (!/^\d+$/.test(port) || +port < 1 || +port > 65535) {
+    showToast('端口必须是 1-65535 的整数', 'error');
+    return;
+  }
+  fetch('api/config').then(r => r.json()).then(d => {
+    var lines = (d.config || '').split('\n');
+    var changed = false;
+    for (var i = 0; i < lines.length; i++) {
+      var m = lines[i].match(/^external-controller:\s*(\S+)/);
+      if (m) {
+        var v = m[1].replace(/^["']|["']$/g, '');
+        var host = v.indexOf(':') !== -1 ? v.split(':')[0] : '0.0.0.0';
+        lines[i] = 'external-controller: ' + host + ':' + port;
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) { lines.push('external-controller: 0.0.0.0:' + port); }
+    return fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: lines.join('\n') }) });
+  }).then(r => r.json()).then(d2 => {
+    if (d2.success) showToast('已保存: external-controller', 'success');
+    else showToast('保存失败: ' + (d2.error || ''), 'error');
+  }).catch(e => showToast('保存出错: ' + e, 'error'));
+}
+
 function saveVcfg(key) {
   var elId = {
     'mixed-port':'vcfgMixedPort','mode':'vcfgMode','log-level':'vcfgLogLevel',
@@ -5168,7 +5197,7 @@ function saveVcfg(key) {
     'dns-enable':'vcfgDnsEnable','dns-enhanced':'vcfgDnsEnhanced','fake-ip-range':'vcfgFakeIpRange',
     'dns-listen':'vcfgDnsListen','dns-respect-rules':'vcfgDnsRespect',
     'dns-ipv6':'vcfgDnsIpv6','dns-use-hosts':'vcfgDnsHosts','dns-use-sys-hosts':'vcfgDnsSysHosts',
-    'ext-addr':'vcfgExtAddr','ext-secret':'vcfgExtSecret','ext-ui':'vcfgExtUi',
+    'ext-secret':'vcfgExtSecret','ext-ui':'vcfgExtUi',
     'profile':'vcfgProfile','geodata-mode':'vcfgGeodataMode','geo-loader':'vcfgGeoLoader',
     'global-ua':'vcfgGlobalUa','keep-alive':'vcfgKeepAlive','sniffer-enable':'vcfgSniffer'
   }[key];
@@ -5199,7 +5228,6 @@ function saveVcfg(key) {
     if (key === 'dns-ipv6') yamlKey = 'ipv6';
     if (key === 'dns-use-hosts') yamlKey = 'use-hosts';
     if (key === 'dns-use-sys-hosts') yamlKey = 'use-system-hosts';
-    if (key === 'ext-addr') yamlKey = 'external-controller';
     if (key === 'ext-secret') yamlKey = 'secret';
     if (key === 'ext-ui') yamlKey = 'external-ui';
     if (key === 'geo-loader') yamlKey = 'geodata-loader';
@@ -5491,9 +5519,9 @@ function resetConfigSection(section) {
   showConfirm('vcfg.resetConfirm', function() {
   // Sections with simple key-value pairs (not a config section)
   var simpleDefaults = {
-    'basic': {'mode':'rule','log-level':'info','ipv6':'true','unified-delay':'true','tcp-concurrent':'true','find-process-mode':'off'},
-    'inbound': {'mixed-port':'7890','socks-port':'7891','redir-port':'7892','tproxy-port':'7893','allow-lan':'true','authentication':'[]'},
-    'external': {'external-controller':'0.0.0.0:9090','secret':'','external-ui':'dashboard'},
+    'basic': {'mode':'rule','log-level':'info','ipv6':'true','tcp-concurrent':'true','find-process-mode':'off'},
+    'inbound': {'external-controller':'0.0.0.0:9090','mixed-port':'7890','socks-port':'7891','redir-port':'7892','tproxy-port':'7893','bind-address':'*','allow-lan':'true','unified-delay':'true','authentication':'[]'},
+    'external': {'secret':'','external-ui':'dashboard'},
     'advanced': {'profile':'','geodata-mode':'true','geodata-loader':'memconservative','global-ua':'clash.meta','keep-alive-interval':'30'}
   };
   if (simpleDefaults[section]) {
@@ -5773,7 +5801,7 @@ var I18N = {
     'config.visual':'可视化配置','config.visualTitle':'返回可视化配置',
     'config.reload':'重新加载','config.save':'保存并重启',
     'config.desc':'直接编辑 config.yaml。保存后服务将自动重启。',
-    'vcfg.basic':'基础设置','vcfg.inbound':'入站设置','vcfg.ports':'网络端口','vcfg.mixedPort':'混合端口','vcfg.bindAddr':'监听地址','vcfg.tunMtu':'MTU','vcfg.dnsListen':'监听地址','vcfg.respectRules':'遵循规则','vcfg.defaultNameserver':'默认 DNS','vcfg.proxyNameserver':'代理服务器 DNS','vcfg.fakeIpFilter':'Fake-IP 过滤','vcfg.env':'环境变量','vcfg.dnsResolve':'DNS 与解析','vcfg.tun':'TUN 设置','vcfg.dns':'DNS 设置',
+    'vcfg.basic':'基础设置','vcfg.inbound':'入站设置','vcfg.ports':'网络端口','vcfg.mixedPort':'混合端口','vcfg.bindAddr':'监听地址','vcfg.ctrlPort':'控制器端口','vcfg.tunMtu':'MTU','vcfg.dnsListen':'监听地址','vcfg.respectRules':'遵循规则','vcfg.defaultNameserver':'默认 DNS','vcfg.proxyNameserver':'代理服务器 DNS','vcfg.fakeIpFilter':'Fake-IP 过滤','vcfg.env':'环境变量','vcfg.dnsResolve':'DNS 与解析','vcfg.tun':'TUN 设置','vcfg.dns':'DNS 设置',
     'vcfg.external':'外部控制','vcfg.advanced':'高级设置',
     'vcfg.mode':'运行模式','vcfg.modeRule':'规则','vcfg.modeGlobal':'全局','vcfg.modeDirect':'直连',
     'vcfg.logLevel':'日志级别','vcfg.tcpConcurrent':'TCP 并发',
@@ -5932,7 +5960,7 @@ var I18N = {
     'config.visual':'Visual Config','config.visualTitle':'Back to Visual Config',
     'config.reload':'Reload','config.save':'Save & Restart',
     'config.desc':'Edit config.yaml directly. Service will restart after saving.',
-    'vcfg.basic':'Basic','vcfg.inbound':'Inbound','vcfg.ports':'Network Ports','vcfg.mixedPort':'Mixed Port','vcfg.bindAddr':'Bind Address','vcfg.tunMtu':'MTU','vcfg.dnsListen':'Listen','vcfg.respectRules':'Respect Rules','vcfg.defaultNameserver':'Default DNS','vcfg.proxyNameserver':'Proxy Server DNS','vcfg.fakeIpFilter':'Fake-IP Filter','vcfg.env':'Environment Variables','vcfg.dnsResolve':'DNS & Resolution','vcfg.tun':'TUN','vcfg.dns':'DNS',
+    'vcfg.basic':'Basic','vcfg.inbound':'Inbound','vcfg.ports':'Network Ports','vcfg.mixedPort':'Mixed Port','vcfg.bindAddr':'Bind Address','vcfg.ctrlPort':'Controller Port','vcfg.tunMtu':'MTU','vcfg.dnsListen':'Listen','vcfg.respectRules':'Respect Rules','vcfg.defaultNameserver':'Default DNS','vcfg.proxyNameserver':'Proxy Server DNS','vcfg.fakeIpFilter':'Fake-IP Filter','vcfg.env':'Environment Variables','vcfg.dnsResolve':'DNS & Resolution','vcfg.tun':'TUN','vcfg.dns':'DNS',
     'vcfg.external':'External','vcfg.advanced':'Advanced',
     'vcfg.mode':'Mode','vcfg.modeRule':'Rule','vcfg.modeGlobal':'Global','vcfg.modeDirect':'Direct',
     'vcfg.logLevel':'Log Level','vcfg.tcpConcurrent':'TCP Concurrent',
