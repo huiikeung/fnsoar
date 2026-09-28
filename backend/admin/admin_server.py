@@ -488,7 +488,7 @@ def live_patch_config(payload):
     通过 PATCH /configs 立即生效。返回 (ok, status_or_error)。"""
     import urllib.request as _ureq
     import urllib.error as _uerror
-    url = f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/configs"
+    url = f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/configs"
     body = json.dumps(payload).encode()
     req = _ureq.Request(url, data=body, headers={
         "Content-Type": "application/json",
@@ -579,6 +579,63 @@ PROXY_TARGETS = (
 )
 SYSTEM_PROXY_SETTINGS_FILE = f"{TRIM_PKGVAR}/system-proxy.json"
 PROXY_BACKUP_DIR = f"{TRIM_PKGVAR}/backups/proxy-environment"
+
+# ── 内核设置（运行方式 / 延迟测试参数） ────────────────────────────────
+CORE_SETTINGS_FILE = f"{TRIM_PKGVAR}/core-settings.json"
+
+
+def _default_core_settings():
+    return {
+        "mode": "managed",                 # managed=面板托管 | external=外部 Mihomo
+        "healthcheck_url": "https://www.gstatic.com/generate_204",
+        "healthcheck_timeout": 3000,
+    }
+
+
+def _read_core_settings():
+    st = _default_core_settings()
+    try:
+        with open(CORE_SETTINGS_FILE, "r", encoding="utf-8") as f:
+            data = json.load(f) or {}
+    except Exception:
+        data = {}
+    if data.get("mode") in ("managed", "external"):
+        st["mode"] = data["mode"]
+    if isinstance(data.get("healthcheck_url"), str) and data["healthcheck_url"].strip():
+        st["healthcheck_url"] = data["healthcheck_url"].strip()
+    try:
+        st["healthcheck_timeout"] = max(1000, min(30000, int(data.get("healthcheck_timeout", st["healthcheck_timeout"]))))
+    except Exception:
+        pass
+    return st
+
+
+def _write_core_settings(settings):
+    try:
+        os.makedirs(os.path.dirname(CORE_SETTINGS_FILE), exist_ok=True)
+        tmp = CORE_SETTINGS_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, CORE_SETTINGS_FILE)
+    except Exception:
+        pass
+
+
+def _ctrl_endpoint():
+    """面板→引擎 API 的 (host, port)。
+    external 模式跟随 config.yaml 的 external-controller；managed 用包装器环境变量。"""
+    st = _read_core_settings()
+    if st.get("mode") == "external":
+        try:
+            cfg = yaml.safe_load(read_config()) or {}
+            addr = str(cfg.get("external-controller", "")).strip()
+            addr = addr.replace("http://", "").replace("https://", "")
+            if ":" in addr:
+                h, pt = addr.rsplit(":", 1)
+                return (h or "127.0.0.1"), int(pt)
+        except Exception:
+            pass
+    return (MIHOMO_CTRL_HOST, MIHOMO_CTRL_PORT)
 DEFAULT_NO_PROXY = "localhost,127.0.0.1,::1"
 
 
@@ -968,7 +1025,7 @@ def is_running():
     derived from it — 9090 (engine controller) is the authoritative check."""
     # 9090 是引擎控制端口；端口在监听时服务就是运行中。优先使用它，
     # 避免每次点击左栏都扫描进程导致状态短暂误判。
-    if not _port_free(MIHOMO_CTRL_PORT):
+    if not _port_free(_ctrl_endpoint()[1]):
         pids = _find_engine_pids()
         return True, (pids[0] if pids else None)
     pids = _find_engine_pids()
@@ -1126,6 +1183,10 @@ def request_provider_restart():
     return True
 
 def start_service():
+    # external 模式：引擎由用户自有服务管理，面板不启停
+    if _read_core_settings().get("mode") == "external":
+        return {"success": True, "skipped": True,
+                "message": "外部 Mihomo 模式：引擎由本机服务管理，面板不执行启停"}
     running, pid = is_running()
     if running:
         if pid and not _find_engine_pids():
@@ -1141,7 +1202,7 @@ def start_service():
         if _host_transparent_enabled() and not _ensure_host_transparent_config():
             return {"success": False, "error": "无法准备主机透明代理 redir-port"}
         for _ in range(10):
-            if _port_free(MIHOMO_CTRL_PORT):
+            if _port_free(_ctrl_endpoint()[1]):
                 break
             time.sleep(0.5)
         # 引擎是面板守护的子进程，通过 bin/engine-start 启动
@@ -1175,6 +1236,10 @@ def start_service():
         return {"success": False, "error": str(e)}
 
 def stop_service():
+    # external 模式：引擎由用户自有服务管理，面板不启停
+    if _read_core_settings().get("mode") == "external":
+        return {"success": True, "skipped": True,
+                "message": "外部 Mihomo 模式：引擎由本机服务管理，面板不执行启停"}
     # Remove host interception before stopping the listener, otherwise a failed
     # connection can be redirected to a dead redir-port.
     _cleanup_host_transparent()
@@ -1210,7 +1275,7 @@ def stop_service():
                 pass
         # 5) 等待控制端口完全释放（最多 8s），避免新实例 bind 失败
         for _ in range(16):
-            if _port_free(MIHOMO_CTRL_PORT):
+            if _port_free(_ctrl_endpoint()[1]):
                 break
             time.sleep(0.5)
         # 注意：PID_FILE 现在是 fnOS 面板守护进程（admin server）的 PID，
@@ -1545,7 +1610,7 @@ def _get_core_version_cached():
         return _CORE_VER_CACHE
     try:
         with urllib.request.urlopen(
-                f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/version", timeout=1) as r:
+                f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/version", timeout=1) as r:
             v = (json.loads(r.read().decode()) or {}).get("version") or ""
         if v:
             _CORE_VER_CACHE = v
@@ -2772,7 +2837,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         try:
             import urllib.request as _uq3
             rq3 = _uq3.Request(
-                f"http://127.0.0.1:{MIHOMO_CTRL_PORT}/providers/proxies/{quote(name)}",
+                f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/providers/proxies/{quote(name)}",
                 method="PUT")
             urllib.request.urlopen(rq3, timeout=20).read(64)
             note = "已同步内核"
@@ -2808,7 +2873,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         try:
             import urllib.request as _ureq
             import urllib.error as _uerror
-            url = f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/{sub_path}"
+            url = f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/{sub_path}"
             fwd_headers = {
                 "Accept": headers.get("Accept", "application/json"),
                 "Content-Type": headers.get("Content-Type", "application/json"),
@@ -2899,9 +2964,9 @@ class AdminHandler(BaseHTTPRequestHandler):
                 sub += "?" + qs
             # Connect to the real controller and replay the upgrade request.
             upstream = _sock.create_connection(
-                (MIHOMO_CTRL_HOST, MIHOMO_CTRL_PORT), timeout=10)
+                (_ctrl_endpoint()[0], _ctrl_endpoint()[1]), timeout=10)
             req = (f"GET /{sub} HTTP/1.1\r\n"
-                   f"Host: {MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}\r\n"
+                   f"Host: {_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}\r\n"
                    f"Upgrade: websocket\r\n"
                    f"Connection: Upgrade\r\n"
                    f"Sec-WebSocket-Key: {self.headers.get('Sec-WebSocket-Key','')}\r\n"
@@ -3071,7 +3136,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             try:
                 import urllib.request as _ureq
                 req = _ureq.Request(
-                    f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/providers/proxies",
+                    f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/providers/proxies",
                     headers={"Accept": "application/json"})
                 with _ureq.urlopen(req, timeout=10) as resp:
                     raw = json.loads(resp.read())
@@ -3212,7 +3277,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             # 引擎不可用时回退到 config.yaml 的 mode。
             try:
                 import urllib.request as _ureq
-                url = f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/configs"
+                url = f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/configs"
                 with _ureq.urlopen(_ureq.Request(url, headers={"Accept": "application/json"}), timeout=3) as resp:
                     d = json.loads(resp.read())
                     if d.get("mode"):
@@ -3231,22 +3296,45 @@ class AdminHandler(BaseHTTPRequestHandler):
                 core_ver = "unknown"
                 try:
                     import urllib.request as _ureq
-                    url = f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/version"
+                    url = f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/version"
                     with _ureq.urlopen(_ureq.Request(url, headers={"Accept": "application/json"}), timeout=2) as resp:
                         core_ver = json.loads(resp.read()).get("version", "unknown")
                 except Exception:
                     pass
-                port_conflict = (not running) and (not _port_free(MIHOMO_CTRL_PORT))
+                _ch, _cp = _ctrl_endpoint()
+                port_conflict = (not running) and (not _port_free(_cp))
+                _cst = _read_core_settings()
+                _secret_set = False
+                try:
+                    _cfg = yaml.safe_load(read_config()) or {}
+                    _secret_set = bool(str(_cfg.get("secret", "")).strip())
+                except Exception:
+                    pass
                 return self._send_json({
                     "success": True,
                     "running": running,
                     "pid": pid,
                     "core_version": core_ver,
                     "app_version": _get_app_version(),
-                    "controller": f"{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}",
-                    "controller_port": MIHOMO_CTRL_PORT,
+                    "mode": _cst.get("mode", "managed"),
+                    "controller": f"{_ch}:{_cp}",
+                    "controller_port": _cp,
                     "port_conflict": port_conflict,
+                    "secret_set": _secret_set,
+                    "binary_path": os.path.join(TRIM_APPDEST, "bin", "mihomo"),
+                    "config_path": CONFIG_FILE,
+                    "healthcheck": {"url": _cst.get("healthcheck_url"),
+                                    "timeout": _cst.get("healthcheck_timeout")},
                 })
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/core-settings":
+            try:
+                st = _read_core_settings()
+                ch, cp = _ctrl_endpoint()
+                data = dict(st)
+                data["controller"] = f"{ch}:{cp}"
+                return self._send_json({"success": True, "settings": data})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/geo-status":
@@ -3276,7 +3364,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 import urllib.request as _ureq
                 core_ver = "unknown"
                 try:
-                    url = f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/version"
+                    url = f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/version"
                     with _ureq.urlopen(_ureq.Request(url, headers={"Accept": "application/json"}), timeout=3) as resp:
                         d = json.loads(resp.read())
                         core_ver = d.get("version", "unknown")
@@ -3387,15 +3475,20 @@ class AdminHandler(BaseHTTPRequestHandler):
             try:
                 data = json.loads(body) if body else {}
                 enable = bool(data.get("enable"))
-                if enable:
-                    ok = start_service()
-                else:
-                    ok = stop_service()
-                if not ok:
+                result = start_service() if enable else stop_service()
+                if not result:
                     return self._send_json({"success": False, "error": "操作失败"}, 500)
+                if isinstance(result, dict) and not result.get("success", True):
+                    return self._send_json({"success": False, "error": result.get("error", "操作失败")}, 500)
+                if isinstance(result, dict) and result.get("skipped"):
+                    # external 模式等被门控：透传原因，不改变持久化的开关状态
+                    return self._send_json({"success": True, "skipped": True,
+                                            "message": result.get("message", "操作被跳过")})
                 # persist the user's choice; restored next time the panel daemon starts
                 _write_service_state(enable)
-                return self._send_json({"success": True, "message": "服务已" + ("启动" if enable else "停止")})
+                msg = result.get("message") if isinstance(result, dict) else None
+                return self._send_json({"success": True,
+                                        "message": msg or ("服务已" + ("启动" if enable else "停止"))})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/tun":
@@ -3473,6 +3566,35 @@ class AdminHandler(BaseHTTPRequestHandler):
                 status["success"] = True
                 status["message"] = "系统代理已" + ("开启" if status.get("enabled") else "关闭")
                 return self._send_json(status)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/core-settings":
+            try:
+                data = json.loads(body) if body else {}
+            except Exception:
+                return self._send_json({"success": False, "error": "参数错误"}, 400)
+            try:
+                st = _read_core_settings()
+                if "mode" in data and data["mode"] in ("managed", "external"):
+                    st["mode"] = data["mode"]
+                if "healthcheck_url" in data:
+                    u = str(data["healthcheck_url"] or "").strip()
+                    if not u.startswith(("http://", "https://")) or len(u) > 500:
+                        return self._send_json({"success": False, "error": "延迟测试 URL 无效"}, 400)
+                    if any(c in u for c in "\r\n\x00 \"'"):
+                        return self._send_json({"success": False, "error": "延迟测试 URL 含非法字符"}, 400)
+                    st["healthcheck_url"] = u
+                if "healthcheck_timeout" in data:
+                    try:
+                        st["healthcheck_timeout"] = max(1000, min(30000, int(data["healthcheck_timeout"])))
+                    except Exception:
+                        return self._send_json({"success": False, "error": "超时必须是毫秒数"}, 400)
+                _write_core_settings(st)
+                ch, cp = _ctrl_endpoint()
+                data2 = dict(st)
+                data2["controller"] = f"{ch}:{cp}"
+                return self._send_json({"success": True, "settings": data2,
+                                        "message": "内核设置已保存"})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/update-geo":
@@ -3641,7 +3763,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                     try:
                         import urllib.request as _uqF
                         rqF = _uqF.Request(
-                            f"http://127.0.0.1:{MIHOMO_CTRL_PORT}/providers/proxies/{quote(final_name)}",
+                            f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/providers/proxies/{quote(final_name)}",
                             method="PUT")
                         urllib.request.urlopen(rqF, timeout=15).read(16)
                     except Exception as e10:
@@ -3682,7 +3804,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 try:
                     import urllib.request as _uqG
                     rqG = _uqG.Request(
-                        f"http://127.0.0.1:{MIHOMO_CTRL_PORT}/providers/proxies/{quote(eff_name)}",
+                        f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/providers/proxies/{quote(eff_name)}",
                         method="PUT")
                     urllib.request.urlopen(rqG, timeout=15).read(16)
                 except Exception as e14:
@@ -3876,6 +3998,9 @@ def start_unix_socket_server():
         return None
 
 def _auto_restore_service():
+    # external 模式：不自动恢复托管引擎
+    if _read_core_settings().get("mode") == "external":
+        return
     """Restore the last saved engine state when the panel daemon starts."""
     if not _read_service_state():
         log("service.state=off, engine stays stopped")
