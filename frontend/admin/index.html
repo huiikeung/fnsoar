@@ -714,6 +714,12 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .dns-ta-box textarea:focus{border-color:var(--accent)}
 .dns-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);font-size:10.5px;color:var(--faint)}
 .dns-foot .core-btn{padding:5px 12px;font-size:11px}
+.tun-banner{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;font-size:11px;line-height:1.55;margin-bottom:8px;background:rgba(255,191,91,.06);border:1px solid rgba(255,191,91,.18);color:#c2b59d}
+.tun-banner strong{flex:none;font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;color:#ffc56a;background:rgba(255,191,91,.1);border:1px solid rgba(255,191,91,.24);margin-top:1px}
+.tun-note{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border:1px solid rgba(255,191,91,.16);border-radius:10px;background:rgba(255,191,91,.04);font-size:10.5px;line-height:1.6;color:#c2b59d;margin-top:4px}
+.tun-note strong{color:#e8b04a;font-weight:700;white-space:nowrap}
+.tun-note svg{width:13px;height:13px;fill:#e8b04a;flex-shrink:0;margin-top:1px}
+.dns-ta-note{font-size:10px;color:var(--faint);line-height:1.5}
 @media(max-width:900px){.dns-grid{grid-template-columns:1fr}}
 /* 连接详情弹窗 */
 .con-detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center}
@@ -1035,7 +1041,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="mx-grid2">
               <div class="mx-field">
                 <div class="mx-field-label">TUN Stack <button class="mx-help" type="button" title="TUN Stack">?</button></div>
-                <select class="mx-input" id="tmStack"><option value="mixed">mixed（推荐）</option><option value="system">system</option><option value="gvisor">gVisor</option></select>
+                <select class="mx-input" id="tmStack"><option value="mixed" data-i18n="vcfg.stackMixed">mixed（推荐）</option><option value="system" data-i18n="vcfg.stackSystem">system</option><option value="gvisor" data-i18n="vcfg.stackGvisor">gVisor</option></select>
                 <div class="mx-field-note" data-i18n="net.stackHint">mixed：TCP 使用 System，UDP 使用 gVisor，兼顾稳定性与兼容性。</div>
               </div>
               <div class="mx-field">
@@ -1539,20 +1545,48 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.proxyAuth">代理认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass，多组用逗号" title="代理入站认证：其他设备经代理端口上网时需输入的用户名:密码，多组用英文逗号分隔" onchange="saveProxyAuth()"></div>
             </div>
           </div>
-          <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-tun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span><span data-i18n="vcfg.tun">TUN 设置</span><span class="flex-sp"></span><button class="mini-btn" style="padding:3px 12px;font-size:12px" onclick="saveTunSettings()" data-i18n="common.save">保存</button><button class="vcfg-reset-btn" onclick="resetConfigSection('tun')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunEnable">TUN 启用</span><span class="vcfg-hint">tun.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgTun" onchange="saveVcfg('tun')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDevice">设备名称</span><span class="vcfg-hint">tun.device</span></span><input type="text" id="vcfgTunDevice" placeholder="Mihomo" onchange="saveVcfg('tun-device')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunStack">协议栈</span><span class="vcfg-hint">tun.stack</span></span><select id="vcfgTunStack" onchange="saveVcfg('tun-stack')"><option value="mixed">mixed（推荐）</option><option value="system">system</option><option value="gvisor">gVisor</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunMtu">MTU</span><span class="vcfg-hint">tun.mtu</span></span><input type="number" id="vcfgTunMtu" placeholder="1500" min="1280" max="65535" onchange="saveTunSettings()"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDnsHijack">DNS 劫持</span><span class="vcfg-hint">tun.dns-hijack</span></span><label class="toggle"><input type="checkbox" id="vcfgTunDnsHijack" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunAutoRoute">自动路由</span><span class="vcfg-hint">tun.auto-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveVcfg('tun-auto-route')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.autoRedirect">Auto Redirect</span><span class="vcfg-hint">tun.auto-redirect</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRedirect" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunAutoDetect">自动检测接口</span><span class="vcfg-hint">tun.auto-detect-interface</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoDetect" onchange="saveVcfg('tun-auto-detect')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.strictRoute">严格路由</span><span class="vcfg-hint">tun.strict-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunStrictRoute" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="net.exclude">排除网段</span><span class="vcfg-hint">tun.route-exclude-address</span></span><textarea id="vcfgTunExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" onchange="saveTunSettings()"></textarea></div>
+<div class="vcfg-card tun-module">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-tun"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span><span data-i18n="vcfg.tun">TUN 设置</span></div>
+            <div style="padding:12px 16px 14px">
+              <div class="dns-field" style="margin-bottom:12px">
+                <span class="dns-field-label"><span data-i18n="tun.master">虚拟网卡（TUN）</span><small style="font-family:inherit;font-size:10.5px;line-height:1.5" data-i18n="tun.masterHint">接管 NAS 系统流量；首页可快速开关，这里配置完整参数</small></span>
+                <div style="display:flex;align-items:center;gap:10px;flex:none">
+                  <span class="geo-status ok" id="tunModuleStatus">-</span>
+                  <label class="toggle"><input type="checkbox" id="vcfgTun" onchange="toggleTunModule(this.checked)"><span class="toggle-track"></span></label>
+                </div>
+              </div>
+              <div class="tun-banner" id="tunCoreBanner" style="display:none">
+                <strong data-i18n="tun.unavailable">不可用</strong>
+                <span data-i18n="tun.coreNotRunning">当前未检测到运行中的 Mihomo Core</span>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunStack">协议栈</span><small>tun.stack</small></span><select class="dns-input" id="vcfgTunStack" onchange="saveTunSettings()"><option value="mixed" data-i18n="vcfg.stackMixed">mixed（推荐）</option><option value="system" data-i18n="vcfg.stackSystem">system</option><option value="gvisor" data-i18n="vcfg.stackGvisor">gVisor</option></select></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunMtu">MTU</span><small>tun.mtu</small></span><input class="dns-input" id="vcfgTunMtu" placeholder="1500" onchange="saveTunSettings()"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunDevice">设备名称</span><small>tun.device</small></span><input class="dns-input" id="vcfgTunDevice" placeholder="tun" onchange="saveTunSettings()"></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunAutoRoute">自动路由</span><small data-i18n="tun.autoRouteHint">自动把系统流量路由到 TUN</small></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span>Auto Redirect</span><small data-i18n="net.autoRedirectHint">Linux 自动配置 nftables/iptables TCP 重定向</small></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRedirect" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunAutoDetect">自动检测接口</span><small data-i18n="net.autoDetectHint">自动选择实际的外网出口接口</small></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoDetect" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tunDnsHijack">DNS 劫持</span><small data-i18n="net.dnsHijackHint">劫持 UDP/TCP 53 到 Mihomo DNS 模块</small></span><label class="toggle"><input type="checkbox" id="vcfgTunDnsHijack" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="net.strictRoute">严格路由</span><small data-i18n="net.strictRouteHint">减少流量/DNS 泄漏；复杂网络可能影响其他虚拟网卡</small></span><label class="toggle"><input type="checkbox" id="vcfgTunStrictRoute" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="net.exclude">排除自定义网段</span><small>tun.route-exclude-address</small></span><textarea id="vcfgTunExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" onchange="saveTunSettings()"></textarea><div class="dns-ta-note" data-i18n="net.excludeHint">每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。</div></div>
+              </div>
+              <div class="tun-note">
+                <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
+                <span><strong data-i18n="tun.attention">注意</strong>　<span data-i18n="tun.note">TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。</span></span>
+              </div>
+              <div class="dns-foot">
+                <span data-i18n="tun.autosave">已自动保存 · 参数修改即写入 config.yaml；TUN 开启时保存后会自动重启引擎</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('tun')" data-i18n="dns.resetDefault">恢复默认值</button>
+                </div>
+              </div>
             </div>
+          </div>
           </div>
           <div class="vcfg-card dns-module">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.6-4-9s1.4-6.5 4-9z"/><path d="M12 3c-2.6 2.5-4 5.6-4 9s1.4 6.5 4 9"/><path d="M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9"/></svg></span><span data-i18n="vcfg.dns">DNS 设置</span></div>
@@ -5199,6 +5233,7 @@ function loadVcfg() {
     var val = document.getElementById('vcfgAllowLan'); if (val) val.checked = getBool('allow-lan');
     var v6 = document.getElementById('vcfgIpv6'); if (v6) v6.checked = getBool('ipv6');
     var vt = document.getElementById('vcfgTun'); if (vt) vt.checked = getBool('enable') && /tun:/.test(cfg);
+  refreshTunModule();
     var vtd = document.getElementById('vcfgTunDevice'); if (vtd) vtd.value = getVal('device', 'Mihomo');
     var vts = document.getElementById('vcfgTunStack'); if (vts) vts.value = getVal('stack', 'mixed');
     var vhp = document.getElementById('vcfgHttpPort'); if (vhp) vhp.value = getVal('http-port', '');
@@ -5727,6 +5762,36 @@ function saveDnsAdvSection() {
 }
 
 // ── DNS 列表字段通用保存（nameserver 系列 / fake-ip-filter） ────────────
+async function toggleTunModule(on) {
+  try {
+    const r = await fetch('api/tun', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ enable: on }) });
+    const d = await r.json();
+    if (!d.success) throw new Error(d.error || '');
+    showToast(d.message || (on ? t('net.bannerTunOn') : t('net.bannerTunOff')), 'success');
+    refreshTunModule();
+  } catch (e) {
+    showToast('TUN 切换失败: ' + (e.message || ''), 'error');
+    const el = document.getElementById('vcfgTun');
+    if (el) el.checked = !on;
+  }
+}
+
+function refreshTunModule() {
+  const vt = document.getElementById('vcfgTun');
+  const on = vt ? vt.checked : false;
+  const st = document.getElementById('tunModuleStatus');
+  if (st) {
+    st.textContent = on ? t('net.enabledOn') : t('net.enabledOff');
+    st.className = 'geo-status ' + (on ? 'ok' : 'missing');
+  }
+  // 引擎未运行时显示能力横幅
+  fetchJSON('api/core-status').then(function(d) {
+    if (!d) return;
+    const banner = document.getElementById('tunCoreBanner');
+    if (banner) banner.style.display = d.running ? 'none' : 'flex';
+  }).catch(function() {});
+}
+
 function saveTunSettings() {
   var mtu = parseInt(document.getElementById('vcfgTunMtu').value || '1500', 10);
   if (!Number.isInteger(mtu) || mtu < 1280 || mtu > 65535) { showToast(t('net.mtuInvalid'), 'error'); return; }
@@ -6105,7 +6170,7 @@ var I18N = {
     'vcfg.findProcess':'查找进程','vcfg.httpPort':'HTTP 端口','vcfg.socksPort':'Socks 端口',
     'vcfg.redirPort':'Redir 端口','vcfg.tproxyPort':'TProxy 端口',
     'vcfg.proxyAuth':'代理认证','vcfg.tunEnable':'TUN 启用','vcfg.tunDevice':'设备名称',
-    'vcfg.tunStack':'协议栈','vcfg.tunDnsHijack':'DNS 劫持',
+    'vcfg.tunStack':'协议栈','vcfg.stackMixed':'mixed（推荐）','vcfg.stackSystem':'system','vcfg.stackGvisor':'gVisor','tun.master':'虚拟网卡（TUN）','tun.masterHint':'接管 NAS 系统流量；首页可快速开关，这里配置完整参数','tun.unavailable':'不可用','tun.coreNotRunning':'当前未检测到运行中的 Mihomo Core','tun.attention':'注意','tun.autosave':'已自动保存 · 参数修改即写入 config.yaml；TUN 开启时保存后会自动重启引擎','tun.autoRouteHint':'自动把系统流量路由到 TUN','tun.note':'TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。','vcfg.tunDnsHijack':'DNS 劫持',
     'vcfg.tunAutoRoute':'自动路由','vcfg.tunAutoDetect':'自动检测接口',
     'vcfg.dnsEnable':'DNS 启用','vcfg.dnsEnhanced':'增强模式',
     'vcfg.fakeIpRange':'Fake-IP 范围','vcfg.dnsIpv6':'IPv6 DNS',
@@ -6275,7 +6340,7 @@ var I18N = {
     'vcfg.findProcess':'Find Process','vcfg.httpPort':'HTTP Port','vcfg.socksPort':'Socks Port',
     'vcfg.redirPort':'Redir Port','vcfg.tproxyPort':'TProxy Port',
     'vcfg.proxyAuth':'Proxy Authentication','vcfg.tunEnable':'TUN Enable','vcfg.tunDevice':'Device',
-    'vcfg.tunStack':'Stack','vcfg.tunDnsHijack':'DNS Hijack',
+    'vcfg.tunStack':'Stack','vcfg.stackMixed':'mixed (recommended)','vcfg.stackSystem':'system','vcfg.stackGvisor':'gVisor','tun.master':'Virtual NIC (TUN)','tun.masterHint':'Takes over NAS system traffic; quick toggle on the home page, full parameters here','tun.unavailable':'Unavailable','tun.coreNotRunning':'No running Mihomo Core detected','tun.attention':'Note','tun.autosave':'Auto-saved · parameter changes are written to config.yaml; saving restarts the engine when TUN is on','tun.autoRouteHint':'Route system traffic into TUN','tun.note':'TUN modifies fnOS system routes and DNS flow. Off by default; an unusable config may affect the NAS internet access.','vcfg.tunDnsHijack':'DNS Hijack',
     'vcfg.tunAutoRoute':'Auto Route','vcfg.tunAutoDetect':'Auto Detect Interface',
     'vcfg.dnsEnable':'DNS Enable','vcfg.dnsEnhanced':'Enhanced Mode',
     'vcfg.fakeIpRange':'Fake-IP Range','vcfg.dnsIpv6':'IPv6 DNS',
