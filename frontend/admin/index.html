@@ -703,10 +703,11 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
 .dns-panel{display:none}
 .dns-panel.active{display:block}
 .dns-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+@media(max-width:1100px){.dns-grid{grid-template-columns:1fr!important}}
 .dns-field{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:var(--card2);min-height:52px}
 .dns-field-label{font-size:12px;font-weight:600;color:var(--text);flex-shrink:0}
 .dns-field-label small{display:block;font-size:10px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:2px;line-height:1.4}
-.dns-input{width:190px;flex:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
+.dns-input{width:190px;flex:0 1 auto;min-width:0;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
 .dns-input:focus{border-color:var(--accent)}
 .dns-input:hover{border-color:var(--accent);border-style:dashed}
 select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
@@ -5308,6 +5309,9 @@ function loadVcfg() {
     }
     function getBool(key) { return new RegExp(key + ':\\s*true').test(cfg); }
     var vmp = document.getElementById('vcfgMixedPort'); if (vmp) vmp.value = getVal('mixed-port', '7890');
+    var vsp = document.getElementById('vcfgSocksPort'); if (vsp) vsp.value = getVal('socks-port', '');
+    var vrp = document.getElementById('vcfgRedirPort'); if (vrp) vrp.value = getVal('redir-port', '');
+    var vtp = document.getElementById('vcfgTproxyPort'); if (vtp) vtp.value = getVal('tproxy-port', '');
     var vm = document.getElementById('vcfgMode'); if (vm) vm.value = getVal('mode', 'rule');
     var vll = document.getElementById('vcfgLogLevel'); if (vll) vll.value = getVal('log-level', 'info');
     var vud = document.getElementById('vcfgUnifiedDelay'); if (vud) vud.checked = getBool('unified-delay');
@@ -5335,6 +5339,7 @@ function loadVcfg() {
     }
     var vcp = document.getElementById('vcfgCtrlPort'); if (vcp) { var ec0 = getVal('external-controller', '0.0.0.0:9090'); vcp.value = ec0.indexOf(':') !== -1 ? ec0.split(':').pop() : '9090'; }
     var ves = document.getElementById('vcfgExtSecret'); if (ves) ves.value = getVal('secret', '');
+    var veu = document.getElementById('vcfgExtUi'); if (veu) veu.value = getVal('external-ui', '');
     var vga = document.getElementById('vcfgGeoAuto'); if (vga) vga.checked = getBool('geo-auto-update');
     var vgi = document.getElementById('vcfgGeoInterval'); if (vgi) vgi.value = getVal('geo-update-interval', '24');
     loadVcfgSections(cfg);
