@@ -618,6 +618,70 @@ def _write_core_settings(settings):
         pass
 
 
+GEO_FILE_MAP = (("geoip", "GeoIP", "geoip.dat"),
+                ("geosite", "GeoSite", "geosite.dat"),
+                ("mmdb", "Country MMDB", "Country.mmdb"),
+                ("asn", "ASN MMDB", "ASN.mmdb"))
+GEO_MAX_BYTES = 200 * 1024 * 1024
+
+
+def _geo_files_payload():
+    files = []
+    for key, label, fname in GEO_FILE_MAP:
+        fpath = os.path.join(TRIM_PKGVAR, fname)
+        entry = {"key": key, "label": label, "filename": fname,
+                 "exists": False, "size": 0, "mtime": ""}
+        if os.path.exists(fpath):
+            st = os.stat(fpath)
+            entry["exists"] = True
+            entry["size"] = st.st_size
+            entry["mtime"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(st.st_mtime))
+        files.append(entry)
+    return files
+
+
+def _geox_urls():
+    """config.yaml geox-url 段：key -> 下载地址。"""
+    try:
+        cfg = yaml.safe_load(read_config()) or {}
+        geox = cfg.get("geox-url") or {}
+        out = {}
+        for k, _l, _f in GEO_FILE_MAP:
+            u = str(geox.get(k, "") or "").strip()
+            if u.startswith(("http://", "https://")):
+                out[k] = u
+        return out
+    except Exception:
+        return {}
+
+
+def _download_geo_file(key, url):
+    """下载单个 GEO 文件到数据目录（原子写入）。"""
+    import urllib.request as _ureq
+    fname = dict((k, f) for k, _l, f in GEO_FILE_MAP)[key]
+    req = _ureq.Request(url, headers={"User-Agent": "fnSoar/1.0"})
+    with _ureq.urlopen(req, timeout=180) as resp:
+        blob = resp.read(GEO_MAX_BYTES + 1)
+    if len(blob) > GEO_MAX_BYTES:
+        raise RuntimeError("文件超过 200MB 限制")
+    dest = os.path.join(TRIM_PKGVAR, fname)
+    tmp = dest + ".download"
+    with open(tmp, "wb") as f:
+        f.write(blob)
+    os.replace(tmp, dest)
+    try:
+        os.chmod(dest, 0o644)
+    except Exception:
+        pass
+    # 属主与既有 GEO 文件保持一致（引擎以降权 UID 运行，需可读）
+    try:
+        import pwd as _pwd, grp as _grp
+        os.chown(dest, _pwd.getpwnam("fnsoar").pw_uid, _grp.getgrnam("fnsoar").gr_gid)
+    except Exception:
+        pass
+    return fname
+
+
 def _ctrl_endpoint():
     """面板→引擎 API 的 (host, port)（由包装器环境变量提供）。"""
     return (MIHOMO_CTRL_HOST, MIHOMO_CTRL_PORT)
@@ -3316,23 +3380,8 @@ class AdminHandler(BaseHTTPRequestHandler):
         if path == "/api/geo-status":
             # 数据目录 GEO 文件清单（大小/修改时间/是否存在）
             try:
-                files = []
-                for key, label, fname in (
-                    ("geoip", "GeoIP", "geoip.dat"),
-                    ("geosite", "GeoSite", "geosite.dat"),
-                    ("mmdb", "Country MMDB", "Country.mmdb"),
-                    ("asn", "ASN MMDB", "ASN.mmdb"),
-                ):
-                    fpath = os.path.join(TRIM_PKGVAR, fname)
-                    entry = {"key": key, "label": label, "filename": fname,
-                             "exists": False, "size": 0, "mtime": ""}
-                    if os.path.exists(fpath):
-                        st = os.stat(fpath)
-                        entry["exists"] = True
-                        entry["size"] = st.st_size
-                        entry["mtime"] = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(st.st_mtime))
-                    files.append(entry)
-                return self._send_json({"success": True, "files": files, "data_dir": TRIM_PKGVAR})
+                return self._send_json({"success": True, "files": _geo_files_payload(),
+                                        "data_dir": TRIM_PKGVAR})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/version":
@@ -3569,6 +3618,43 @@ class AdminHandler(BaseHTTPRequestHandler):
                 data2["controller"] = f"{ch}:{cp}"
                 return self._send_json({"success": True, "settings": data2,
                                         "message": "内核设置已保存"})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/geo-download":
+            # 按 config.yaml geox-url 直接下载 GEO 文件。
+            # mihomo update geodata 在引擎运行时会因入站端口占用而中止、不执行下载，
+            # 因此由面板自行完成下载；支持单文件（key）或全部（不传 key）。
+            try:
+                data = json.loads(body) if body else {}
+            except Exception:
+                return self._send_json({"success": False, "error": "参数错误"}, 400)
+            try:
+                only = data.get("key")
+                urls = _geox_urls()
+                jobs = [(k, f) for k, _l, f in GEO_FILE_MAP if not only or k == only]
+                if only and not jobs:
+                    return self._send_json({"success": False, "error": "未知的 GEO 类型"}, 400)
+                downloaded, failed = [], []
+                for key, fname in jobs:
+                    url = urls.get(key, "")
+                    if not url:
+                        failed.append({"key": key, "error": "未配置下载地址"})
+                        continue
+                    try:
+                        _download_geo_file(key, url)
+                        downloaded.append(key)
+                    except Exception as e:
+                        failed.append({"key": key, "error": str(e)})
+                msg = ("已更新: " + ", ".join(downloaded)) if downloaded else "下载失败"
+                if downloaded and failed:
+                    msg += "（部分失败: " + ", ".join(x["key"] for x in failed) + "）"
+                return self._send_json({
+                    "success": bool(downloaded) and not failed,
+                    "partial": bool(downloaded) and bool(failed),
+                    "downloaded": downloaded, "failed": failed,
+                    "message": msg,
+                    "files": _geo_files_payload(),
+                })
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/update-geo":
