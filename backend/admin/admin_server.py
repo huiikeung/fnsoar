@@ -4026,7 +4026,10 @@ class AdminHandler(BaseHTTPRequestHandler):
                 replacement = yaml_text if yaml_text.endswith('\n') else yaml_text + '\n'
                 new_text = _re.sub(pattern, replacement, text, count=1, flags=_re.MULTILINE|_re.DOTALL)
                 if new_text == text:
-                    return self._send_json({"success": False, "error": f"未找到 section: {section}"}, 400)
+                    # 区分「段落不存在」与「内容无变化」：后者是合法 no-op，不应报错
+                    if not _re.search(pattern, text, _re.MULTILINE | _re.DOTALL):
+                        return self._send_json({"success": False, "error": f"未找到 section: {section}"}, 400)
+                    return self._send_json({"success": True, "message": f"{section} 无变化"})
                 if write_config(new_text):
                     return self._send_json({"success": True, "message": f"{section} 已保存"})
                 return self._send_json({"success": False, "error": "保存失败"}, 500)

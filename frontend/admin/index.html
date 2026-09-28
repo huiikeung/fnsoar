@@ -5611,6 +5611,7 @@ function saveVcfg(key) {
     if (key === 'ext-secret') yamlKey = 'secret';
     if (key === 'ext-ui') yamlKey = 'external-ui';
     if (key === 'geo-loader') yamlKey = 'geodata-loader';
+    if (key === 'sniffer-enable') { yamlKey = 'enable'; section = 'sniffer'; }
     var found = false;
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
