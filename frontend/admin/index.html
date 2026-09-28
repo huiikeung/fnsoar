@@ -713,13 +713,6 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .dns-ta-box{flex-direction:column;align-items:stretch;gap:7px;min-height:0}
 .dns-ta-box textarea{width:100%;min-height:88px;max-height:220px;resize:vertical;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;color:var(--text);outline:none;transition:border-color .15s}
 .dns-field.wide{grid-column:1/-1}
-/* 半宽卡片内的纵向字段（外部控制）：标签在上、输入框全宽在下 */
-.ext-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
-.ext-field .dns-field-label{font-size:12px;font-weight:600;color:var(--text)}
-.ext-field .dns-field-label small{display:block;font-size:10px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:2px;line-height:1.4}
-.ext-input{width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
-.ext-input:hover{border-color:var(--accent);border-style:dashed}
-.ext-input:focus{border-color:var(--accent)}
 .dns-ta-box textarea:focus{border-color:var(--accent)}
 .dns-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);font-size:10.5px;color:var(--faint)}
 .dns-foot .core-btn{padding:5px 12px;font-size:11px}
@@ -1529,27 +1522,23 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
           </div>
         </div>
         <div class="vcfg-grid" id="vcfgGrid">
-          <div class="vcfg-card">
+          <div class="vcfg-card" style="grid-column:1/-1">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.basic">基础设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('basic')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.mode">运行模式</span><span class="vcfg-hint">mode</span></span><select id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule" data-i18n="vcfg.modeRule">规则</option><option value="global" data-i18n="vcfg.modeGlobal">全局</option><option value="direct" data-i18n="vcfg.modeDirect">直连</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.logLevel">日志级别</span><span class="vcfg-hint">log-level</span></span><select id="vcfgLogLevel" onchange="saveVcfg('log-level')"><option value="silent">silent</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option><option value="debug">debug</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tcpConcurrent">TCP 并发</span><span class="vcfg-hint">tcp-concurrent</span></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.findProcess">查找进程</span><span class="vcfg-hint">find-process-mode</span></span><select id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
-            </div>
-            <!-- 外部控制（并入基础设置卡片，半宽卡片适配：纵向字段 + 全宽输入） -->
-            <div style="padding:12px 16px 14px;border-top:1px solid var(--border)">
-              <div class="ext-field">
-                <span class="dns-field-label"><span data-i18n="vcfg.ctrlPort">控制器端口</span><small data-i18n="vcfg.ctrlPortHint">external-controller · 管理 API 监听端口</small></span>
-                <input type="number" class="ext-input" id="vcfgCtrlPort" placeholder="9090" onchange="saveCtrlPort()">
+            <div style="padding:12px 16px 14px">
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.mode">运行模式</span><small>mode</small></span><select class="dns-input" id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule" data-i18n="vcfg.modeRule">规则</option><option value="global" data-i18n="vcfg.modeGlobal">全局</option><option value="direct" data-i18n="vcfg.modeDirect">直连</option></select></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.logLevel">日志级别</span><small>log-level</small></span><select class="dns-input" id="vcfgLogLevel" onchange="saveVcfg('log-level')"><option value="silent">silent</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option><option value="debug">debug</option></select></div>
               </div>
-              <div class="ext-field">
-                <span class="dns-field-label"><span data-i18n="vcfg.extSecret">密钥</span><small data-i18n="vcfg.extSecretHint">secret · 访问管理 API 的密码</small></span>
-                <input type="text" class="ext-input" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')">
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tcpConcurrent">TCP 并发</span><small>tcp-concurrent</small></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.findProcess">查找进程</span><small>find-process-mode</small></span><select class="dns-input" id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
               </div>
-              <div class="ext-field">
-                <span class="dns-field-label"><span data-i18n="vcfg.extUi">外部 UI</span><small data-i18n="vcfg.extUiHint">external-ui · 面板目录名（如 zashboard）</small></span>
-                <input type="text" class="ext-input" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')">
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.ctrlPort">控制器端口</span><small data-i18n="vcfg.ctrlPortHint">external-controller · 管理 API 监听端口</small></span><input class="dns-input" id="vcfgCtrlPort" placeholder="9090" onchange="saveCtrlPort()"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.extSecret">密钥</span><small data-i18n="vcfg.extSecretHint">secret · 访问管理 API 的密码</small></span><input class="dns-input" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.extUi">外部 UI</span><small data-i18n="vcfg.extUiHint">external-ui · 面板目录名（如 zashboard）</small></span><input class="dns-input" style="flex:1;width:auto;min-width:0" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')"></div>
               </div>
               <div class="tun-note">
                 <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
@@ -1557,19 +1546,33 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               </div>
             </div>
           </div>
-          <div class="vcfg-card">
+          <div class="vcfg-card" style="grid-column:1/-1">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="12" cy="18" r="2.6"/><line x1="8.6" y1="6" x2="15.4" y2="6"/><line x1="7.2" y1="8.3" x2="10.8" y2="15.7"/><line x1="16.8" y1="8.3" x2="13.2" y2="15.7"/></svg></span><span data-i18n="vcfg.ports">网络端口</span><button class="vcfg-reset-btn" onclick="resetConfigSection('inbound')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.mixedPort">混合端口</span><span class="vcfg-hint">mixed-port</span></span><input type="number" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><span class="vcfg-hint">http-port</span></span><input type="number" id="vcfgHttpPort" placeholder="留空不启用" onchange="saveVcfg('http-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.socksPort">Socks 端口</span><span class="vcfg-hint">socks-port</span></span><input type="number" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.redirPort">Redir 端口</span><span class="vcfg-hint">redir-port</span></span><input type="number" id="vcfgRedirPort" placeholder="7892" onchange="saveVcfg('redir-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tproxyPort">TProxy 端口</span><span class="vcfg-hint">tproxy-port</span></span><input type="number" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.bindAddr">监听地址</span><span class="vcfg-hint">bind-address</span></span><input type="text" id="vcfgBindAddr" placeholder="*" onchange="saveVcfg('bind-address')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.allowLan">局域网连接</span><span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.ipv6">IPv6</span><span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.proxyAuth">代理认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass，多组用逗号" title="代理入站认证：其他设备经代理端口上网时需输入的用户名:密码，多组用英文逗号分隔" onchange="saveProxyAuth()"></div>
+            <div style="padding:12px 16px 14px">
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.mixedPort">混合端口</span><small data-i18n="vcfg.mixedPortHint">mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）</small></span><input class="dns-input" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><small data-i18n="vcfg.httpPortHint">http-port · 留空则不单独监听</small></span><input class="dns-input" id="vcfgHttpPort" placeholder="留空不启用" onchange="saveVcfg('http-port')"></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.socksPort">Socks 端口</span><small>socks-port</small></span><input class="dns-input" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.redirPort">Redir 端口</span><small data-i18n="vcfg.redirPortHint">redir-port · 网关 / 透明代理场景</small></span><input class="dns-input" id="vcfgRedirPort" placeholder="7892" onchange="saveVcfg('redir-port')"></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.tproxyPort">TProxy 端口</span><small data-i18n="vcfg.tproxyPortHint">tproxy-port · 网关 / 透明代理场景</small></span><input class="dns-input" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.bindAddr">监听地址</span><small data-i18n="vcfg.bindAddrHint">bind-address · * 表示监听所有网卡</small></span><input class="dns-input" id="vcfgBindAddr" placeholder="*" onchange="saveVcfg('bind-address')"></div>
+              </div>
+              <div class="dns-grid" style="grid-template-columns:repeat(3,minmax(0,1fr))">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="settings.allowLan">局域网连接</span><small>allow-lan</small></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="settings.ipv6">IPv6</span><small>ipv6</small></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><small>unified-delay</small></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.proxyAuth">代理认证</span><small data-i18n="vcfg.proxyAuthHint">authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔</small></span><input class="dns-input" style="flex:1;width:auto;min-width:0" id="vcfgAuth" placeholder="user:pass，多组用逗号" title="代理入站认证：其他设备经代理端口上网时需输入的用户名:密码，多组用英文逗号分隔" onchange="saveProxyAuth()"></div>
+              </div>
+              <div class="tun-note">
+                <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
+                <span><strong data-i18n="vcfg.portsNoteTitle">端口用途说明</strong>　<span data-i18n="vcfg.portsNote">混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。</span></span>
+              </div>
             </div>
           </div>
 <div class="vcfg-card tun-module">
@@ -6203,7 +6206,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS 启用','vcfg.dnsEnhanced':'增强模式',
     'vcfg.fakeIpRange':'Fake-IP 范围','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'使用 hosts','vcfg.dnsUseSysHosts':'系统 hosts',
-    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。',
+    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。','vcfg.mixedPortHint':'mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）','vcfg.httpPortHint':'http-port · 留空则不单独监听','vcfg.redirPortHint':'redir-port · 网关 / 透明代理场景','vcfg.tproxyPortHint':'tproxy-port · 网关 / 透明代理场景','vcfg.bindAddrHint':'bind-address · * 表示监听所有网卡','vcfg.proxyAuthHint':'authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔','vcfg.portsNoteTitle':'端口用途说明','vcfg.portsNote':'混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。',
     'vcfg.optional':'(留空不设置)','vcfg.default':'(默认)',
     'vcfg.profile':'性能模式','vcfg.geoMode':'GEO 加载','vcfg.geoLoader':'GEO 更新间隔',
     'vcfg.globalUa':'全局 UA','vcfg.keepAlive':'保活间隔',
@@ -6373,7 +6376,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS Enable','vcfg.dnsEnhanced':'Enhanced Mode',
     'vcfg.fakeIpRange':'Fake-IP Range','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'Use Hosts','vcfg.dnsUseSysHosts':'System Hosts',
-    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.',
+    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.','vcfg.mixedPortHint':'mixed-port · main client entry (HTTP + SOCKS5)','vcfg.httpPortHint':'http-port · leave empty to disable','vcfg.redirPortHint':'redir-port · gateway / transparent proxy','vcfg.tproxyPortHint':'tproxy-port · gateway / transparent proxy','vcfg.bindAddrHint':'bind-address · * listens on all interfaces','vcfg.proxyAuthHint':'authentication · user:pass for devices browsing via these ports, comma-separated','vcfg.portsNoteTitle':'About these ports','vcfg.portsNote':'The mixed port is the combined HTTP + SOCKS5 entry point — set it as the proxy on phones/PCs. HTTP/Socks ports stay unlistened when empty. Redir/TProxy serve transparent-proxy scenarios such as routers. Bind address * allows LAN devices to connect. Proxy Authentication is the username:password other devices provide when browsing via these ports. The controller port (management API) is configured in Basic Settings.',
     'vcfg.optional':'(Optional)','vcfg.default':'(Default)',
     'vcfg.profile':'Profile','vcfg.geoMode':'GEO Mode','vcfg.geoLoader':'GEO Loader',
     'vcfg.globalUa':'Global UA','vcfg.keepAlive':'Keep Alive Interval',
