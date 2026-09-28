@@ -996,6 +996,15 @@ def set_tun_settings_in_config(patch):
             clean[k] = str(v)
     if not clean:
         return True, "ok"
+    # Mihomo 的 TUN 初始化要求 auto-redirect 必须伴随 auto-route：
+    # 单独开启 auto-redirect（auto-route:false）会让 sing_tun 走错误路径，
+    # 收尾时 nil 解引用直接 panic——引擎启动即崩（页面全空白）。
+    # 按“合并后的最终值”判断，只改其中一个开关也要拦。
+    eff = _read_tun_settings()
+    eff.update(clean)
+    if eff.get("auto-redirect") and not eff.get("auto-route"):
+        return False, ("自动重定向(auto-redirect)依赖自动路由(auto-route)："
+                       "请先开启「自动路由」，或关闭「自动重定向」")
     txt = read_config()
     if not txt.strip():
         return False, "config 为空"
@@ -1065,22 +1074,31 @@ def _mixed_port_from_config():
     except Exception:
         return 7890
 
+def _foreign_engine_listener():
+    """控制器端口有监听，但本应用引擎进程不存在。
+
+    9090 是多款 Mihomo 面板的默认控制器端口（clash-for-fnos 等同样
+    默认占用它）。端口被外来内核占用时若谎报“运行中”，启动会被
+    “服务已在运行”挡死，而 API 代理只会拿到外来内核的 401（前端页面
+    整页空白）。调用方应把这视为“fnSoar 引擎未运行 + 端口被占”。"""
+    if _port_free(_ctrl_endpoint()[1]):
+        return False
+    return not _find_engine_pids()
+
+
 def is_running():
     """Return the real engine state, not only the wrapper PID file.
     fnOS can briefly leave a stale/missing PID during reinstall or wrapper
     handoff while mihomo is already listening; the UI must still show ON.
     NOTE: since v1.0.68 the PID file tracks the ADMIN daemon (which is
     always alive while the panel is open), so engine status must never be
-    derived from it — 9090 (engine controller) is the authoritative check."""
-    # 9090 是引擎控制端口；端口在监听时服务就是运行中。优先使用它，
-    # 避免每次点击左栏都扫描进程导致状态短暂误判。
-    if not _port_free(_ctrl_endpoint()[1]):
-        pids = _find_engine_pids()
-        return True, (pids[0] if pids else None)
+    derived from it.
+    权威判据是本应用自己的引擎进程（bin/mihomo-{amd64,arm64}.real，由
+    engine-start 启动）；端口在听但进程不存在属于外来内核占用，见
+    _foreign_engine_listener()，此时必须报告未运行。"""
     pids = _find_engine_pids()
     if pids:
-        pid = pids[0]
-        return True, pid
+        return True, pids[0]
     return False, None
 
 def _find_engine_pids():
@@ -1250,6 +1268,21 @@ def start_service():
             if _port_free(_ctrl_endpoint()[1]):
                 break
             time.sleep(0.5)
+        # 端口被外来内核占用时不要硬启：引擎会因 bind 失败秒退，白等 20s
+        # 后只换来一个没有信息量的“启动失败”。
+        if not _port_free(_ctrl_endpoint()[1]) and not _find_engine_pids():
+            return {"success": False,
+                    "error": (f"控制器端口 {_ctrl_endpoint()[1]} 被其他程序占用"
+                              "（常见于其他 Mihomo 面板/应用，如 clash-for-fnos）。"
+                              "请先停止占用该端口的应用，再启动 fnSoar 引擎")}
+        # TUN 组合预检：Mihomo 要求 auto-redirect 必须伴随 auto-route，
+        # 非法组合会让 sing_tun 初始化走错误路径并 panic（引擎启动即崩）。
+        tun_pre = _read_tun_settings()
+        if (tun_pre.get("enable") and tun_pre.get("auto-redirect")
+                and not tun_pre.get("auto-route")):
+            return {"success": False,
+                    "error": ("TUN 配置无效：「自动重定向(auto-redirect)」需要同时开启"
+                              "「自动路由(auto-route)」。请先在 TUN 设置中修正后再启动服务")}
         # 引擎是面板守护的子进程，通过 bin/engine-start 启动
         # （它会处理 host-transparent 防火墙规则并按需降权执行引擎）。
         env = dict(os.environ)
@@ -1276,7 +1309,9 @@ def start_service():
             if not transparent.get("success"):
                 stop_service()
                 return {"success": False, "error": "主机透明代理启用失败: " + transparent.get("error", "未知错误")}
-        return {"success": running}
+        return {"success": False,
+                "error": ("引擎启动失败：进程已退出（多为端口被占、配置非法或"
+                          f"TUN 初始化失败）。请查看日志 {TRIM_PKGVAR}/{TRIM_APPNAME}.log")}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -2977,6 +3012,17 @@ class AdminHandler(BaseHTTPRequestHandler):
                 # 上游 mihomo 返回了明确的错误状态码（400/404/503 等），
                 # 原样透传给前端，而不是全部伪装成 502。
                 data = e.read()
+                # 401/403 且本应用引擎不在运行：9090 上监听的是别的应用的
+                # Mihomo（fnSoar 的 config.yaml 从不写 secret，自己的引擎不会
+                # 要求鉴权）。原样透传只会让前端整页空白，改成明确错误。
+                if e.code in (401, 403) and not _find_engine_pids():
+                    self._send_json({
+                        "error": "引擎控制器鉴权失败",
+                        "detail": (f"{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]} 上监听的 "
+                                   "Mihomo 不属于 fnSoar（端口可能被其他应用占用，"
+                                   "如 clash-for-fnos）；fnSoar 引擎当前未运行。"),
+                    }, 503)
+                    return
                 self.send_response(e.code)
                 self.send_header("Content-Type",
                                  e.headers.get("Content-Type",
