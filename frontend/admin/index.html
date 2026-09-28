@@ -555,7 +555,7 @@ tbody tr:hover{background:var(--card2)}
 .net-meta{margin-top:10px;font-size:11.5px;color:var(--faint);line-height:1.6}
 .net-meta b{color:var(--dim);font-weight:600}
 /* ── 设置弹窗（浅色卡片，参考 Clash-for-fnos 系统代理/TUN 设置弹窗） ── */
-:root{--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;
+:root{--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;--mx-panel:#ffffff;
   --mx-accent:#627fe6;--mx-good:#239a58;--mx-good-strong:#2dbd74;--mx-warn:#b76b10}
 .modal-card.mx-modal{width:min(540px,100%);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;
   background:var(--mx-panel);border:1px solid var(--mx-line);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.35);color:var(--mx-text)}
@@ -568,7 +568,7 @@ tbody tr:hover{background:var(--card2)}
 .mx-save{background:linear-gradient(135deg,#2dbd74,#43d17b);border-color:transparent;color:#fff}
 .mx-save:hover{filter:brightness(1.06)}
 .mx-save:disabled{opacity:.55;cursor:not-allowed}
-.mx-body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:4px 20px 14px}
+.mx-body{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:14px;padding:4px 20px 18px}
 .mx-foot{flex:none;display:flex;justify-content:flex-end;gap:8px;padding:12px 20px 18px;border-top:1px solid #eef1f6}
 /* 分区标题 */
 .mx-cap{margin:0 0 -6px;color:var(--mx-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
@@ -931,10 +931,6 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
             </div>
             <p class="mx-note-accent" data-i18n="net.sysProxyNote">fnOS 使用 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 和 NO_PROXY 环境变量；修改主要对新启动的进程与新登录会话生效。</p>
           </div>
-          <div class="mx-foot">
-            <button class="mx-cancel" onclick="closeSysProxyModal()" data-i18n="common.cancel">取消</button>
-            <button class="mx-save" onclick="saveSysProxyModal()" data-i18n="common.save">保存</button>
-          </div>
         </div>
       </div>
       <!-- TUN 设置弹窗（浅色，参考 Clash-for-fnos） -->
@@ -999,10 +995,6 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:#b76b10;flex-shrink:0;margin-top:1px"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
               <span><strong data-i18n="net.attention">注意</strong>　<span data-i18n="net.tunNote">TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。</span></span>
             </div>
-          </div>
-          <div class="mx-foot">
-            <button class="mx-cancel" onclick="closeTunModal()" data-i18n="common.cancel">取消</button>
-            <button class="mx-save" onclick="saveTunModal()" data-i18n="common.save">保存</button>
           </div>
         </div>
       </div>
