@@ -1500,7 +1500,6 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
             <div class="vcfg-card-body">
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.mode">运行模式</span><span class="vcfg-hint">mode</span></span><select id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule" data-i18n="vcfg.modeRule">规则</option><option value="global" data-i18n="vcfg.modeGlobal">全局</option><option value="direct" data-i18n="vcfg.modeDirect">直连</option></select></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.logLevel">日志级别</span><span class="vcfg-hint">log-level</span></span><select id="vcfgLogLevel" onchange="saveVcfg('log-level')"><option value="silent">silent</option><option value="error">error</option><option value="warning">warning</option><option value="info">info</option><option value="debug">debug</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.ipv6">IPv6</span><span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tcpConcurrent">TCP 并发</span><span class="vcfg-hint">tcp-concurrent</span></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.findProcess">查找进程</span><span class="vcfg-hint">find-process-mode</span></span><select id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
             </div>
@@ -1516,6 +1515,7 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tproxyPort">TProxy 端口</span><span class="vcfg-hint">tproxy-port</span></span><input type="number" id="vcfgTproxyPort" placeholder="7893" onchange="saveVcfg('tproxy-port')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.bindAddr">监听地址</span><span class="vcfg-hint">bind-address</span></span><input type="text" id="vcfgBindAddr" placeholder="*" onchange="saveVcfg('bind-address')"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.allowLan">局域网连接</span><span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.ipv6">IPv6</span><span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.auth">认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass" onchange="saveVcfg('auth')"></div>
             </div>
@@ -5519,8 +5519,8 @@ function resetConfigSection(section) {
   showConfirm('vcfg.resetConfirm', function() {
   // Sections with simple key-value pairs (not a config section)
   var simpleDefaults = {
-    'basic': {'mode':'rule','log-level':'info','ipv6':'true','tcp-concurrent':'true','find-process-mode':'off'},
-    'inbound': {'external-controller':'0.0.0.0:9090','mixed-port':'7890','socks-port':'7891','redir-port':'7892','tproxy-port':'7893','bind-address':'*','allow-lan':'true','unified-delay':'true','authentication':'[]'},
+    'basic': {'mode':'rule','log-level':'info','tcp-concurrent':'true','find-process-mode':'off'},
+    'inbound': {'external-controller':'0.0.0.0:9090','mixed-port':'7890','socks-port':'7891','redir-port':'7892','tproxy-port':'7893','bind-address':'*','allow-lan':'true','ipv6':'true','unified-delay':'true','authentication':'[]'},
     'external': {'secret':'','external-ui':'dashboard'},
     'advanced': {'profile':'','geodata-mode':'true','geodata-loader':'memconservative','global-ua':'clash.meta','keep-alive-interval':'30'}
   };
