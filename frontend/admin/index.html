@@ -696,6 +696,27 @@ input.no-spin{-moz-appearance:textfield;appearance:textfield}
 input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;margin:0}
 .core-btn:hover{border-color:var(--accent);color:var(--accent2);border-style:dashed}
 .core-btn.primary:hover{filter:brightness(1.12);color:#fff;border-style:dashed}
+/* 配置页 - DNS 设置五标签模块 */
+.dns-module{grid-column:1/-1}
+.dns-master-label{font-size:12px;color:var(--dim);font-weight:600;margin-left:auto}
+.dns-master-hint{font-size:11px;color:var(--faint);margin:0 0 10px;line-height:1.5}
+.dns-tabs{margin-bottom:12px}
+.dns-panel{display:none}
+.dns-panel.active{display:block}
+.dns-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
+.dns-field{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:var(--card2);min-height:52px}
+.dns-field-label{font-size:12px;font-weight:600;color:var(--text);flex-shrink:0}
+.dns-field-label small{display:block;font-size:10px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:2px;line-height:1.4}
+.dns-input{width:190px;flex:none;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:6px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
+.dns-input:focus{border-color:var(--accent)}
+.dns-input:hover{border-color:var(--accent);border-style:dashed}
+select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%239a9aa3' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;cursor:pointer}
+.dns-ta-box{grid-column:1/-1;flex-direction:column;align-items:stretch;gap:7px;min-height:0}
+.dns-ta-box textarea{width:100%;min-height:96px;resize:vertical;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;color:var(--text);outline:none;transition:border-color .15s}
+.dns-ta-box textarea:focus{border-color:var(--accent)}
+.dns-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);font-size:10.5px;color:var(--faint)}
+.dns-foot .core-btn{padding:5px 12px;font-size:11px}
+@media(max-width:900px){.dns-grid{grid-template-columns:1fr}}
 /* 连接详情弹窗 */
 .con-detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center}
 .con-detail-overlay.hidden{display:none}
@@ -1535,21 +1556,77 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
               <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="net.exclude">排除网段</span><span class="vcfg-hint">tun.route-exclude-address</span></span><textarea id="vcfgTunExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8" onchange="saveTunSettings()"></textarea></div>
             </div>
           </div>
-          <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.dns">DNS 设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('dns')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsEnable">DNS 启用</span><span class="vcfg-hint">dns.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsEnable" onchange="saveVcfg('dns-enable')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsEnhanced">增强模式</span><span class="vcfg-hint">dns.enhanced-mode</span></span><select id="vcfgDnsEnhanced" onchange="saveVcfg('dns-enhanced')"><option value="fake-ip">fake-ip</option><option value="redir-host">redir-host</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsListen">监听地址</span><span class="vcfg-hint">dns.listen</span></span><input type="text" id="vcfgDnsListen" placeholder="127.0.0.1:1053" onchange="saveVcfg('dns-listen')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.respectRules">遵循规则</span><span class="vcfg-hint">dns.respect-rules</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsRespect" onchange="saveVcfg('dns-respect-rules')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.fakeIpRange">Fake-IP 范围</span><span class="vcfg-hint">dns.fake-ip-range</span></span><input type="text" id="vcfgFakeIpRange" placeholder="198.18.0.1/16" onchange="saveVcfg('fake-ip-range')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsIpv6">IPv6 DNS</span><span class="vcfg-hint">dns.ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsIpv6" onchange="saveVcfg('dns-ipv6')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsUseHosts">使用 hosts</span><span class="vcfg-hint">dns.use-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsHosts" onchange="saveVcfg('dns-use-hosts')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.dnsUseSysHosts">系统 hosts</span><span class="vcfg-hint">dns.use-system-hosts</span></span><label class="toggle"><input type="checkbox" id="vcfgDnsSysHosts" onchange="saveVcfg('dns-use-sys-hosts')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.defaultNameserver">默认 DNS</span><span class="vcfg-hint">dns.default-nameserver</span></span><textarea id="vcfgDnsDefaultNs" rows="2" placeholder="223.5.5.5&#10;119.29.29.29" onchange="saveDnsList('default-nameserver','vcfgDnsDefaultNs')"></textarea></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsNameserver">nameserver</span><span class="vcfg-hint">dns.nameserver</span></span><textarea id="vcfgDnsNs" rows="2" onchange="saveDnsList('nameserver','vcfgDnsNs')"></textarea></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.proxyNameserver">代理服务器 DNS</span><span class="vcfg-hint">dns.proxy-server-nameserver</span></span><textarea id="vcfgDnsProxyNs" rows="2" placeholder="https://doh.pub/dns-query" onchange="saveDnsList('proxy-server-nameserver','vcfgDnsProxyNs')"></textarea></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.fakeIpFilter">Fake-IP 过滤</span><span class="vcfg-hint">dns.fake-ip-filter</span></span><textarea id="vcfgDnsFakeFilter" rows="3" placeholder="+.lan&#10;time.*.com" onchange="saveDnsList('fake-ip-filter','vcfgDnsFakeFilter')"></textarea></div>
+          <div class="vcfg-card dns-module">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.dns">DNS 设置</span><span class="dns-master-label" data-i18n="dns.master">DNS 覆写</span><label class="toggle"><input type="checkbox" id="vcfgDnsEnable" onchange="saveVcfg('dns-enable')"><span class="toggle-track"></span></label></div>
+            <div style="padding:12px 16px 14px">
+              <p class="dns-master-hint" data-i18n="dns.masterHint">默认关闭；关闭时只保存 DNS 模板，不写入当前启动配置</p>
+              <div class="core-tabs dns-tabs">
+                <button class="core-tab active" id="dnsTabBasic" onclick="switchDnsTab('basic')"><span data-i18n="dns.tabBasic">基础设置</span></button>
+                <button class="core-tab" id="dnsTabNs" onclick="switchDnsTab('ns')"><span data-i18n="dns.tabNs">解析服务器</span></button>
+                <button class="core-tab" id="dnsTabFake" onclick="switchDnsTab('fake')"><span data-i18n="dns.tabFake">Fake IP 与域名策略</span></button>
+                <button class="core-tab" id="dnsTabFb" onclick="switchDnsTab('fb')"><span data-i18n="dns.tabFb">回退过滤</span></button>
+                <button class="core-tab" id="dnsTabHosts" onclick="switchDnsTab('hosts')"><span data-i18n="dns.tabHosts">Hosts 映射</span></button>
+              </div>
+
+              <div class="core-panel active dns-panel" id="dnsPanelBasic">
+                <div class="dns-grid">
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.listen">DNS 监听地址</span><small>dns.listen</small></span><input class="dns-input" id="vcfgDnsListen" placeholder="127.0.0.1:1053" onchange="saveVcfg('dns-listen')"></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.enhanced">增强模式</span><small>dns.enhanced-mode</small></span><select class="dns-input" id="vcfgDnsEnhanced" onchange="saveVcfg('dns-enhanced')"><option value="fake-ip">Fake IP</option><option value="redir-host">Redir Host</option></select></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.fakeIpRange">Fake IP IPv4 范围</span><small>dns.fake-ip-range</small></span><input class="dns-input" id="vcfgFakeIpRange" placeholder="198.18.0.1/16" onchange="saveVcfg('fake-ip-range')"></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.fakeIpRange6">Fake IP IPv6 范围</span><small>dns.fake-ip-range-v6</small></span><input class="dns-input" id="vcfgDnsFakeIpRange6" placeholder="fdfe:dcba:9876::1/64" onchange="saveVcfg('dns-fake6')"></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.filterMode">Fake IP 过滤模式</span><small>dns.fake-ip-filter-mode</small></span><select class="dns-input" id="vcfgDnsFilterMode" onchange="saveVcfg('dns-filter-mode')"><option value="blacklist" data-i18n="dns.modeBlacklist">黑名单</option><option value="whitelist" data-i18n="dns.modeWhitelist">白名单</option></select></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.preferH3">优先使用 HTTP/3</span><small>dns.prefer-h3</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsPreferH3" onchange="saveVcfg('dns-prefer-h3')"><span class="toggle-track"></span></label></div>
+                </div>
+                <div class="dns-grid">
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="settings.ipv6">IPv6 DNS 解析</span><small data-i18n="dns.ipv6Hint">是否返回 AAAA 记录；与全局 IPv6 开关不同</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsIpv6" onchange="saveVcfg('dns-ipv6')"><span class="toggle-track"></span></label></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.respectRules">DNS 遵循路由规则</span><small data-i18n="dns.respectRulesHint">需要配置代理节点 DNS，避免解析循环</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsRespect" onchange="saveVcfg('dns-respect-rules')"><span class="toggle-track"></span></label></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.useHosts">使用配置 Hosts</span><small data-i18n="dns.useHostsHint">使用 Mihomo 配置中的 hosts 映射</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsHosts" onchange="saveVcfg('dns-use-hosts')"><span class="toggle-track"></span></label></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.useSysHosts">使用系统 Hosts</span><small data-i18n="dns.useSysHostsHint">读取 fnOS 的系统 hosts 文件</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsSysHosts" onchange="saveVcfg('dns-use-sys-hosts')"><span class="toggle-track"></span></label></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.followPolicy">直连 DNS 遵循策略</span><small data-i18n="dns.followPolicyHint">直连域名解析遵循 nameserver-policy</small></span><label class="toggle"><input type="checkbox" id="vcfgDnsFollowPolicy" onchange="saveVcfg('dns-follow-policy')"><span class="toggle-track"></span></label></div>
+                </div>
+              </div>
+
+              <div class="core-panel dns-panel" id="dnsPanelNs">
+                <div class="dns-grid">
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.defaultNs">默认域名服务器</span><small>dns.default-nameserver</small></span><textarea id="vcfgDnsDefaultNs" rows="3" placeholder="223.5.5.5&#10;119.29.29.29" onchange="saveDnsList('default-nameserver','vcfgDnsDefaultNs')"></textarea></div>
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.nameserver">域名服务器</span><small>dns.nameserver</small></span><textarea id="vcfgDnsNs" rows="3" placeholder="https://doh.pub/dns-query" onchange="saveDnsList('nameserver','vcfgDnsNs')"></textarea></div>
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.fallback">回退服务器</span><small>dns.fallback</small></span><textarea id="vcfgDnsFb" rows="3" placeholder="https://dns.alidns.com/dns-query" onchange="saveDnsList('fallback','vcfgDnsFb')"></textarea></div>
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.proxyNs">代理节点 DNS</span><small>dns.proxy-server-nameserver</small></span><textarea id="vcfgDnsProxyNs" rows="3" placeholder="https://doh.pub/dns-query&#10;tls://223.5.5.5" onchange="saveDnsList('proxy-server-nameserver','vcfgDnsProxyNs')"></textarea></div>
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.directNs">直连域名服务器</span><small>dns.direct-nameserver</small></span><textarea id="vcfgDnsDirectNs" rows="3" placeholder="system://223.5.5.5" onchange="saveDnsList('direct-nameserver','vcfgDnsDirectNs')"></textarea></div>
+                </div>
+              </div>
+
+              <div class="core-panel dns-panel" id="dnsPanelFake">
+                <div class="dns-grid">
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.fakeIpFilter">Fake IP 过滤</span><small>dns.fake-ip-filter</small></span><textarea id="vcfgDnsFakeFilter" rows="5" placeholder="+.lan&#10;*.local&#10;time.*.com" onchange="saveDnsList('fake-ip-filter','vcfgDnsFakeFilter')"></textarea></div>
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.policy">域名服务器策略</span><small>dns.nameserver-policy</small></span><textarea id="vcfgDnsPolicy" rows="5" placeholder="+.example.com = server1; server2" onchange="saveDnsMap('nameserver-policy','vcfgDnsPolicy')"></textarea></div>
+                </div>
+              </div>
+
+              <div class="core-panel dns-panel" id="dnsPanelFb">
+                <div class="dns-grid">
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.fbGeoip">启用 GeoIP 过滤</span><small data-i18n="dns.fbGeoipHint">结果不属于指定国家时采用 fallback</small></span><label class="toggle"><input type="checkbox" id="vcfgFbGeoip" onchange="saveFallbackFilter()"><span class="toggle-track"></span></label></div>
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="dns.geoipCode">GeoIP 国家代码</span><small>dns.fallback-filter.geoip-code</small></span><input class="dns-input" id="vcfgDnsGeoipCode" placeholder="CN" style="width:90px;text-transform:uppercase" onchange="saveFallbackFilter()"></div>
+                </div>
+                <div class="dns-grid">
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.ipcidr">污染结果 IP CIDR</span><small>dns.fallback-filter.ipcidr</small></span><textarea id="vcfgFbIpcidr" rows="3" placeholder="240.0.0.0/4&#10;0.0.0.0/32" onchange="saveFallbackFilter()"></textarea></div>
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.fbDomain">直接使用 fallback 的域名</span><small>dns.fallback-filter.domain</small></span><textarea id="vcfgFbDomain" rows="3" placeholder="+.google.com&#10;+.youtube.com" onchange="saveFallbackFilter()"></textarea></div>
+                </div>
+              </div>
+
+              <div class="core-panel dns-panel" id="dnsPanelHosts">
+                <div class="dns-grid">
+                  <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="dns.hosts">Hosts 映射</span><small>dns.hosts</small></span><textarea id="vcfgDnsHosts" rows="6" placeholder="example.com = 1.1.1.1; 2.2.2.2" onchange="saveDnsMap('hosts','vcfgDnsHosts')"></textarea></div>
+                </div>
+              </div>
+
+              <div class="dns-foot">
+                <span data-i18n="dns.autosave">已自动保存 · 开启后自动备份、校验并应用；Controller 无法恢复时由后端自动回滚</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('dns')" data-i18n="dns.resetDefault">恢复默认值</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="vcfg-card">
@@ -1577,27 +1654,6 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
                 <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.sniffing">协议</span></span><div style="display:flex;gap:12px"><label class="pg-check" id="vcfgSniffTlsCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">TLS</label><label class="pg-check" id="vcfgSniffHttpCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">HTTP</label></div></div>
                 <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.sniffSkip">跳过域名</span></span><textarea id="vcfgSniffSkip" rows="2" onchange="saveSnifferSection()"></textarea></div>
               </div>
-            </div>
-          </div>
-          <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.dnsAdv">DNS 高级</span><button class="vcfg-reset-btn" onclick="resetConfigSection('dns')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.dnsFallback">fallback</span><span class="vcfg-hint">dns.fallback</span></span><textarea id="vcfgDnsFb" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.fbGeoip">fallback-filter geoip</span></span><label class="toggle"><input type="checkbox" id="vcfgFbGeoip" onchange="saveDnsAdvSection()"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.fbDomain">fallback-filter domain</span></span><textarea id="vcfgFbDomain" rows="2" onchange="saveDnsAdvSection()"></textarea></div>
-            </div>
-          </div>
-          <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-ctrl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></span><span data-i18n="vcfg.env">环境变量</span><span class="flex-sp"></span><button class="mini-btn" style="padding:3px 12px;font-size:12px" onclick="saveEnvVars()" data-i18n="common.save">保存</button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.enableEnv">启用代理环境变量</span><span class="vcfg-hint">HTTP_PROXY / ALL_PROXY</span></span><label class="toggle"><input type="checkbox" id="envEnabled"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.followPort">自动跟随 Mixed Port</span></span><label class="toggle"><input type="checkbox" id="envFollow" onchange="document.getElementById('envPort').disabled=this.checked"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.port">代理端口</span></span><input type="number" id="envPort" min="1" max="65535" value="7890"></div>
-              <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="net.bypass">代理绕过（NO_PROXY）</span></span><textarea id="envNoProxy" rows="2" placeholder="localhost,127.0.0.1,::1"></textarea></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.tgtEnv">系统登录环境</span><span class="vcfg-hint">/etc/environment</span></span><label class="toggle"><input type="checkbox" id="envTgtEnv"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.tgtProfile">登录 Shell</span><span class="vcfg-hint">/etc/profile</span></span><label class="toggle"><input type="checkbox" id="envTgtProfile"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.tgtBashrc">Bash 交互环境</span><span class="vcfg-hint">/etc/bash.bashrc</span></span><label class="toggle"><input type="checkbox" id="envTgtBashrc"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="net.currentStatus">当前状态</span></span><span class="vcfg-hint" id="envStatus">-</span></div>
             </div>
           </div>
           <div class="vcfg-card">
@@ -5194,6 +5250,78 @@ function saveProxyAuth() {
   }).catch(e => showToast('保存出错: ' + e, 'error'));
 }
 
+function switchDnsTab(tab) {
+  var tabs = ['basic', 'ns', 'fake', 'fb', 'hosts'];
+  var labels = {basic:'Basic', ns:'Ns', fake:'Fake', fb:'Fb', hosts:'Hosts'};
+  tabs.forEach(function(t) {
+    var tb = document.getElementById('dnsTab' + labels[t]);
+    var pn = document.getElementById('dnsPanel' + labels[t]);
+    if (tb) tb.classList.toggle('active', t === tab);
+    if (pn) pn.classList.toggle('active', t === tab);
+  });
+}
+
+function saveDnsMap(key, textareaId) {
+  var raw = (document.getElementById(textareaId).value || '').trim();
+  var items = raw.split('\n').map(function(l) { return l.trim(); }).filter(Boolean);
+  var pairs = [];
+  for (var i = 0; i < items.length; i++) {
+    var at = items[i].indexOf('=');
+    if (at <= 0) { showToast('每行必须使用「键 = 值1; 值2」格式', 'error'); return; }
+    var k = items[i].slice(0, at).trim();
+    var vals = items[i].slice(at + 1).split(';').map(function(x) { return x.trim(); }).filter(Boolean);
+    if (!k || !vals.length || /["'\r\n]/.test(k)) { showToast('每行必须使用「键 = 值1; 值2」格式', 'error'); return; }
+    pairs.push([k, vals]);
+  }
+  var block;
+  if (!pairs.length) {
+    block = '  ' + key + ': {}\n';
+  } else {
+    block = '  ' + key + ':\n' + pairs.map(function(pr) {
+      return '    ' + pr[0] + ':\n' + pr[1].map(function(v) { return '      - ' + v; }).join('\n');
+    }).join('\n') + '\n';
+  }
+  _replaceDnsKeyBlock(key, block, '已保存: dns.' + key);
+}
+
+function saveFallbackFilter() {
+  var geoip = document.getElementById('vcfgFbGeoip').checked;
+  var code = (document.getElementById('vcfgDnsGeoipCode').value || '').trim().toUpperCase() || 'CN';
+  var ipcidr = (document.getElementById('vcfgFbIpcidr').value || '').trim().split('\n').map(function(x){return x.trim()}).filter(Boolean);
+  var domain = (document.getElementById('vcfgFbDomain').value || '').trim().split('\n').map(function(x){return x.trim()}).filter(Boolean);
+  var block = '  fallback-filter:\n    geoip: ' + (geoip ? 'true' : 'false') + '\n    geoip-code: ' + code + '\n';
+  block += '    ipcidr: ' + (ipcidr.length ? '\n' + ipcidr.map(function(x){return '      - ' + x}).join('\n') : '[]') + '\n';
+  block += '    domain: ' + (domain.length ? '\n' + domain.map(function(x){return '      - ' + x}).join('\n') : '[]') + '\n';
+  _replaceDnsKeyBlock('fallback-filter', block, '已保存: dns.fallback-filter');
+}
+
+// 在 dns 段内替换/插入一个键块（块以 2 空格缩进的 key: 开头到下一个 2 空格键或段尾）
+function _replaceDnsKeyBlock(key, block, okMsg) {
+  fetch('api/config').then(r => r.json()).then(d => {
+    var lines = (d.config || '').split('\n');
+    var inDns = false, start = -1, end = -1;
+    for (var i = 0; i < lines.length; i++) {
+      if (/^dns:\s*$/.test(lines[i])) { inDns = true; continue; }
+      if (inDns && /^\S/.test(lines[i])) { break; }
+      if (inDns && new RegExp('^  ' + key.replace(/-/g,'\\-') + ':').test(lines[i])) { start = i; continue; }
+      if (inDns && start !== -1 && /^  \S/.test(lines[i])) { end = i; break; }
+    }
+    if (start === -1) {
+      // 插到 dns: 行之后
+      for (var j = 0; j < lines.length; j++) {
+        if (/^dns:\s*$/.test(lines[j])) { lines.splice(j + 1, 0, block.replace(/\n$/, '')); break; }
+      }
+    } else {
+      var stop = (end === -1) ? lines.length : end;
+      lines.splice(start, stop - start, block.replace(/\n$/, ''));
+    }
+    return fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: lines.join('\n') }) });
+  }).then(r => r.json()).then(d2 => {
+    if (d2.success) showToast(okMsg, 'success');
+    else showToast('保存失败: ' + (d2.error || ''), 'error');
+  }).catch(e => showToast('保存出错: ' + e, 'error'));
+}
+
 function saveCtrlPort() {
   var el = document.getElementById('vcfgCtrlPort');
   var port = (el.value || '').trim();
@@ -5233,7 +5361,7 @@ function saveVcfg(key) {
     'tun':'vcfgTun','tun-device':'vcfgTunDevice','tun-stack':'vcfgTunStack',
     'tun-dns-hijack':'vcfgTunDnsHijack','tun-auto-route':'vcfgTunAutoRoute','tun-auto-detect':'vcfgTunAutoDetect',
     'dns-enable':'vcfgDnsEnable','dns-enhanced':'vcfgDnsEnhanced','fake-ip-range':'vcfgFakeIpRange',
-    'dns-listen':'vcfgDnsListen','dns-respect-rules':'vcfgDnsRespect',
+    'dns-listen':'vcfgDnsListen','dns-respect-rules':'vcfgDnsRespect','dns-fake6':'vcfgDnsFakeIpRange6','dns-filter-mode':'vcfgDnsFilterMode','dns-prefer-h3':'vcfgDnsPreferH3','dns-follow-policy':'vcfgDnsFollowPolicy',
     'dns-ipv6':'vcfgDnsIpv6','dns-use-hosts':'vcfgDnsHosts','dns-use-sys-hosts':'vcfgDnsSysHosts',
     'ext-secret':'vcfgExtSecret','ext-ui':'vcfgExtUi',
     'profile':'vcfgProfile','geodata-mode':'vcfgGeodataMode','geo-loader':'vcfgGeoLoader',
@@ -5262,6 +5390,10 @@ function saveVcfg(key) {
     if (key === 'dns-enhanced') yamlKey = 'enhanced-mode';
     if (key === 'fake-ip-range') yamlKey = 'fake-ip-range';
     if (key === 'dns-listen') yamlKey = 'listen';
+    if (key === 'dns-fake6') yamlKey = 'fake-ip-range-v6';
+    if (key === 'dns-filter-mode') yamlKey = 'fake-ip-filter-mode';
+    if (key === 'dns-prefer-h3') yamlKey = 'prefer-h3';
+    if (key === 'dns-follow-policy') yamlKey = 'direct-nameserver-follow-policy';
     if (key === 'dns-respect-rules') yamlKey = 'respect-rules';
     if (key === 'dns-ipv6') yamlKey = 'ipv6';
     if (key === 'dns-use-hosts') yamlKey = 'use-hosts';
@@ -5337,14 +5469,79 @@ function loadVcfgSections(cfg) {
   if (fbd) { var fdm = dnsText.match(/fallback-filter:[\s\S]*?domain:\s*\n([\s\S]*?)(?=\n  \S|\n\S|(?![\s\S]))/); fbd.value = fdm ? fdm[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
 
   // DNS 设置（nameserver 系列 / fake-ip-filter / listen / respect-rules）
-  function dnsList(key) { var m = dnsText.match(new RegExp(key + ':\\s*\\n([\\s\\S]*?)(?=\\n  \\S|\\n\\S|(?!\\n[\\s\\S]))')); return m ? m[1].replace(/^\s+-\s+/gm,'').trim() : ''; }
-  function dnsScalar(key, def) { var m = dnsText.match(new RegExp('\\n\\s*' + key + ':\\s*(.+)')); return m ? m[1].trim().replace(/^"|"$/g,'') : (def || ''); }
+  // 缩进感知的列表/标量/映射读取：兼容 2 空格项（模板）与 4 空格项（本应用保存），
+  // 键以行首锚定，避免 nameserver 误命中 default-nameserver 子串
+  function dnsList(key, text) {
+    text = text || dnsText;
+    var kre = new RegExp('^([ \\t]*)' + key.replace(/-/g,'\\-') + ':[ \\t]*$', 'm');
+    var lines_ = text.split(/\r?\n/);
+    var startLine = -1, indent = 0;
+    for (var i = 0; i < lines_.length; i++) {
+      var km = lines_[i].match(kre);
+      if (km) { startLine = i; indent = km[1].length; break; }
+    }
+    if (startLine === -1) return '';
+    var vals = [];
+    for (var j = startLine + 1; j < lines_.length; j++) {
+      var ln = lines_[j];
+      if (!ln.trim()) continue;
+      var li = ln.match(/^(\s*)/)[1].length;
+      if (li < indent) break;
+      var im = ln.match(/^\s*-\s+(.+)$/);
+      if (im) { vals.push(im[1].trim().replace(/^["']|["']$/g,'')); }
+      else if (li <= indent) { break; }
+    }
+    return vals.join('\n');
+  }
+  function dnsMapLoad(text, key) {
+    var kre = new RegExp('^([ \\t]*)' + key.replace(/-/g,'\\-') + ':[ \\t]*(?:\{[^}]*\})?[ \\t]*$', 'm');
+    var lines_ = String(text).split(/\r?\n/);
+    var startLine = -1, indent = 0;
+    for (var i = 0; i < lines_.length; i++) {
+      var km = lines_[i].match(kre);
+      if (km) { startLine = i; indent = km[1].length; break; }
+    }
+    if (startLine === -1) return '';
+    var out = [], curKey = null, curVals = [];
+    for (var j = startLine + 1; j < lines_.length; j++) {
+      var ln = lines_[j];
+      if (!ln.trim()) continue;
+      var li = ln.match(/^(\s*)/)[1].length;
+      if (li <= indent) break;
+      var im = ln.match(/^\s*-\s+(.+)$/);
+      var km2 = ln.match(/^\s*(\S.*?):\s*$/);
+      if (km2) { if (curKey) out.push(curKey + ' = ' + curVals.join('; ')); curKey = km2[1].replace(/^["']|["']$/g,''); curVals = []; }
+      else if (im && curKey) { curVals.push(im[1].trim().replace(/^["']|["']$/g,'')); }
+    }
+    if (curKey) out.push(curKey + ' = ' + curVals.join('; '));
+    return out.join('\n');
+  }
+  function dnsScalar(key, def, text) {
+    text = text || dnsText;
+    var m = text.match(new RegExp('^[ \\t]*' + key.replace(/-/g,'\\-') + ':[ \\t]*(.+)$', 'm'));
+    return m ? m[1].trim().replace(/^["']|["']$/g,'') : (def || '');
+  }
   var vdln = document.getElementById('vcfgDnsListen'); if (vdln) vdln.value = dnsScalar('listen', '127.0.0.1:1053');
   var vdrs = document.getElementById('vcfgDnsRespect'); if (vdrs) vdrs.checked = /respect-rules:\s*true/.test(dnsText);
   var vddn = document.getElementById('vcfgDnsDefaultNs'); if (vddn) vddn.value = dnsList('default-nameserver');
   var vdns = document.getElementById('vcfgDnsNs'); if (vdns) vdns.value = dnsList('nameserver');
   var vdpn = document.getElementById('vcfgDnsProxyNs'); if (vdpn) vdpn.value = dnsList('proxy-server-nameserver');
   var vdff = document.getElementById('vcfgDnsFakeFilter'); if (vdff) vdff.value = dnsList('fake-ip-filter');
+  var vdfb = document.getElementById('vcfgDnsFb'); if (vdfb) vdfb.value = dnsList('fallback');
+  var vddn2 = document.getElementById('vcfgDnsDirectNs'); if (vddn2) vddn2.value = dnsList('direct-nameserver');
+  var vdf6 = document.getElementById('vcfgDnsFakeIpRange6'); if (vdf6) vdf6.value = dnsScalar('fake-ip-range-v6', '');
+  var vdfm = document.getElementById('vcfgDnsFilterMode'); if (vdfm) vdfm.value = dnsScalar('fake-ip-filter-mode', 'blacklist');
+  var vdp3 = document.getElementById('vcfgDnsPreferH3'); if (vdp3) vdp3.checked = /prefer-h3:\s*true/.test(dnsText);
+  var vdfp = document.getElementById('vcfgDnsFollowPolicy'); if (vdfp) vdfp.checked = /direct-nameserver-follow-policy:\s*true/.test(dnsText);
+  var vdpo = document.getElementById('vcfgDnsPolicy'); if (vdpo) vdpo.value = dnsMapLoad(dnsText, 'nameserver-policy');
+  var vdho = document.getElementById('vcfgDnsHosts'); if (vdho) vdho.value = dnsMapLoad(dnsText, 'hosts');
+  // fallback-filter 嵌套块（geoip/geoip-code/ipcidr/domain）
+  var fbText = dnsText.match(/  fallback-filter:\s*\n([\s\S]*?)(?=\n  \S|\n\S|(?![\s\S]))/);
+  var fbBlock = fbText ? fbText[0] : '';
+  var vfbg = document.getElementById('vcfgFbGeoip'); if (vfbg) vfbg.checked = /geoip:\s*true/.test(fbBlock);
+  var vfgc = document.getElementById('vcfgDnsGeoipCode'); if (vfgc) { var gcm = fbBlock.match(/geoip-code:\s*(\S+)/); vfgc.value = gcm ? gcm[1].replace(/^["']|["']$/g,'') : 'CN'; }
+  var vfbi = document.getElementById('vcfgFbIpcidr'); if (vfbi) vfbi.value = dnsList('ipcidr', fbBlock);
+  var vfbd = document.getElementById('vcfgFbDomain'); if (vfbd) vfbd.value = dnsList('domain', fbBlock);
 
   // TUN 设置（mtu / auto-redirect / strict-route / dns-hijack / 排除网段）
   var tunSection = cfg.match(/^tun:\s*\n([\s\S]*?)(?=^\S|(?![\s\S]))/m);
@@ -5884,6 +6081,17 @@ var I18N = {
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
     'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动','core.title':'内核设置','core.tabManage':'内核管理','core.tabConn':'连接管理','core.tabGeo':'GEO 数据','core.subTitle':'核心版本与运行方式','core.viewDetails':'查看详情','core.binary':'二进制','core.configPath':'启动配置','core.redetect':'重新检测','core.stop':'停止内核','core.stopped':'内核已停止','core.stopFail':'停止失败: ','core.portFix':'端口占用处理','core.portFixHint':'可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。','core.modifyPort':'修改端口','core.sshHelp':'高级排查（SSH 命令）','core.copy':'复制','core.copied':'已复制到剪贴板','core.sshStep1T':'查找占用进程','core.sshStep1D':'在 NAS 的 SSH 终端执行，查看输出中的进程名和 pid=数字。','core.sshStep2T':'核对应用用途','core.sshStep2D':'将命令中的 PID 替换为上一步查到的进程号，确认它是可以停止的服务。','core.sshStep3T':'停止已确认的进程','core.sshStep3D':'同样替换 PID。等待几秒，再执行第一条命令，确认端口已释放，然后点击「重新检测」或「启动内核」。','core.sshDockerNote':'如果占用者是 Docker 容器，请在飞牛 Docker 页面停止对应容器或修改端口映射，不要直接结束 docker-proxy。受服务管理器控制的进程可能自动重启，应通过原服务停止。','core.sshSubForceT':'进程仍未退出时','core.sshSubForceD':'先重新查询并核对 PID，确认仍是同一进程后才强制结束；强制结束不会执行正常清理。','core.sshSubNetT':'系统没有 ss 命令时','core.sshSubNetD':'可用 netstat 查看监听列表，找到本地地址末尾为 {port} 的行及其 PID/程序名。','core.controller':'控制器','core.interval12':'12 小时','core.interval24':'24 小时','core.interval72':'3 天','core.interval168':'7 天','core.connSettings':'连接设置','core.connSub':'连接当前 Core 的 Controller API','core.autoManage':'自动管理','core.portSettings':'端口设置','core.delayUrl':'延迟测试 URL','core.delayTimeout':'超时（毫秒）','core.delayHint':'用于节点延迟测速的请求地址与超时；修改后自动保存。','core.hcSaved':'测速参数已保存','core.geoDownload':'下载','core.geoSource':'来源','core.geoNoDownload':'未下载','core.geoNoSource':'未配置下载地址','core.geoDownloadFail':'下载失败: ','core.version':'内核版本','core.start':'启动内核','core.restart':'重启内核','core.checkUpdate':'检查更新','core.started':'内核已启动','core.restarted':'内核已重启','core.startFail':'启动失败: ','core.restartFail':'重启失败: ','core.portConflict':'控制器端口 {port} 被其他进程占用，内核可能无法启动。可前往「配置 → 外部控制」修改监听端口。','core.secret':'密钥','core.secretSet':'已设置','core.secretUnset':'未设置','core.goConfig':'前往配置','core.test':'测试连接','core.testOk':'连接成功','core.testFail':'连接失败，引擎未响应','core.geoAuto':'自动更新','core.geoInterval':'更新周期','core.saveSettings':'保存设置','core.geoSaved':'GEO 设置已保存，服务正在重启...','core.geoOk':'可用','core.geoMissing':'缺失','core.updateNow':'立即更新','core.saveFailed':'保存失败: ','core.geoHint':'GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。','core.connHint':'Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。',
+    'dns.master':'DNS 覆写','dns.masterHint':'默认关闭；关闭时只保存 DNS 模板，不写入当前启动配置',
+'dns.tabBasic':'基础设置','dns.tabNs':'解析服务器','dns.tabFake':'Fake IP 与域名策略','dns.tabFb':'回退过滤','dns.tabHosts':'Hosts 映射',
+'dns.listen':'DNS 监听地址','dns.enhanced':'增强模式','dns.fakeIpRange':'Fake IP IPv4 范围','dns.fakeIpRange6':'Fake IP IPv6 范围',
+'dns.filterMode':'Fake IP 过滤模式','dns.modeBlacklist':'黑名单','dns.modeWhitelist':'白名单','dns.preferH3':'优先使用 HTTP/3',
+'dns.ipv6Hint':'是否返回 AAAA 记录；与全局 IPv6 开关不同','dns.respectRules':'DNS 遵循路由规则','dns.respectRulesHint':'需要配置代理节点 DNS，避免解析循环',
+'dns.useHosts':'使用配置 Hosts','dns.useHostsHint':'使用 Mihomo 配置中的 hosts 映射','dns.useSysHosts':'使用系统 Hosts','dns.useSysHostsHint':'读取 fnOS 的系统 hosts 文件',
+'dns.followPolicy':'直连 DNS 遵循策略','dns.followPolicyHint':'直连域名解析遵循 nameserver-policy',
+'dns.defaultNs':'默认域名服务器','dns.nameserver':'域名服务器','dns.fallback':'回退服务器','dns.proxyNs':'代理节点 DNS','dns.directNs':'直连域名服务器',
+'dns.fakeIpFilter':'Fake IP 过滤','dns.policy':'域名服务器策略','dns.fbGeoip':'启用 GeoIP 过滤','dns.fbGeoipHint':'结果不属于指定国家时采用 fallback',
+'dns.geoipCode':'GeoIP 国家代码','dns.ipcidr':'污染结果 IP CIDR','dns.fbDomain':'直接使用 fallback 的域名','dns.hosts':'Hosts 映射',
+'dns.autosave':'已自动保存 · 开启后自动备份、校验并应用；Controller 无法恢复时由后端自动回滚','dns.viewRaw':'查看原始配置','dns.resetDefault':'恢复默认值',
     'net.title':'网络设置','net.tabProxy':'系统代理','net.tabTun':'虚拟网卡模式',
     'net.sysProxy':'系统代理','net.tun':'虚拟网卡模式',
     'net.bannerProxyOn':'系统代理已启用，读取代理环境变量的程序将通过 127.0.0.1 端口走代理。',
@@ -6043,6 +6251,17 @@ var I18N = {
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
     'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start','core.title':'Core Settings','core.tabManage':'Core','core.tabConn':'Connection','core.tabGeo':'GEO Data','core.subTitle':'Core version and run mode','core.viewDetails':'Details','core.binary':'Binary','core.configPath':'Startup config','core.redetect':'Re-detect','core.stop':'Stop Core','core.stopped':'Core stopped','core.stopFail':'Stop failed: ','core.portFix':'Port Conflict','core.portFixHint':'Change the managed core startup port directly to keep the existing service. Config is backed up and validated, and the connection is verified after start.','core.modifyPort':'Change Port','core.sshHelp':'Advanced (SSH commands)','core.copy':'Copy','core.copied':'Copied to clipboard','core.sshStep1T':'Find the occupying process','core.sshStep1D':'Run in the NAS SSH terminal and check the process name and pid= in the output.','core.sshStep2T':'Verify the process','core.sshStep2D':'Replace PID with the process number found in the previous step and confirm it is a service that can be stopped.','core.sshStep3T':'Stop the confirmed process','core.sshStep3D':'Replace PID as well. Wait a few seconds, run the first command again to confirm the port is released, then click Re-detect or Start Core.','core.sshDockerNote':'If the occupier is a Docker container, stop the container or change its port mapping in the fnOS Docker page instead of killing docker-proxy directly. Processes controlled by a service manager may auto-restart; stop them via the original service.','core.sshSubForceT':'When the process still does not exit','core.sshSubForceD':'Re-query and verify the PID first; force kill only after confirming it is still the same process. Forced termination skips normal cleanup.','core.sshSubNetT':'When the ss command is unavailable','core.sshSubNetD':'Use netstat to list listeners and find the line whose local address ends with {port}, along with its PID/program name.','core.controller':'Controller','core.interval12':'12 hours','core.interval24':'24 hours','core.interval72':'3 days','core.interval168':'7 days','core.connSettings':'Connection','core.connSub':'Connect to the current core Controller API','core.autoManage':'Auto-managed','core.portSettings':'Port Settings','core.delayUrl':'Healthcheck URL','core.delayTimeout':'Timeout (ms)','core.delayHint':'URL and timeout used for node delay tests; saved automatically.','core.hcSaved':'Healthcheck settings saved','core.geoDownload':'Download','core.geoSource':'Source','core.geoNoDownload':'Not downloaded','core.geoNoSource':'No source configured','core.geoDownloadFail':'Download failed: ','core.version':'Core Version','core.start':'Start Core','core.restart':'Restart Core','core.checkUpdate':'Check Updates','core.started':'Core started','core.restarted':'Core restarted','core.startFail':'Start failed: ','core.restartFail':'Restart failed: ','core.portConflict':'Controller port {port} is used by another process; the core may fail to start. Change the listen port in Config → External Controller.','core.secret':'Secret','core.secretSet':'Set','core.secretUnset':'Not set','core.goConfig':'Go to Config','core.test':'Test Connection','core.testOk':'Connected','core.testFail':'Connection failed, engine not responding','core.geoAuto':'Auto Update','core.geoInterval':'Interval','core.saveSettings':'Save Settings','core.geoSaved':'GEO settings saved, restarting service...','core.geoOk':'Available','core.geoMissing':'Missing','core.updateNow':'Update Now','core.saveFailed':'Save failed: ','core.geoHint':'GEO files live in /vol1/@appdata/fnnas.fnsoar/; restart the core after updating. Download sources can be edited in Config → Geo Data.','core.connHint':'Controller is the API endpoint the panel uses to talk to the engine. Edit the listen port or Secret in Config → External Controller.',
+    'dns.master':'DNS Override','dns.masterHint':'Off by default; when off, only the DNS template is saved and not written to the running config',
+'dns.tabBasic':'Basic','dns.tabNs':'Nameservers','dns.tabFake':'Fake IP & Policy','dns.tabFb':'Fallback Filter','dns.tabHosts':'Hosts',
+'dns.listen':'DNS Listen','dns.enhanced':'Enhanced Mode','dns.fakeIpRange':'Fake IP IPv4 Range','dns.fakeIpRange6':'Fake IP IPv6 Range',
+'dns.filterMode':'Fake IP Filter Mode','dns.modeBlacklist':'Blacklist','dns.modeWhitelist':'Whitelist','dns.preferH3':'Prefer HTTP/3',
+'dns.ipv6Hint':'Whether to return AAAA records; independent of the global IPv6 switch','dns.respectRules':'Respect Rules','dns.respectRulesHint':'Requires proxy-node DNS to avoid resolution loops',
+'dns.useHosts':'Use Configured Hosts','dns.useHostsHint':'Use the hosts map in the Mihomo config','dns.useSysHosts':'Use System Hosts','dns.useSysHostsHint':'Read the fnOS system hosts file',
+'dns.followPolicy':'Direct DNS Follow Policy','dns.followPolicyHint':'Direct-domain resolution follows nameserver-policy',
+'dns.defaultNs':'Default Nameservers','dns.nameserver':'Nameservers','dns.fallback':'Fallback Servers','dns.proxyNs':'Proxy Node DNS','dns.directNs':'Direct Nameservers',
+'dns.fakeIpFilter':'Fake IP Filter','dns.policy':'Nameserver Policy','dns.fbGeoip':'Enable GeoIP Filter','dns.fbGeoipHint':'Use fallback when results are outside the specified country',
+'dns.geoipCode':'GeoIP Country Code','dns.ipcidr':'Polluted Result IP CIDR','dns.fbDomain':'Domains Using Fallback Directly','dns.hosts':'Hosts',
+'dns.autosave':'Auto-saved · backed up, validated and applied when enabled; the backend rolls back automatically if the Controller is unrecoverable','dns.viewRaw':'View Raw Config','dns.resetDefault':'Reset to Defaults',
     'net.title':'Network','net.tabProxy':'System Proxy','net.tabTun':'TUN Mode',
     'net.sysProxy':'System Proxy','net.tun':'TUN Mode',
     'net.bannerProxyOn':'System proxy is on. Programs that read proxy env vars will route through 127.0.0.1.',
