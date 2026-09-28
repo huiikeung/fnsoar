@@ -1459,7 +1459,7 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
             <div class="vcfg-card-body">
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunEnable">TUN 启用</span><span class="vcfg-hint">tun.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgTun" onchange="saveVcfg('tun')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDevice">设备名称</span><span class="vcfg-hint">tun.device</span></span><input type="text" id="vcfgTunDevice" placeholder="Mihomo" onchange="saveVcfg('tun-device')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunStack">协议栈</span><span class="vcfg-hint">tun.stack</span></span><select id="vcfgTunStack" onchange="saveVcfg('tun-stack')"><option value="gvisor">gvisor</option><option value="system">system</option><option value="mixed">mixed</option></select></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunStack">协议栈</span><span class="vcfg-hint">tun.stack</span></span><select id="vcfgTunStack" onchange="saveVcfg('tun-stack')"><option value="mixed">mixed（推荐）</option><option value="system">system</option><option value="gvisor">gVisor</option></select></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunMtu">MTU</span><span class="vcfg-hint">tun.mtu</span></span><input type="number" id="vcfgTunMtu" placeholder="1500" min="1280" max="65535" onchange="saveTunSettings()"></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunDnsHijack">DNS 劫持</span><span class="vcfg-hint">tun.dns-hijack</span></span><label class="toggle"><input type="checkbox" id="vcfgTunDnsHijack" onchange="saveTunSettings()"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tunAutoRoute">自动路由</span><span class="vcfg-hint">tun.auto-route</span></span><label class="toggle"><input type="checkbox" id="vcfgTunAutoRoute" onchange="saveVcfg('tun-auto-route')"><span class="toggle-track"></span></label></div>
@@ -4961,7 +4961,7 @@ function loadVcfg() {
     var v6 = document.getElementById('vcfgIpv6'); if (v6) v6.checked = getBool('ipv6');
     var vt = document.getElementById('vcfgTun'); if (vt) vt.checked = getBool('enable') && /tun:/.test(cfg);
     var vtd = document.getElementById('vcfgTunDevice'); if (vtd) vtd.value = getVal('device', 'Mihomo');
-    var vts = document.getElementById('vcfgTunStack'); if (vts) vts.value = getVal('stack', 'gvisor');
+    var vts = document.getElementById('vcfgTunStack'); if (vts) vts.value = getVal('stack', 'mixed');
     var vhp = document.getElementById('vcfgHttpPort'); if (vhp) vhp.value = getVal('http-port', '');
     var vba = document.getElementById('vcfgBindAddr'); if (vba) vba.value = getVal('bind-address', '*');
     var vde = document.getElementById('vcfgDnsEnable'); if (vde) vde.checked = /\bdns:/.test(cfg) && getBool('enable');
