@@ -713,6 +713,13 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .dns-ta-box{flex-direction:column;align-items:stretch;gap:7px;min-height:0}
 .dns-ta-box textarea{width:100%;min-height:88px;max-height:220px;resize:vertical;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;color:var(--text);outline:none;transition:border-color .15s}
 .dns-field.wide{grid-column:1/-1}
+/* 半宽卡片内的纵向字段（外部控制）：标签在上、输入框全宽在下 */
+.ext-field{display:flex;flex-direction:column;gap:5px;margin-bottom:10px}
+.ext-field .dns-field-label{font-size:12px;font-weight:600;color:var(--text)}
+.ext-field .dns-field-label small{display:block;font-size:10px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:2px;line-height:1.4}
+.ext-input{width:100%;box-sizing:border-box;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:7px 10px;font-size:12px;color:var(--text);outline:none;font-family:inherit;transition:border-color .15s}
+.ext-input:hover{border-color:var(--accent);border-style:dashed}
+.ext-input:focus{border-color:var(--accent)}
 .dns-ta-box textarea:focus{border-color:var(--accent)}
 .dns-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);font-size:10.5px;color:var(--faint)}
 .dns-foot .core-btn{padding:5px 12px;font-size:11px}
@@ -1530,21 +1537,23 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.tcpConcurrent">TCP 并发</span><span class="vcfg-hint">tcp-concurrent</span></span><label class="toggle"><input type="checkbox" id="vcfgTcpConcurrent" onchange="saveVcfg('tcp-concurrent')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.findProcess">查找进程</span><span class="vcfg-hint">find-process-mode</span></span><select id="vcfgFindProcess" onchange="saveVcfg('find-process')"><option value="off">off</option><option value="strict">strict</option><option value="always">always</option></select></div>
             </div>
-            <!-- 外部控制（并入基础设置卡片，TUN 样式） -->
-            <div style="border-top:1px solid var(--border)">
-              <div class="vcfg-card-title"><span class="vcfg-ic cfg-ctrl"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8H5v2h4V8zm0 3H5v2h4v-2zm0 3H5v2h4v-2zm3-6h7v2h-7V8zm0 3h7v2h-7v-2zm0 3h7v2h-7v-2z"/></svg></span><span data-i18n="vcfg.external">外部控制</span><button class="vcfg-reset-btn" onclick="resetConfigSection('external')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-              <div style="padding:12px 16px 14px">
-                <div class="dns-grid">
-                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.ctrlPort">控制器端口</span><small data-i18n="vcfg.ctrlPortHint">external-controller · 管理 API 监听端口</small></span><input type="number" class="dns-input" id="vcfgCtrlPort" placeholder="9090" onchange="saveCtrlPort()"></div>
-                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.extSecret">密钥</span><small data-i18n="vcfg.extSecretHint">secret · 访问管理 API 的密码</small></span><input type="text" class="dns-input" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
-                </div>
-                <div class="dns-grid">
-                  <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.extUi">外部 UI</span><small data-i18n="vcfg.extUiHint">external-ui · 面板目录名（如 zashboard）</small></span><input type="text" class="dns-input" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')"></div>
-                </div>
-                <div class="tun-note">
-                  <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
-                  <span><strong data-i18n="vcfg.externalNoteTitle">密钥 与 代理认证 的区别</strong>　<span data-i18n="vcfg.externalNote">控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。</span></span>
-                </div>
+            <!-- 外部控制（并入基础设置卡片，半宽卡片适配：纵向字段 + 全宽输入） -->
+            <div style="padding:12px 16px 14px;border-top:1px solid var(--border)">
+              <div class="ext-field">
+                <span class="dns-field-label"><span data-i18n="vcfg.ctrlPort">控制器端口</span><small data-i18n="vcfg.ctrlPortHint">external-controller · 管理 API 监听端口</small></span>
+                <input type="number" class="ext-input" id="vcfgCtrlPort" placeholder="9090" onchange="saveCtrlPort()">
+              </div>
+              <div class="ext-field">
+                <span class="dns-field-label"><span data-i18n="vcfg.extSecret">密钥</span><small data-i18n="vcfg.extSecretHint">secret · 访问管理 API 的密码</small></span>
+                <input type="text" class="ext-input" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')">
+              </div>
+              <div class="ext-field">
+                <span class="dns-field-label"><span data-i18n="vcfg.extUi">外部 UI</span><small data-i18n="vcfg.extUiHint">external-ui · 面板目录名（如 zashboard）</small></span>
+                <input type="text" class="ext-input" id="vcfgExtUi" placeholder="dashboard" onchange="saveVcfg('ext-ui')">
+              </div>
+              <div class="tun-note">
+                <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
+                <span><strong data-i18n="vcfg.externalNoteTitle">密钥 与 代理认证 的区别</strong>　<span data-i18n="vcfg.externalNote">控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。</span></span>
               </div>
             </div>
           </div>
@@ -5901,9 +5910,8 @@ function resetConfigSection(section) {
   showConfirm('vcfg.resetConfirm', function() {
   // Sections with simple key-value pairs (not a config section)
   var simpleDefaults = {
-    'basic': {'mode':'rule','log-level':'info','tcp-concurrent':'true','find-process-mode':'off'},
+    'basic': {'mode':'rule','log-level':'info','tcp-concurrent':'true','find-process-mode':'off','external-controller':'0.0.0.0:9090','secret':'','external-ui':'dashboard'},
     'inbound': {'mixed-port':'7890','socks-port':'7891','redir-port':'7892','tproxy-port':'7893','bind-address':'*','allow-lan':'true','ipv6':'true','unified-delay':'true','authentication':'[]'},
-    'external': {'external-controller':'0.0.0.0:9090','secret':'','external-ui':'dashboard'},
     'advanced': {'profile':'','geodata-mode':'true','geodata-loader':'memconservative','global-ua':'clash.meta','keep-alive-interval':'30'}
   };
   if (simpleDefaults[section]) {
