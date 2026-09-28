@@ -636,7 +636,7 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .core-tabs{display:flex;gap:7px;margin:0 0 14px}
 .core-tab{flex:1;padding:9px 12px;border:1px solid var(--border);background:var(--card2);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;transition:all .14s;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:7px}
 .core-tab svg{width:15px;height:15px;fill:currentColor;opacity:.85;flex-shrink:0}
-.core-tab:hover{color:var(--text);border-color:var(--dim)}
+.core-tab:hover{color:var(--text);border-color:var(--accent);border-style:dashed}
 .core-tab.active{color:#fff;border-color:var(--accent);background:var(--accent)}
 .core-actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 4px}
 .core-btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:9px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-size:12px;font-weight:600;cursor:pointer;transition:all .13s;font-family:inherit}
@@ -686,9 +686,11 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .geo-src-btn.active svg{transform:rotate(180deg)}
 .geo-src-btn:disabled{opacity:.45;cursor:not-allowed}
 .geo-src-wrap{margin-top:2px}
-/* 内核设置卡片：set-item 去掉额外左右内缩（wrapper 已有 16px，
-   否则文字距卡片左缘 36px，与卡片内标题/说明/按钮的 16px 对不齐） */
-.core-panel .set-item{padding-left:0;padding-right:0}
+/* 内核设置卡片：set-item 只保留 4px 内缩（wrapper 已有 16px，
+   文字距卡片左缘 20px，与设置页其他卡片行规范一致） */
+.core-panel .set-item{padding-left:4px;padding-right:4px}
+/* 内核设置模块：输入框/选择器 hover 同样虚线（对齐基础设置自定义下拉虚线规范） */
+.core-card .set-input:hover,.core-card .set-select:hover{border-color:var(--accent);border-style:dashed}
 /* 无旋钮数字输入 + 按钮悬停虚线（与基础设置自定义下拉一致） */
 input.no-spin{-moz-appearance:textfield;appearance:textfield}
 input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;margin:0}
