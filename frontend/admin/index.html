@@ -686,6 +686,11 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .geo-src-btn.active svg{transform:rotate(180deg)}
 .geo-src-btn:disabled{opacity:.45;cursor:not-allowed}
 .geo-src-wrap{margin-top:2px}
+/* 无旋钮数字输入 + 按钮悬停虚线（与基础设置自定义下拉一致） */
+input.no-spin{-moz-appearance:textfield;appearance:textfield}
+input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-button{-webkit-appearance:none;appearance:none;margin:0}
+.core-btn:hover{border-color:var(--accent);color:var(--accent2);border-style:dashed}
+.core-btn.primary:hover{filter:brightness(1.12);color:#fff;border-style:dashed}
 /* 连接详情弹窗 */
 .con-detail-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.5);z-index:999;display:flex;align-items:center;justify-content:center}
 .con-detail-overlay.hidden{display:none}
@@ -1749,11 +1754,11 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
             <div style="border-top:1px solid var(--border-soft);margin-top:12px;padding-top:12px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px">
               <div>
                 <label style="display:block;font-size:11.5px;font-weight:600;color:var(--dim);margin-bottom:5px" data-i18n="core.delayUrl">延迟测试 URL</label>
-                <input class="set-input" style="width:100%;max-width:none;text-align:left" id="coreHcUrl" placeholder="https://www.gstatic.com/generate_204" onchange="saveHealthcheck()">
+                <input class="set-input" style="width:100%;max-width:none;height:38px;text-align:left" id="coreHcUrl" placeholder="https://www.gstatic.com/generate_204" onchange="saveHealthcheck()">
               </div>
               <div>
                 <label style="display:block;font-size:11.5px;font-weight:600;color:var(--dim);margin-bottom:5px" data-i18n="core.delayTimeout">超时（毫秒）</label>
-                <input class="set-input" style="width:100%;max-width:none;text-align:left" type="number" id="coreHcTimeout" min="1000" max="30000" placeholder="3000" onchange="saveHealthcheck()">
+                <input class="set-input no-spin" style="width:100%;max-width:none;height:38px;text-align:left" type="number" id="coreHcTimeout" min="1000" max="30000" placeholder="3000" onchange="saveHealthcheck()">
               </div>
             </div>
             <p style="font-size:11px;color:var(--faint);line-height:1.6;margin:8px 0 0" data-i18n="core.delayHint">用于节点延迟测速的请求地址与超时；修改后自动保存。</p>
