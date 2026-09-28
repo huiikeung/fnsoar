@@ -109,6 +109,21 @@ def read_config():
     except Exception as e:
         return f"# Error reading config: {e}\n"
 
+def _tail_file(path, n=200):
+    """高效读取文件末尾 n 行（避免 readlines() 读整个大文件）。"""
+    with open(path, "rb") as f:
+        BUFSIZE = 65536
+        buf = b""
+        f.seek(0, 2)
+        pos = f.tell()
+        while pos > 0 and buf.count(b"\n") <= n:
+            read_size = min(BUFSIZE, pos)
+            pos -= read_size
+            f.seek(pos)
+            buf = f.read(read_size) + buf
+        lines = buf.decode("utf-8", errors="replace").splitlines()
+        return "\n".join(lines[-n:])
+
 # ── 图标本地化：远程图标下载到本机 ICON_DIR 缓存，之后从本地读取 ────────
 _ICON_MIME_EXT = {
     "image/png": ".png", "image/jpeg": ".jpg", "image/jpg": ".jpg",
@@ -3326,8 +3341,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         if path == "/api/logs":
             lines = 200
             try:
-                with open(LOG_FILE, "r", encoding="utf-8", errors="replace") as f:
-                    content = "".join(f.readlines()[-lines:])
+                content = _tail_file(LOG_FILE, lines)
             except FileNotFoundError:
                 content = "日志文件不存在"
             self.send_response(200)
@@ -3532,6 +3546,13 @@ class AdminHandler(BaseHTTPRequestHandler):
         """POST 端点：服务开关 / TUN / GEO 更新 / 内核更新 / 订阅管理 / 模式 / 配置保存等。"""
         path = self._strip_gateway_prefix(urlparse(self.path).path)
         body = self._read_body()
+        if path == "/api/unlock/check":
+            try:
+                from media_unlock import check_media_unlock
+                items = check_media_unlock()
+                return self._send_json({"success": True, "items": items})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/dashboard-update":
             try:
                 data = json.loads(body) if body else {}

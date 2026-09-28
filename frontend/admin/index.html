@@ -5199,7 +5199,13 @@ async function unlockCheckSingle(name) {
 
 // ── 配置 ───────────────────────────────────
 function loadConfigToEditor() {
-  fetch('api/config').then(r => r.json()).then(d => { document.getElementById('configYaml').value = d.config || ''; });
+  var ta = document.getElementById('configYaml');
+  if (ta) ta.value = '加载中…';
+  fetch('api/config').then(r => r.json()).then(d => {
+    if (ta) ta.value = d.config || '';
+  }).catch(function(e) {
+    if (ta) ta.value = '# 加载配置失败: ' + (e.message || e);
+  });
 }
 function saveConfig() {
   const yaml = document.getElementById('configYaml').value;
@@ -5822,16 +5828,18 @@ function saveTunSettings() {
 
 // ── 环境变量（配置页卡片保存 / 渲染） ────────────
 function saveEnvVars() {
-  var noProxy = document.getElementById('envNoProxy').value.split(/[\n,]/).map(function(s){return s.trim()}).filter(Boolean).join(',');
+  function val(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+  function chk(id, def) { var el = document.getElementById(id); return el ? el.checked : (def || false); }
+  var noProxy = (val('envNoProxy') || '').split(/[\n,]/).map(function(s){return s.trim()}).filter(Boolean).join(',');
   var body = {
-    enabled: document.getElementById('envEnabled').checked,
-    follow_mixed_port: document.getElementById('envFollow').checked,
-    port: parseInt(document.getElementById('envPort').value || '7890', 10),
+    enabled: chk('envEnabled'),
+    follow_mixed_port: chk('envFollow', true),
+    port: parseInt(val('envPort') || '7890', 10),
     no_proxy: noProxy,
     targets: {
-      environment: document.getElementById('envTgtEnv').checked,
-      profile: document.getElementById('envTgtProfile').checked,
-      bashrc: document.getElementById('envTgtBashrc').checked
+      environment: chk('envTgtEnv', true),
+      profile: chk('envTgtProfile', true),
+      bashrc: chk('envTgtBashrc', true)
     }
   };
   fetch('api/system-proxy', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(body) })
