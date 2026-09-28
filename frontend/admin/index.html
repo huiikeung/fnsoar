@@ -1517,7 +1517,7 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.allowLan">局域网连接</span><span class="vcfg-hint">allow-lan</span></span><label class="toggle"><input type="checkbox" id="vcfgAllowLan" onchange="saveVcfg('allow-lan')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.ipv6">IPv6</span><span class="vcfg-hint">ipv6</span></span><label class="toggle"><input type="checkbox" id="vcfgIpv6" onchange="saveVcfg('ipv6')"><span class="toggle-track"></span></label></div>
               <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><span class="vcfg-hint">unified-delay</span></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.auth">认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass" onchange="saveVcfg('auth')"></div>
+              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.proxyAuth">代理认证</span><span class="vcfg-hint">authentication</span></span><input type="text" id="vcfgAuth" placeholder="user:pass，多组用逗号" title="代理入站认证：其他设备经代理端口上网时需输入的用户名:密码，多组用英文逗号分隔" onchange="saveProxyAuth()"></div>
             </div>
           </div>
           <div class="vcfg-card">
@@ -5149,6 +5149,17 @@ function loadVcfg() {
     var vde = document.getElementById('vcfgDnsEnable'); if (vde) vde.checked = /\bdns:/.test(cfg) && getBool('enable');
     var vdh = document.getElementById('vcfgDnsEnhanced'); if (vdh) vdh.value = getVal('enhanced-mode', 'fake-ip');
     var vfir = document.getElementById('vcfgFakeIpRange'); if (vfir) vfir.value = getVal('fake-ip-range', '198.18.0.1/16');
+    var vau = document.getElementById('vcfgAuth');
+    if (vau) {
+      var am = cfg.match(/^authentication:\s*(.+)$/m);
+      var av = am ? am[1].trim() : '';
+      if (av.charAt(0) === '[') {
+        var aItems = (av.match(/"([^"]*)"|'([^']*)'/g) || []).map(function(x) { return x.slice(1, -1); });
+        vau.value = aItems.join(',');
+      } else {
+        vau.value = av.replace(/^["']|["']$/g, '');
+      }
+    }
     var vcp = document.getElementById('vcfgCtrlPort'); if (vcp) { var ec0 = getVal('external-controller', '0.0.0.0:9090'); vcp.value = ec0.indexOf(':') !== -1 ? ec0.split(':').pop() : '9090'; }
     var ves = document.getElementById('vcfgExtSecret'); if (ves) ves.value = getVal('secret', '');
     var vga = document.getElementById('vcfgGeoAuto'); if (vga) vga.checked = getBool('geo-auto-update');
@@ -5156,6 +5167,33 @@ function loadVcfg() {
     loadVcfgSections(cfg);
   });
 }
+function saveProxyAuth() {
+  var raw = (document.getElementById('vcfgAuth').value || '').trim();
+  var items = raw.split(',').map(function(x) { return x.trim(); }).filter(Boolean);
+  var bad = items.filter(function(x) { return !/^[^:\s]+:[^:\s]+$/.test(x); });
+  if (bad.length) {
+    showToast('每组认证都必须是 user:pass 格式（含且仅含一个冒号、无空格）', 'error');
+    return;
+  }
+  var yamlVal = items.length ? '[' + items.map(function(x) { return '"' + x + '"'; }).join(', ') + ']' : '[]';
+  fetch('api/config').then(r => r.json()).then(d => {
+    var lines = (d.config || '').split('\n');
+    var changed = false;
+    for (var i = 0; i < lines.length; i++) {
+      if (/^authentication:\s*/.test(lines[i])) {
+        lines[i] = 'authentication: ' + yamlVal;
+        changed = true;
+        break;
+      }
+    }
+    if (!changed) { lines.push('authentication: ' + yamlVal); }
+    return fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: lines.join('\n') }) });
+  }).then(r => r.json()).then(d2 => {
+    if (d2.success) showToast('已保存: authentication', 'success');
+    else showToast('保存失败: ' + (d2.error || ''), 'error');
+  }).catch(e => showToast('保存出错: ' + e, 'error'));
+}
+
 function saveCtrlPort() {
   var el = document.getElementById('vcfgCtrlPort');
   var port = (el.value || '').trim();
@@ -5191,7 +5229,7 @@ function saveVcfg(key) {
     'unified-delay':'vcfgUnifiedDelay','allow-lan':'vcfgAllowLan','ipv6':'vcfgIpv6',
     'tcp-concurrent':'vcfgTcpConcurrent','find-process':'vcfgFindProcess',
     'socks-port':'vcfgSocksPort','redir-port':'vcfgRedirPort','tproxy-port':'vcfgTproxyPort',
-    'auth':'vcfgAuth','http-port':'vcfgHttpPort','bind-address':'vcfgBindAddr',
+'http-port':'vcfgHttpPort','bind-address':'vcfgBindAddr',
     'tun':'vcfgTun','tun-device':'vcfgTunDevice','tun-stack':'vcfgTunStack',
     'tun-dns-hijack':'vcfgTunDnsHijack','tun-auto-route':'vcfgTunAutoRoute','tun-auto-detect':'vcfgTunAutoDetect',
     'dns-enable':'vcfgDnsEnable','dns-enhanced':'vcfgDnsEnhanced','fake-ip-range':'vcfgFakeIpRange',
@@ -5807,7 +5845,7 @@ var I18N = {
     'vcfg.logLevel':'日志级别','vcfg.tcpConcurrent':'TCP 并发',
     'vcfg.findProcess':'查找进程','vcfg.httpPort':'HTTP 端口','vcfg.socksPort':'Socks 端口',
     'vcfg.redirPort':'Redir 端口','vcfg.tproxyPort':'TProxy 端口',
-    'vcfg.auth':'认证','vcfg.tunEnable':'TUN 启用','vcfg.tunDevice':'设备名称',
+    'vcfg.proxyAuth':'代理认证','vcfg.tunEnable':'TUN 启用','vcfg.tunDevice':'设备名称',
     'vcfg.tunStack':'协议栈','vcfg.tunDnsHijack':'DNS 劫持',
     'vcfg.tunAutoRoute':'自动路由','vcfg.tunAutoDetect':'自动检测接口',
     'vcfg.dnsEnable':'DNS 启用','vcfg.dnsEnhanced':'增强模式',
@@ -5966,7 +6004,7 @@ var I18N = {
     'vcfg.logLevel':'Log Level','vcfg.tcpConcurrent':'TCP Concurrent',
     'vcfg.findProcess':'Find Process','vcfg.httpPort':'HTTP Port','vcfg.socksPort':'Socks Port',
     'vcfg.redirPort':'Redir Port','vcfg.tproxyPort':'TProxy Port',
-    'vcfg.auth':'Authentication','vcfg.tunEnable':'TUN Enable','vcfg.tunDevice':'Device',
+    'vcfg.proxyAuth':'Proxy Authentication','vcfg.tunEnable':'TUN Enable','vcfg.tunDevice':'Device',
     'vcfg.tunStack':'Stack','vcfg.tunDnsHijack':'DNS Hijack',
     'vcfg.tunAutoRoute':'Auto Route','vcfg.tunAutoDetect':'Auto Detect Interface',
     'vcfg.dnsEnable':'DNS Enable','vcfg.dnsEnhanced':'Enhanced Mode',
