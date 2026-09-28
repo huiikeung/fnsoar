@@ -83,21 +83,23 @@ dns:
     - "swscan.apple.com"
     - "swcdn.apple.com"
   nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
   proxy-server-nameserver:
-    - 223.5.5.5
-    - 119.29.29.29
+    - https://doh.pub/dns-query
+    - https://dns.alidns.com/dns-query
   nameserver-policy:
     "geosite:cn,private":
-      - 223.5.5.5
-      - 119.29.29.29
+      - https://doh.pub/dns-query
+      - https://dns.alidns.com/dns-query
     "geosite:geolocation-!cn":
-      - 223.5.5.5
-      - 119.29.29.29
+      - https://dns.cloudflare.com/dns-query
+      - https://dns.google/dns-query
   fallback:
-    - 223.5.5.5
-    - 119.29.29.29
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
+    - tls://1.1.1.1:853
+    - tls://8.8.8.8:853
   fallback-filter:
     geoip: true
     geoip-code: CN
@@ -172,11 +174,6 @@ x-fnsoar:
       - 官网
       - 公告
       - 通知
-      - 专用客户端
-      - 如果只显示此节点
-      - 客户端太旧
-      - 请到网站使用教程
-      - 更新一下客户端
       - traffic left
       - traffic remain
       - traffic reset
