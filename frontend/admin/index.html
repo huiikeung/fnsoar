@@ -1523,7 +1523,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
         </div>
         <div class="vcfg-grid" id="vcfgGrid">
           <div class="vcfg-card" style="grid-column:1/-1">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.basic">基础设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('basic')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.basic">基础设置</span></div>
             <div style="padding:12px 16px 14px">
               <div class="dns-grid">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.mode">运行模式</span><small>mode</small></span><select class="dns-input" id="vcfgMode" onchange="saveVcfg('mode')"><option value="rule" data-i18n="vcfg.modeRule">规则</option><option value="global" data-i18n="vcfg.modeGlobal">全局</option><option value="direct" data-i18n="vcfg.modeDirect">直连</option></select></div>
@@ -1544,10 +1544,17 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                 <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
                 <span><strong data-i18n="vcfg.externalNoteTitle">密钥 与 代理认证 的区别</strong>　<span data-i18n="vcfg.externalNote">控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。</span></span>
               </div>
+              <div class="dns-foot">
+                <span data-i18n="vcfg.basicAutosave">已自动保存 · 参数修改即写入 config.yaml；外部控制（控制器端口 / 密钥 / 外部 UI）同此</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('basic')" data-i18n="dns.resetDefault">恢复默认值</button>
+                </div>
+              </div>
             </div>
           </div>
           <div class="vcfg-card" style="grid-column:1/-1">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="12" cy="18" r="2.6"/><line x1="8.6" y1="6" x2="15.4" y2="6"/><line x1="7.2" y1="8.3" x2="10.8" y2="15.7"/><line x1="16.8" y1="8.3" x2="13.2" y2="15.7"/></svg></span><span data-i18n="vcfg.ports">网络端口</span><button class="vcfg-reset-btn" onclick="resetConfigSection('inbound')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="2.6"/><circle cx="18" cy="6" r="2.6"/><circle cx="12" cy="18" r="2.6"/><line x1="8.6" y1="6" x2="15.4" y2="6"/><line x1="7.2" y1="8.3" x2="10.8" y2="15.7"/><line x1="16.8" y1="8.3" x2="13.2" y2="15.7"/></svg></span><span data-i18n="vcfg.ports">网络端口</span></div>
             <div style="padding:12px 16px 14px">
               <div class="dns-grid">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.mixedPort">混合端口</span><small data-i18n="vcfg.mixedPortHint">mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）</small></span><input class="dns-input" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
@@ -1572,6 +1579,13 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div class="tun-note">
                 <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
                 <span><strong data-i18n="vcfg.portsNoteTitle">端口用途说明</strong>　<span data-i18n="vcfg.portsNote">混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。</span></span>
+              </div>
+              <div class="dns-foot">
+                <span data-i18n="vcfg.portsAutosave">已自动保存 · 端口修改即写入 config.yaml；保存后网络异常可在原始配置中回滚</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('inbound')" data-i18n="dns.resetDefault">恢复默认值</button>
+                </div>
               </div>
             </div>
           </div>
@@ -1618,7 +1632,6 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                 </div>
               </div>
             </div>
-          </div>
           </div>
           <div class="vcfg-card dns-module">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9c-2.6-2.5-4-5.6-4-9s1.4-6.5 4-9z"/><path d="M12 3c-2.6 2.5-4 5.6-4 9s1.4 6.5 4 9"/><path d="M12 3c2.6 2.5 4 5.6 4 9s-1.4 6.5-4 9"/></svg></span><span data-i18n="vcfg.dns">DNS 设置</span></div>
@@ -1696,35 +1709,73 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               </div>
             </div>
           </div>
-          <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-adv"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span><span data-i18n="vcfg.advanced">高级设置</span><button class="vcfg-reset-btn" onclick="resetConfigSection('advanced')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.profile">性能模式</span><span class="vcfg-hint">profile</span></span><select id="vcfgProfile" onchange="saveVcfg('profile')"><option value="" data-i18n="vcfg.default">(默认)</option><option value="low">low</option><option value="balance">balance</option><option value="high">high</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.geoMode">GEO 加载</span><span class="vcfg-hint">geodata-mode</span></span><select id="vcfgGeodataMode" onchange="saveVcfg('geodata-mode')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.geoLoader">GEO 更新间隔</span><span class="vcfg-hint">geodata-loader</span></span><select id="vcfgGeoLoader" onchange="saveVcfg('geo-loader')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.globalUa">全局 UA</span><span class="vcfg-hint">global-ua</span></span><input type="text" id="vcfgGlobalUa" placeholder="clash.meta" onchange="saveVcfg('global-ua')"></div>
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.keepAlive">保活间隔</span><span class="vcfg-hint">keep-alive-interval</span></span><input type="number" id="vcfgKeepAlive" placeholder="30" onchange="saveVcfg('keep-alive')"></div>
-            </div>
-        </div>
-          <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.sniffer">Sniffer</span><button class="vcfg-reset-btn" onclick="resetConfigSection('sniffer')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.snifferEnable">Sniffer 启用</span><span class="vcfg-hint">sniffer.enable</span></span><label class="toggle"><input type="checkbox" id="vcfgSniffer" onchange="saveVcfg('sniffer-enable');document.getElementById('vcfgSnifferGroup').style.display=this.checked?'flex':'none'"><span class="toggle-track"></span></label></div>
-              <div id="vcfgSnifferGroup" style="display:flex;flex-direction:column;gap:24px">
-                <div class="vcfg-row"><span class="vcfg-label"><span data-i18n="vcfg.sniffing">协议</span></span><div style="display:flex;gap:12px"><label class="pg-check" id="vcfgSniffTlsCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">TLS</label><label class="pg-check" id="vcfgSniffHttpCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">HTTP</label></div></div>
-                <div class="vcfg-row" style="align-items:flex-start"><span class="vcfg-label"><span data-i18n="vcfg.sniffSkip">跳过域名</span></span><textarea id="vcfgSniffSkip" rows="2" onchange="saveSnifferSection()"></textarea></div>
+          <div class="vcfg-card" style="grid-column:1/-1">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-adv"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg></span><span data-i18n="vcfg.advanced">高级设置</span></div>
+            <div style="padding:12px 16px 14px">
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.profile">性能模式</span><small>profile</small></span><select class="dns-input" id="vcfgProfile" onchange="saveVcfg('profile')"><option value="" data-i18n="vcfg.default">(默认)</option><option value="low">low</option><option value="balance">balance</option><option value="high">high</option></select></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.geoMode">GEO 加载</span><small>geodata-mode</small></span><select class="dns-input" id="vcfgGeodataMode" onchange="saveVcfg('geodata-mode')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.geoLoader">GEO 更新间隔</span><small>geodata-loader</small></span><select class="dns-input" id="vcfgGeoLoader" onchange="saveVcfg('geo-loader')"><option value="standard">standard</option><option value="memconservative">memconservative</option></select></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.globalUa">全局 UA</span><small>global-ua</small></span><input class="dns-input" id="vcfgGlobalUa" placeholder="clash.meta" onchange="saveVcfg('global-ua')"></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.keepAlive">保活间隔</span><small>keep-alive-interval</small></span><input class="dns-input" style="flex:1;width:auto;min-width:0" id="vcfgKeepAlive" placeholder="30" onchange="saveVcfg('keep-alive')"></div>
+              </div>
+              <div class="dns-foot">
+                <span data-i18n="vcfg.advancedAutosave">已自动保存 · 参数修改即写入 config.yaml</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('advanced')" data-i18n="dns.resetDefault">恢复默认值</button>
+                </div>
               </div>
             </div>
           </div>
-          <div class="vcfg-card">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.geo">Geo 数据</span><button class="vcfg-reset-btn" onclick="resetConfigSection('geox-url')" data-i18n-title="vcfg.resetSection" title="重置此模块"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg> <span data-i18n="vcfg.reset">重置</span></button></div>
-            <div class="vcfg-card-body">
-              <div class="vcfg-row"><span class="vcfg-label">geoip</span><input type="text" id="vcfgGeoIp" onchange="saveGeoSection()"></div>
-              <div class="vcfg-row"><span class="vcfg-label">geosite</span><input type="text" id="vcfgGeoSite" onchange="saveGeoSection()"></div>
-              <div class="vcfg-row"><span class="vcfg-label">mmdb</span><input type="text" id="vcfgMmdb" onchange="saveGeoSection()"></div>
-              <div class="vcfg-row"><span class="vcfg-label">asn</span><input type="text" id="vcfgAsn" onchange="saveGeoSection()"></div>
+          <div class="vcfg-card" style="grid-column:1/-1">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg></span><span data-i18n="vcfg.sniffer">Sniffer</span></div>
+            <div style="padding:12px 16px 14px">
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.snifferEnable">Sniffer 启用</span><small>sniffer.enable</small></span><label class="toggle"><input type="checkbox" id="vcfgSniffer" onchange="saveVcfg('sniffer-enable');document.getElementById('vcfgSnifferGroup').style.display=this.checked?'flex':'none'"><span class="toggle-track"></span></label></div>
+              </div>
+              <div id="vcfgSnifferGroup" style="display:none;flex-direction:column;gap:8px">
+                <div class="dns-grid">
+                  <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.sniffing">协议</span><small>sniffer sniff</small></span><div style="display:flex;gap:12px"><label class="pg-check" id="vcfgSniffTlsCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">TLS</label><label class="pg-check" id="vcfgSniffHttpCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">HTTP</label></div></div>
+                </div>
+                <div class="dns-grid">
+                  <div class="dns-field dns-ta-box wide"><span class="dns-field-label"><span data-i18n="vcfg.sniffSkip">跳过域名</span><small>sniffer.skip-domain</small></span><textarea id="vcfgSniffSkip" rows="3" placeholder="每行一个域名" onchange="saveSnifferSection()"></textarea><div class="dns-ta-note" data-i18n="vcfg.sniffSkipHint">每行一个域名；命中这些域名的连接不进行协议嗅探。</div></div>
+                </div>
+              </div>
+              <div class="dns-foot">
+                <span data-i18n="vcfg.snifferAutosave">已自动保存 · 参数修改即写入 config.yaml</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('sniffer')" data-i18n="dns.resetDefault">恢复默认值</button>
+                </div>
+              </div>
             </div>
           </div>
+          <div class="vcfg-card" style="grid-column:1/-1">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.geo">Geo 数据</span></div>
+            <div style="padding:12px 16px 14px">
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label">geoip<small>geox-url.geoip</small></span><input class="dns-input" style="flex:1;width:auto;min-width:0" id="vcfgGeoIp" onchange="saveGeoSection()"></div>
+                <div class="dns-field"><span class="dns-field-label">geosite<small>geox-url.geosite</small></span><input class="dns-input" style="flex:1;width:auto;min-width:0" id="vcfgGeoSite" onchange="saveGeoSection()"></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field"><span class="dns-field-label">mmdb<small>geox-url.mmdb</small></span><input class="dns-input" style="flex:1;width:auto;min-width:0" id="vcfgMmdb" onchange="saveGeoSection()"></div>
+                <div class="dns-field"><span class="dns-field-label">asn<small>geox-url.asn</small></span><input class="dns-input" style="flex:1;width:auto;min-width:0" id="vcfgAsn" onchange="saveGeoSection()"></div>
+              </div>
+              <div class="dns-foot">
+                <span data-i18n="vcfg.geoAutosave">已自动保存 · GEO 数据源地址修改即写入 config.yaml</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('geox-url')" data-i18n="dns.resetDefault">恢复默认值</button>
+                </div>
+              </div>
+            </div>
+          </div>
+      </div>
       </div>
       <div id="configRaw" style="display:none;flex:1;flex-direction:column;min-height:0">
         <div class="con-head">
@@ -6206,7 +6257,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS 启用','vcfg.dnsEnhanced':'增强模式',
     'vcfg.fakeIpRange':'Fake-IP 范围','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'使用 hosts','vcfg.dnsUseSysHosts':'系统 hosts',
-    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。','vcfg.mixedPortHint':'mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）','vcfg.httpPortHint':'http-port · 留空则不单独监听','vcfg.redirPortHint':'redir-port · 网关 / 透明代理场景','vcfg.tproxyPortHint':'tproxy-port · 网关 / 透明代理场景','vcfg.bindAddrHint':'bind-address · * 表示监听所有网卡','vcfg.proxyAuthHint':'authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔','vcfg.portsNoteTitle':'端口用途说明','vcfg.portsNote':'混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。',
+    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。','vcfg.mixedPortHint':'mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）','vcfg.httpPortHint':'http-port · 留空则不单独监听','vcfg.redirPortHint':'redir-port · 网关 / 透明代理场景','vcfg.tproxyPortHint':'tproxy-port · 网关 / 透明代理场景','vcfg.bindAddrHint':'bind-address · * 表示监听所有网卡','vcfg.proxyAuthHint':'authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔','vcfg.portsNoteTitle':'端口用途说明','vcfg.portsNote':'混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。','vcfg.basicAutosave':'已自动保存 · 参数修改即写入 config.yaml；外部控制（控制器端口 / 密钥 / 外部 UI）同此','vcfg.portsAutosave':'已自动保存 · 端口修改即写入 config.yaml；保存后网络异常可在原始配置中回滚','vcfg.advancedAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.snifferAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.sniffSkipHint':'每行一个域名；命中这些域名的连接不进行协议嗅探。','vcfg.geoAutosave':'已自动保存 · GEO 数据源地址修改即写入 config.yaml',
     'vcfg.optional':'(留空不设置)','vcfg.default':'(默认)',
     'vcfg.profile':'性能模式','vcfg.geoMode':'GEO 加载','vcfg.geoLoader':'GEO 更新间隔',
     'vcfg.globalUa':'全局 UA','vcfg.keepAlive':'保活间隔',
@@ -6376,7 +6427,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS Enable','vcfg.dnsEnhanced':'Enhanced Mode',
     'vcfg.fakeIpRange':'Fake-IP Range','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'Use Hosts','vcfg.dnsUseSysHosts':'System Hosts',
-    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.','vcfg.mixedPortHint':'mixed-port · main client entry (HTTP + SOCKS5)','vcfg.httpPortHint':'http-port · leave empty to disable','vcfg.redirPortHint':'redir-port · gateway / transparent proxy','vcfg.tproxyPortHint':'tproxy-port · gateway / transparent proxy','vcfg.bindAddrHint':'bind-address · * listens on all interfaces','vcfg.proxyAuthHint':'authentication · user:pass for devices browsing via these ports, comma-separated','vcfg.portsNoteTitle':'About these ports','vcfg.portsNote':'The mixed port is the combined HTTP + SOCKS5 entry point — set it as the proxy on phones/PCs. HTTP/Socks ports stay unlistened when empty. Redir/TProxy serve transparent-proxy scenarios such as routers. Bind address * allows LAN devices to connect. Proxy Authentication is the username:password other devices provide when browsing via these ports. The controller port (management API) is configured in Basic Settings.',
+    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.','vcfg.mixedPortHint':'mixed-port · main client entry (HTTP + SOCKS5)','vcfg.httpPortHint':'http-port · leave empty to disable','vcfg.redirPortHint':'redir-port · gateway / transparent proxy','vcfg.tproxyPortHint':'tproxy-port · gateway / transparent proxy','vcfg.bindAddrHint':'bind-address · * listens on all interfaces','vcfg.proxyAuthHint':'authentication · user:pass for devices browsing via these ports, comma-separated','vcfg.portsNoteTitle':'About these ports','vcfg.portsNote':'The mixed port is the combined HTTP + SOCKS5 entry point — set it as the proxy on phones/PCs. HTTP/Socks ports stay unlistened when empty. Redir/TProxy serve transparent-proxy scenarios such as routers. Bind address * allows LAN devices to connect. Proxy Authentication is the username:password other devices provide when browsing via these ports. The controller port (management API) is configured in Basic Settings.','vcfg.basicAutosave':'Auto-saved · changes are written to config.yaml; same for external control (controller port / secret / external UI)','vcfg.portsAutosave':'Auto-saved · port changes are written to config.yaml; roll back in raw config if networking breaks','vcfg.advancedAutosave':'Auto-saved · changes are written to config.yaml','vcfg.snifferAutosave':'Auto-saved · changes are written to config.yaml','vcfg.sniffSkipHint':'One domain per line; connections to these domains skip protocol sniffing.','vcfg.geoAutosave':'Auto-saved · GEO data source URLs are written to config.yaml',
     'vcfg.optional':'(Optional)','vcfg.default':'(Default)',
     'vcfg.profile':'Profile','vcfg.geoMode':'GEO Mode','vcfg.geoLoader':'GEO Loader',
     'vcfg.globalUa':'Global UA','vcfg.keepAlive':'Keep Alive Interval',
