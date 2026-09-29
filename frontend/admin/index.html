@@ -3948,8 +3948,15 @@ function _drawTrafficFrame(ptsUp, ptsDown, maxV) {
     ctx.lineCap = 'round';
     ctx.stroke();
   };
+  // 裁剪到绘图区：数据值已钳到 >=0，但贝塞尔控制点仍可能让曲线在 0 附近
+  // 下冲出基线（表现为负值），此处统一裁掉，线与填充都不会越界
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(padL - 2, padT - 2, plotW + 4, plotH + 4);
+  ctx.clip();
   drawSeries(ptsDown, cDown);  // 下载在下层
   drawSeries(ptsUp, cUp);
+  ctx.restore();
 }
 function _seriesPts(win, maxV, getVal, interp) {
   var s = _setupTrafficCanvas();
