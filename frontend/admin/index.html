@@ -621,7 +621,12 @@ tbody tr:hover{background:var(--card2)}
 /* 字段（label + 控件） */
 .mx-field{padding:10px 12px;border:1px solid var(--mx-line);border-radius:10px;background:var(--mx-inset)}
 .mx-field-label{display:flex;align-items:center;gap:6px;min-height:18px;margin-bottom:7px;font-size:12px;font-weight:600;color:var(--mx-text)}
-.mx-help{display:grid;place-items:center;width:15px;height:15px;min-height:0;padding:0;border:1px solid #b6c0d0;border-radius:50%;background:transparent;color:var(--mx-muted);font-size:9px;font-weight:750;line-height:1;cursor:help}
+.mx-help{position:relative;display:inline-grid;place-items:center;width:16px;height:16px;min-height:0;padding:0;border:none;background:transparent;color:var(--mx-muted);line-height:1;cursor:help;vertical-align:middle;flex:none;transition:color .12s}
+.mx-help:hover{color:var(--accent2)}
+.mx-help svg{width:14px;height:14px;fill:currentColor}
+.mx-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:250px;padding:9px 12px;background:var(--card);border:1px solid var(--mx-line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:11px;font-weight:400;color:var(--mx-sub);line-height:1.65;text-align:left;white-space:normal;opacity:0;visibility:hidden;transition:opacity .14s;z-index:60;pointer-events:none;text-transform:none;letter-spacing:normal}
+.mx-tip b{display:block;margin-bottom:2px;font-size:11.5px;font-weight:600;color:var(--mx-text)}
+.mx-help:hover .mx-tip{opacity:1;visibility:visible}
 .mx-input{width:100%;background:var(--mx-ctl);border:1px solid var(--mx-line);color:var(--mx-text);border-radius:8px;padding:8px 10px;outline:none;font-size:12.5px;font-family:inherit;transition:border-color .15s,box-shadow .15s}
 .mx-input:hover{border-color:var(--accent);border-style:dashed}
 .mx-input:focus{border-color:rgba(98,127,230,.65);box-shadow:0 0 0 3px rgba(98,127,230,.1)}
@@ -1098,12 +1103,12 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             </div>
             <div class="mx-grid2">
               <div class="mx-field">
-                <div class="mx-field-label">TUN Stack <button class="mx-help" type="button" title="TUN Stack">?</button></div>
+                <div class="mx-field-label">TUN Stack <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip"><b>TUN 协议栈</b>mixed：TCP 使用 System、UDP 使用 gVisor，兼顾稳定性与兼容性；system 全走 System；gVisor 全走 gVisor。</span></button></div>
                 <select class="mx-input" id="tmStack" onchange="saveTunModal()"><option value="mixed" data-i18n="vcfg.stackMixed">mixed（推荐）</option><option value="system" data-i18n="vcfg.stackSystem">system</option><option value="gvisor" data-i18n="vcfg.stackGvisor">gVisor</option></select>
                 <div class="mx-field-note" data-i18n="net.stackHint">mixed：TCP 使用 System，UDP 使用 gVisor，兼顾稳定性与兼容性。</div>
               </div>
               <div class="mx-field">
-                <div class="mx-field-label">MTU <button class="mx-help" type="button" title="MTU">?</button></div>
+                <div class="mx-field-label">MTU <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip"><b>MTU</b>默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。</span></button></div>
                 <input type="number" class="mx-input num-full" id="tmMtu" min="1280" max="65535" value="1500" onchange="saveTunModal()">
                 <div class="mx-field-note" data-i18n="net.mtuHint">默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。</div>
               </div>
@@ -1135,7 +1140,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               </div>
             </div>
             <div>
-              <div class="mx-cap" style="margin-bottom:6px">排除自定义网段 <button class="mx-help" type="button" title="排除自定义网段">?</button></div>
+              <div class="mx-cap" style="margin-bottom:6px">排除自定义网段 <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip"><b>让指定目标网段绕过 TUN 自动路由</b>仅在开启“自动路由”时生效。支持 IPv4/IPv6 CIDR，每行填写一个。</span></button></div>
               <textarea class="mx-input" id="tmExclude" rows="3" onchange="saveTunModal()" placeholder="192.168.0.0/16&#10;10.0.0.0/8"></textarea>
               <div class="mx-field-note" data-i18n="net.excludeHint">每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。</div>
             </div>
