@@ -40,6 +40,33 @@ CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
 # ── 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 ──────────────
 _CHANGELOG_CACHE = {"t": 0, "d": None}
 _CORE_LATEST_CACHE = {"t": 0, "d": None}   # 内核最新版长效缓存（6h，扛 GitHub 限流）
+_GH_CACHE_FILE = f"{TRIM_PKGVAR}/gh-cache.json"   # GitHub 查询的持久化「最后一次成功」
+
+
+def _gh_cache_get(key, max_age):
+    """持久化缓存读取：重启/限流/断网后仍能给出最近一次成功的结果。"""
+    try:
+        with open(_GH_CACHE_FILE, "r", encoding="utf-8") as f:
+            d = json.load(f)
+        ent = (d or {}).get(key) or {}
+        if ent.get("t") and time.time() - ent["t"] < max_age:
+            return ent.get("d")
+    except Exception:
+        pass
+    return None
+
+
+def _gh_cache_put(key, data):
+    try:
+        d = {}
+        if os.path.exists(_GH_CACHE_FILE):
+            with open(_GH_CACHE_FILE, "r", encoding="utf-8") as f:
+                d = json.load(f) or {}
+        d[key] = {"t": int(time.time()), "d": data}
+        with open(_GH_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(d, f, ensure_ascii=False)
+    except Exception:
+        pass
 PROFILE_EXT_FILE = f"{TRIM_PKGVAR}/profile-ext.json"
 # 应用设置接管的字段：全局扩展（合并/脚本）改不动这些，最终以应用设置为准
 APP_MANAGED_KEYS = (
@@ -458,7 +485,12 @@ def _github_latest(repo):
     (https://api.github.com). An optional MIHOMO_GITHUB_TOKEN is attached when
     available (raises the rate limit and enables private-repo access)."""
     gh_api = os.environ.get("MIHOMO_GITHUB_API", "https://api.github.com").rstrip("/")
-    return _github_fetch_json(f"{gh_api}/repos/{repo}/releases/latest")
+    try:
+        return _github_fetch_json(f"{gh_api}/repos/{repo}/releases/latest")
+    except Exception:
+        # REST 限流/不可达：atom 源取版本号（无资产列表，资产由调用方按仓库规则拼）
+        ver = _github_latest_via_atom(repo)
+        return {"tag_name": ver, "assets": [], "atom_fallback": True}
 
 def dashboard_latest_info(name):
     """Return (latest_version, download_url, current_version) for a dashboard.
@@ -472,6 +504,14 @@ def dashboard_latest_info(name):
     for a in d.get("assets", []):
         if meta["asset_match"](a.get("name", "")):
             url = a.get("browser_download_url", ""); break
+    if not url and d.get("atom_fallback"):
+        # atom 没有资产列表：按仓库既定命名规则拼下载地址
+        tag = (d.get("tag_name") or "").strip()
+        base = f"https://github.com/{meta['repo']}/releases/download/{tag}/"
+        for cand in (f"dist-{latest}.zip", f"{latest}.zip", f"metacubexd-{latest}.tgz", f"{latest}.tgz"):
+            if meta["asset_match"](cand):
+                url = base + cand
+                break
     if not url:
         raise ValueError("no downloadable asset found for " + meta["repo"])
     current = _read_dashboard_version(name)
@@ -3794,8 +3834,14 @@ class AdminHandler(BaseHTTPRequestHandler):
                 latest = d.get("tag_name", "").lstrip("v")
                 cur = _get_app_version()
                 has = bool(latest) and cur not in ("", "unknown") and latest != cur
-                return self._send_json({"success": True, "latest": latest, "current": cur, "url": d.get("html_url", ""), "has_update": has})
+                out = {"success": True, "latest": latest, "current": cur,
+                       "url": d.get("html_url", ""), "has_update": has}
+                _gh_cache_put("app-update", dict(out))
+                return self._send_json(out)
             except Exception as e:
+                cached = _gh_cache_get("app-update", 7 * 24 * 3600)
+                if cached:
+                    return self._send_json(dict(cached, stale=True))
                 msg = str(e)
                 if "404" in msg:
                     msg = "GitHub 仓库 huiikeung/fnsoar 不存在或为私有仓库，无法公开检测更新。请将仓库设为公开，或配置 MIHOMO_GITHUB_TOKEN 后重试。"
@@ -3849,6 +3895,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 now_ct = time.time()
                 if _CORE_LATEST_CACHE["t"] and now_ct - _CORE_LATEST_CACHE["t"] < 6 * 3600:
                     return self._send_json(_CORE_LATEST_CACHE["d"])
+                _persisted = _gh_cache_get("core-latest", 7 * 24 * 3600)
                 d = None
                 try:
                     d = _github_fetch_json("https://api.github.com/repos/MetaCubeX/mihomo/releases/latest")
@@ -3861,8 +3908,11 @@ class AdminHandler(BaseHTTPRequestHandler):
                             {"name": asset,
                              "browser_download_url": f"https://github.com/MetaCubeX/mihomo/releases/download/{ver}/{asset}"}]}
                     except Exception:
-                        if _CORE_LATEST_CACHE["t"]:   # 都失败：返回上次成功的结果（降级）
+                        # 都失败：依次降级到内存缓存 → 持久化缓存（重启前的成功结果）
+                        if _CORE_LATEST_CACHE["t"]:
                             return self._send_json(dict(_CORE_LATEST_CACHE["d"], stale=True))
+                        if _persisted:
+                            return self._send_json(dict(_persisted, stale=True))
                         raise
                 ver = (d.get("tag_name", "") or "").lstrip("v")
                 dl = ""
@@ -3877,6 +3927,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                             dl = a.get("browser_download_url", ""); break
                 out = {"success": True, "version": ver, "url": dl}
                 _CORE_LATEST_CACHE.update({"t": now_ct, "d": dict(out)})
+                _gh_cache_put("core-latest", dict(out))
                 return self._send_json(out)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
@@ -3888,16 +3939,18 @@ class AdminHandler(BaseHTTPRequestHandler):
                     try:
                         latest, url, current = dashboard_latest_info(name)
                         has = bool(latest) and (not current or latest != current)
-                        result.append({
-                            "name": name,
-                            "current": current or "",
-                            "latest": latest,
-                            "url": url,
-                            "has_update": has,
-                        })
+                        ent = {"name": name, "current": current or "", "latest": latest,
+                               "url": url, "has_update": has}
+                        _gh_cache_put("dashboard-" + name, dict(ent))
+                        result.append(ent)
                     except Exception as e:
-                        result.append({"name": name, "error": str(e),
-                                       "current": _read_dashboard_version(name) or ""})
+                        # 降级：持久化缓存里的上次成功结果（附 stale 标记）
+                        cached = _gh_cache_get("dashboard-" + name, 30 * 24 * 3600)
+                        if cached:
+                            result.append(dict(cached, stale=True))
+                        else:
+                            result.append({"name": name, "error": str(e),
+                                           "current": _read_dashboard_version(name) or ""})
                 return self._send_json({"dashboards": result})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
