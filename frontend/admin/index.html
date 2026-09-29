@@ -8674,7 +8674,8 @@ async function loadConnections() {
 }
 
 function renderConnections() {
-  var q = (document.getElementById('connSearch')?.value || '').toLowerCase();
+  var _cs = document.getElementById('connSearch');
+  var q = ((_cs && _cs.value) || '').toLowerCase();
   var data = connTab === 'closed' ? closedConns : connData;
   var filtered = data.filter(function(c) {
     if (!q) return true;
@@ -8988,7 +8989,8 @@ async function loadRules() {
   catch (e) { document.getElementById('rulesWrap').innerHTML = '<div class="con-empty">' + t('conn.loading') + '</div>'; }
 }
 function renderRules() {
-  var q = (document.getElementById('rulesSearch')?.value || '').toLowerCase();
+  var _rs = document.getElementById('rulesSearch');
+  var q = ((_rs && _rs.value) || '').toLowerCase();
   var filtered = rulesData.filter(function(r) {
     if (!q) return true;
     var type = (r.type || '').toLowerCase();
