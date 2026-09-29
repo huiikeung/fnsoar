@@ -893,6 +893,14 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .pg-check:hover{border-color:var(--border)}
 .pg-check.on{background:var(--accent);color:#fff;border-color:var(--accent)}
 .pg-check input{display:none}
+/* 编辑源文件：自定义可拖拽滚动条（覆盖全局隐藏） */
+#configYaml{scrollbar-width:auto}
+#configYaml::-webkit-scrollbar{display:block;width:12px}
+#configYaml::-webkit-scrollbar-track{background:transparent;border-radius:10px}
+#configYaml::-webkit-scrollbar-thumb{background:rgba(139,145,158,.35);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+#configYaml::-webkit-scrollbar-thumb:hover{background:rgba(78,110,242,.55);border:3px solid transparent;background-clip:content-box}
+#configYaml::-webkit-scrollbar-thumb:active{background:var(--accent);border:3px solid transparent;background-clip:content-box}
+#configYaml::-webkit-scrollbar-corner{background:transparent}
 .con-raw-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--dim);font-size:12px;cursor:pointer;transition:all .12s;font-family:inherit}
 .con-raw-btn:hover{background:var(--card);color:var(--text);border-color:var(--accent)}
 @media(max-width:760px){.vcfg-grid{grid-template-columns:1fr}}
@@ -908,6 +916,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .pe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}
 .pe-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card);min-width:0;transition:border-color .15s}
 .pe-card:hover{border-color:var(--faint)}
+.filter-sec{margin-bottom:8px}
+.filter-empty{font-size:11px;color:var(--faint);padding:2px 0}
 .pe-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:13px;background:rgba(78,110,242,.12);color:var(--accent2);border:1px solid rgba(78,110,242,.25)}
 .pe-info{flex:1;min-width:0}
 .pe-name{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -1944,6 +1954,40 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                 </div>
               </div>
             </div>
+          <div class="vcfg-card" style="grid-column:1/-1">
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-adv"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 11H15V13H3V11ZM3 18H11V20H3V18ZM17 10V7L21 11L17 15V12H14V10H17Z"/></svg></span><span data-i18n="vcfg.filter">订阅节点过滤</span></div>
+            <div style="padding:12px 16px 14px">
+              <div class="dns-grid" style="margin-bottom:10px">
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.filterEnable">启用过滤</span><small>subscription-filter.enabled</small></span><label class="toggle"><input type="checkbox" id="vcfgFilterEnabled" onchange="saveFilter()"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.filterHint2">作用范围</span><small>订阅导入/更新时生效</small></span><span style="font-size:11.5px;color:var(--faint);line-height:1.6">导入或更新订阅时，自动剔除名称命中的流量/到期等提示节点</span></div>
+              </div>
+              <div class="dns-grid">
+                <div class="dns-field wide">
+                  <span class="dns-field-label"><span data-i18n="vcfg.filterKw">名称关键词</span><small>exclude-name-keywords · 命中任一即过滤，不区分大小写</small></span>
+                  <div class="mx-bypass">
+                    <div class="mx-bypass-editor" id="sfKwTags">
+                      <input type="text" id="sfKwInput" placeholder="输入关键词，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('kw')}">
+                    </div>
+                  </div>
+                </div>
+                <div class="dns-field wide">
+                  <span class="dns-field-label"><span data-i18n="vcfg.filterRe">名称正则</span><small>exclude-name-regex · 命中任一即过滤，PCRE 忽略大小写</small></span>
+                  <div class="mx-bypass">
+                    <div class="mx-bypass-editor" id="sfReTags">
+                      <input type="text" id="sfReInput" placeholder="输入正则表达式，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('re')}">
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="dns-foot">
+                <span data-i18n="vcfg.filterAutosave">已自动保存 · 修改后下次导入/更新订阅时生效</span>
+                <div style="display:flex;gap:8px">
+                  <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           </div>
       </div>
       </div>
@@ -2422,6 +2466,7 @@ function showSection(name) {
   if (name === 'test') loadUnlock();
   if (name === 'settings') loadSettings();
   if (name === 'config') { loadVcfg(); }
+    loadFilter();  // 订阅过滤规则
   // 离开连接/日志页面时停止轮询
   if (name !== 'connections') stopConnPolling();
   if (name !== 'logs') stopLogPolling();
@@ -6515,7 +6560,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS 启用','vcfg.dnsEnhanced':'增强模式',
     'vcfg.fakeIpRange':'Fake-IP 范围','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'使用 hosts','vcfg.dnsUseSysHosts':'系统 hosts',
-    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。','vcfg.mixedPortHint':'mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）','vcfg.httpPortHint':'http-port · 留空则不单独监听','vcfg.redirPortHint':'redir-port · 网关 / 透明代理场景','vcfg.tproxyPortHint':'tproxy-port · 网关 / 透明代理场景','vcfg.bindAddrHint':'bind-address · * 表示监听所有网卡','vcfg.proxyAuthHint':'authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔','vcfg.portsNoteTitle':'端口用途说明','vcfg.portsNote':'混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。','vcfg.basicAutosave':'已自动保存 · 参数修改即写入 config.yaml；外部控制（控制器端口 / 密钥 / 外部 UI）同此','vcfg.portsAutosave':'已自动保存 · 端口修改即写入 config.yaml；保存后网络异常可在原始配置中回滚','vcfg.advancedAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.snifferAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.sniffSkipHint':'每行一个域名；命中这些域名的连接不进行协议嗅探。','vcfg.geoAutosave':'已自动保存 · GEO 数据源地址修改即写入 config.yaml',
+    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。','vcfg.mixedPortHint':'mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）','vcfg.httpPortHint':'http-port · 留空则不单独监听','vcfg.redirPortHint':'redir-port · 网关 / 透明代理场景','vcfg.tproxyPortHint':'tproxy-port · 网关 / 透明代理场景','vcfg.bindAddrHint':'bind-address · * 表示监听所有网卡','vcfg.proxyAuthHint':'authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔','vcfg.portsNoteTitle':'端口用途说明','vcfg.portsNote':'混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。','vcfg.basicAutosave':'已自动保存 · 参数修改即写入 config.yaml；外部控制（控制器端口 / 密钥 / 外部 UI）同此','vcfg.portsAutosave':'已自动保存 · 端口修改即写入 config.yaml；保存后网络异常可在原始配置中回滚','vcfg.advancedAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.snifferAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.sniffSkipHint':'每行一个域名；命中这些域名的连接不进行协议嗅探。','vcfg.geoAutosave':'已自动保存 · GEO 数据源地址修改即写入 config.yaml','vcfg.filter':'订阅节点过滤','vcfg.filterEnable':'启用过滤','vcfg.filterHint2':'作用范围','vcfg.filterKw':'名称关键词','vcfg.filterRe':'名称正则','vcfg.filterAutosave':'已自动保存 · 修改后下次导入/更新订阅时生效','vcfg.filterSaved':'过滤规则已保存，导入/更新订阅时生效',
     'vcfg.optional':'(留空不设置)','vcfg.default':'(默认)',
     'vcfg.profile':'性能模式','vcfg.geoMode':'GEO 加载','vcfg.geoLoader':'GEO 更新间隔',
     'vcfg.globalUa':'全局 UA','vcfg.keepAlive':'保活间隔',
@@ -6685,7 +6730,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS Enable','vcfg.dnsEnhanced':'Enhanced Mode',
     'vcfg.fakeIpRange':'Fake-IP Range','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'Use Hosts','vcfg.dnsUseSysHosts':'System Hosts',
-    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.','vcfg.mixedPortHint':'mixed-port · main client entry (HTTP + SOCKS5)','vcfg.httpPortHint':'http-port · leave empty to disable','vcfg.redirPortHint':'redir-port · gateway / transparent proxy','vcfg.tproxyPortHint':'tproxy-port · gateway / transparent proxy','vcfg.bindAddrHint':'bind-address · * listens on all interfaces','vcfg.proxyAuthHint':'authentication · user:pass for devices browsing via these ports, comma-separated','vcfg.portsNoteTitle':'About these ports','vcfg.portsNote':'The mixed port is the combined HTTP + SOCKS5 entry point — set it as the proxy on phones/PCs. HTTP/Socks ports stay unlistened when empty. Redir/TProxy serve transparent-proxy scenarios such as routers. Bind address * allows LAN devices to connect. Proxy Authentication is the username:password other devices provide when browsing via these ports. The controller port (management API) is configured in Basic Settings.','vcfg.basicAutosave':'Auto-saved · changes are written to config.yaml; same for external control (controller port / secret / external UI)','vcfg.portsAutosave':'Auto-saved · port changes are written to config.yaml; roll back in raw config if networking breaks','vcfg.advancedAutosave':'Auto-saved · changes are written to config.yaml','vcfg.snifferAutosave':'Auto-saved · changes are written to config.yaml','vcfg.sniffSkipHint':'One domain per line; connections to these domains skip protocol sniffing.','vcfg.geoAutosave':'Auto-saved · GEO data source URLs are written to config.yaml',
+    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.','vcfg.mixedPortHint':'mixed-port · main client entry (HTTP + SOCKS5)','vcfg.httpPortHint':'http-port · leave empty to disable','vcfg.redirPortHint':'redir-port · gateway / transparent proxy','vcfg.tproxyPortHint':'tproxy-port · gateway / transparent proxy','vcfg.bindAddrHint':'bind-address · * listens on all interfaces','vcfg.proxyAuthHint':'authentication · user:pass for devices browsing via these ports, comma-separated','vcfg.portsNoteTitle':'About these ports','vcfg.portsNote':'The mixed port is the combined HTTP + SOCKS5 entry point — set it as the proxy on phones/PCs. HTTP/Socks ports stay unlistened when empty. Redir/TProxy serve transparent-proxy scenarios such as routers. Bind address * allows LAN devices to connect. Proxy Authentication is the username:password other devices provide when browsing via these ports. The controller port (management API) is configured in Basic Settings.','vcfg.basicAutosave':'Auto-saved · changes are written to config.yaml; same for external control (controller port / secret / external UI)','vcfg.portsAutosave':'Auto-saved · port changes are written to config.yaml; roll back in raw config if networking breaks','vcfg.advancedAutosave':'Auto-saved · changes are written to config.yaml','vcfg.snifferAutosave':'Auto-saved · changes are written to config.yaml','vcfg.sniffSkipHint':'One domain per line; connections to these domains skip protocol sniffing.','vcfg.geoAutosave':'Auto-saved · GEO data source URLs are written to config.yaml','vcfg.filter':'Subscription Filter','vcfg.filterEnable':'Enable filter','vcfg.filterHint2':'Scope','vcfg.filterKw':'Name keywords','vcfg.filterRe':'Name regex','vcfg.filterAutosave':'Autosaved · applies on next import/update','vcfg.filterSaved':'Filter rules saved', 
     'vcfg.optional':'(Optional)','vcfg.default':'(Default)',
     'vcfg.profile':'Profile','vcfg.geoMode':'GEO Mode','vcfg.geoLoader':'GEO Loader',
     'vcfg.globalUa':'Global UA','vcfg.keepAlive':'Keep Alive Interval',
@@ -7341,6 +7386,76 @@ async function geoUpdateAll() {
   if (btn) btn.disabled = false;
 }
 
+// ── 订阅节点过滤（x-fnsoar.subscription-filter） ──────────────────
+var _sfData = { kw: [], re: [] };
+function loadFilter() {
+  fetch('api/config').then(r => r.json()).then(d => {
+    var raw = (d && d.config) || '';
+    // 抓取 x-fnsoar 段（所有缩进行）
+    var m = raw.match(/^x-fnsoar:[ \t]*\r?\n((?:[ \t]+[^\r\n]*\r?\n|[ \t]*\r?\n)*)/m);
+    var seg = m ? m[1] : '';
+    var sfM = seg.match(/subscription-filter:[ \t]*\r?\n((?:[ \t]+[^\r\n]*\r?\n|[ \t]*\r?\n)*)/);
+    var sf = sfM ? sfM[1] : '';
+    function _list(key) {
+      var lm = sf.match(new RegExp(key + ':[ \\t]*\\r?\\n((?:[ \\t]+-[^\\r\\n]*\\r?\\n?)*)'));
+      if (!lm) return [];
+      return (lm[1].match(/-[ \t]*([^\r\n]+)/g) || []).map(function(s) {
+        return s.replace(/^-[ \t]*/, '').trim().replace(/^["']|["']$/g, '');
+      }).filter(Boolean);
+    }
+    _sfData.kw = _list('exclude-name-keywords');
+    _sfData.re = _list('exclude-name-regex');
+    var enEl = document.getElementById('vcfgFilterEnabled');
+    if (enEl) enEl.checked = /enabled:[ \t]*true/.test(sf);
+    renderSfTags('kw'); renderSfTags('re');
+  }).catch(function() {});
+}
+function _sfYamlStr(s) {
+  return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+}
+function renderSfTags(kind) {
+  var box = document.getElementById(kind === 'kw' ? 'sfKwTags' : 'sfReTags');
+  if (!box) return;
+  box.querySelectorAll('.mx-tag').forEach(function(t) { t.remove(); });
+  var list = kind === 'kw' ? _sfData.kw : _sfData.re;
+  var input = document.getElementById(kind === 'kw' ? 'sfKwInput' : 'sfReInput');
+  list.forEach(function(tag, i) {
+    var span = document.createElement('span');
+    span.className = 'mx-tag';
+    span.textContent = tag;
+    var btn = document.createElement('button');
+    btn.textContent = '\u00d7';
+    btn.onclick = function() { list.splice(i, 1); renderSfTags(kind); saveFilter(); };
+    span.appendChild(btn);
+    box.insertBefore(span, input);
+  });
+}
+function addSfTag(kind) {
+  var input = document.getElementById(kind === 'kw' ? 'sfKwInput' : 'sfReInput');
+  var v = (input.value || '').trim();
+  if (!v) return;
+  if (/["'\r\n]/.test(v) || v.length > 300) { showToast('内容含引号/换行或过长', 'error'); return; }
+  var list = kind === 'kw' ? _sfData.kw : _sfData.re;
+  if (!list.includes(v)) list.push(v);
+  input.value = '';
+  renderSfTags(kind);
+  saveFilter();
+}
+function saveFilter() {
+  var en = document.getElementById('vcfgFilterEnabled').checked;
+  var kwLines = _sfData.kw.length ? '\n' + _sfData.kw.map(function(k) { return '    - ' + k; }).join('\n') : ' []';
+  var reLines = _sfData.re.length ? '\n' + _sfData.re.map(function(k) { return '    - ' + _sfYamlStr(k); }).join('\n') : ' []';
+  var yaml = 'x-fnsoar:\n  subscription-filter:\n    enabled: ' + (en ? 'true' : 'false')
+    + '\n    exclude-name-keywords: ' + kwLines
+    + '\n    exclude-name-regex: ' + reLines + '\n';
+  fetch('api/config-section', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'x-fnsoar', yaml: yaml }) })
+    .then(r => r.json())
+    .then(function(d) {
+      if (d.success === false) throw new Error(d.error || '保存失败');
+      showToast(t('vcfg.filterSaved') || '过滤规则已保存，导入/更新订阅时生效', 'success');
+    })
+    .catch(e => showToast(e.message || '保存失败', 'error'));
+}
 function saveGeoSettings() {
   const autoOn = document.getElementById('vcfgGeoAuto').checked;
   const interval = document.getElementById('vcfgGeoInterval').value;
