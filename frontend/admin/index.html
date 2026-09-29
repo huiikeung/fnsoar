@@ -3339,6 +3339,7 @@ async function refreshNetworkCard() {
   try {
     netTunData = await fetchJSON('api/tun');
     renderNetworkTun();
+    renderNetworkProxy();  // TUN 状态刷新后同步系统代理提示文案
   } catch (e) { /* 保留上一次状态 */ }
 }
 
@@ -3351,10 +3352,12 @@ function renderNetworkProxy() {
   _netDot('netProxyDot', on ? 'on' : 'off');
   const tgEl = document.getElementById('netProxyToggle');
   if (tgEl) tgEl.checked = on;
+  // TUN 开启时全部流量已走代理，系统代理只是可选补充——按 TUN 状态给不同提示
+  const _tunOn = !!(netTunData && netTunData.enable);
   if (on) {
-    _netBanner('netProxyBanner', 'netProxyBannerText', t('net.bannerProxyOn'), 'ok');
+    _netBanner('netProxyBanner', 'netProxyBannerText', t(_tunOn ? 'net.bannerProxyOnTun' : 'net.bannerProxyOn'), 'ok');
   } else {
-    _netBanner('netProxyBanner', 'netProxyBannerText', t('net.bannerProxyOff'), '');
+    _netBanner('netProxyBanner', 'netProxyBannerText', t(_tunOn ? 'net.bannerProxyOffTun' : 'net.bannerProxyOff'), '');
   }
   const scopeCount = ['environment', 'profile', 'bashrc'].filter(k => tg[k] !== false).length;
   const addr = _actualProxyAddr(s);
@@ -6724,8 +6727,8 @@ var I18N = {
 'dns.autosave':'已自动保存 · 开启后自动备份、校验并应用；Controller 无法恢复时由后端自动回滚','dns.viewRaw':'查看原始配置','dns.resetDefault':'恢复默认值',
     'net.title':'网络设置','net.tabProxy':'系统代理','net.tabTun':'虚拟网卡模式',
     'net.sysProxy':'系统代理','net.tun':'虚拟网卡模式',
-    'net.bannerProxyOn':'系统代理已启用，命令行等程序走代理。',
-    'net.bannerProxyOff':'系统代理已关闭，开启后，命令行等程序走代理。',
+    'net.bannerProxyOn':'系统代理已启用，命令行等新会话程序走代理。','net.bannerProxyOnTun':'系统代理已启用（TUN 已代理全部流量，此项为可选补充）。',
+    'net.bannerProxyOff':'系统代理已关闭，开启后命令行等新会话程序走代理。','net.bannerProxyOffTun':'系统代理已关闭。TUN 已代理全部流量，无需开启。',
     'net.bannerTunOn':'TUN 模式已启用，应用将通过虚拟网卡访问网络。',
     'net.bannerTunOff':'TUN 模式已关闭，当前仅代理遵循规则的应用流量。',
     'net.metaProxy':'服务地址 {addr} · 应用范围 {scope} 个文件',
@@ -6894,8 +6897,8 @@ var I18N = {
 'dns.autosave':'Auto-saved · backed up, validated and applied when enabled; the backend rolls back automatically if the Controller is unrecoverable','dns.viewRaw':'View Raw Config','dns.resetDefault':'Reset to Defaults',
     'net.title':'Network','net.tabProxy':'System Proxy','net.tabTun':'TUN Mode',
     'net.sysProxy':'System Proxy','net.tun':'TUN Mode',
-    'net.bannerProxyOn':'System proxy on. CLI tools use the proxy.',
-    'net.bannerProxyOff':'System proxy off. Enable if needed (proxies CLI tools).',
+    'net.bannerProxyOn':'System proxy on. CLI tools in new sessions use the proxy.','net.bannerProxyOnTun':'System proxy on (optional; TUN already proxies all traffic).',
+    'net.bannerProxyOff':'System proxy off. Enabling it proxies CLI tools in new sessions.','net.bannerProxyOffTun':'System proxy off. TUN already proxies all traffic — not needed.',
     'net.bannerTunOn':'TUN mode is on. Apps will reach the network through the virtual NIC.',
     'net.bannerTunOff':'TUN mode is off. Only rule-following app traffic is proxied.',
     'net.metaProxy':'Address {addr} · {scope} target file(s)',
