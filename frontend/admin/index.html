@@ -673,8 +673,8 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .geo-file-meta span{display:block}
 .geo-status{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;flex-shrink:0}
 /* Clash核心 行「有版本更新」徽章 */
-.core-upd-badge{flex:none;font-size:10px;font-weight:600;color:var(--red);background:rgba(246,78,110,.1);border:1px solid rgba(246,78,110,.32);border-radius:20px;padding:2px 9px;margin-left:2px;white-space:nowrap;cursor:pointer;transition:border-color .15s}
-.core-upd-badge:hover{border-color:var(--red);border-style:dashed}
+.upd-badge{flex:none;font-size:10px;font-weight:600;color:var(--red);background:rgba(246,78,110,.1);border:1px solid rgba(246,78,110,.32);border-radius:20px;padding:2px 9px;margin-left:2px;white-space:nowrap;cursor:pointer;transition:border-color .15s}
+.upd-badge:hover{border-color:var(--red);border-style:dashed}
 /* 更新内核弹窗内的内核管理按钮行 */
 .core-mgr-actions{display:flex;flex-wrap:wrap;gap:8px}
 .core-mgr-actions .core-btn{flex:1;min-width:96px;justify-content:center}
@@ -2055,7 +2055,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.core">Clash核心</span></div>
               <span class="set-val" id="setCoreVersion">-</span>
-              <span class="core-upd-badge" id="coreUpdBadge" style="display:none" onclick="showCoreUpdatePopup()" data-i18n="core.updateAvailable">有版本更新</span>
+              <span class="upd-badge" id="coreUpdBadge" style="display:none" onclick="showCoreUpdatePopup()" data-i18n="core.updateAvailable">有版本更新</span>
               <button class="mini-btn mini-btn-ic" onclick="showCoreUpdatePopup()" title="更新内核" aria-label="更新内核"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
             </div>
             <div class="set-item set-item-chev" onclick="updateGeoData()">
@@ -2144,12 +2144,14 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="set-item">
               <div class="set-item-left"><span style="font-size:13px;color:var(--text)">Zashboard</span></div>
               <span class="set-val" id="dashZasVer" style="font-size:12px;color:var(--dim);text-align:right">-</span>
-              <button class="btn btn-primary" id="dashZasBtn" onclick="updateDashboard('zashboard')" style="padding:6px 12px;font-size:12px">升级</button>
+              <span class="upd-badge" id="dashZasBadge" style="display:none" data-i18n="core.updateAvailable">有版本更新</span>
+              <button class="mini-btn" id="dashZasBtn" onclick="updateDashboard('zashboard')" style="display:none;flex:none">升级</button>
             </div>
             <div class="set-item">
               <div class="set-item-left"><span style="font-size:13px;color:var(--text)">Metacubexd</span></div>
               <span class="set-val" id="dashMetaVer" style="font-size:12px;color:var(--dim);text-align:right">-</span>
-              <button class="btn btn-primary" id="dashMetaBtn" onclick="updateDashboard('metacubexd')" style="padding:6px 12px;font-size:12px">升级</button>
+              <span class="upd-badge" id="dashMetaBadge" style="display:none" data-i18n="core.updateAvailable">有版本更新</span>
+              <button class="mini-btn" id="dashMetaBtn" onclick="updateDashboard('metacubexd')" style="display:none;flex:none">升级</button>
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.dashStatus">状态</span></div>
@@ -6158,9 +6160,16 @@ function loadDashboardStatus() {
     if (st) st.textContent = '';
     var anyUpdate = false;
     (d.dashboards || []).forEach(function(item) {
-      var verEl = document.getElementById(item.name === 'zashboard' ? 'dashZasVer' : 'dashMetaVer');
-      var btn = document.getElementById(item.name === 'zashboard' ? 'dashZasBtn' : 'dashMetaBtn');
-      if (verEl) verEl.textContent = item.current ? ('v' + item.current) : '未安装';
+      var isZas = item.name === 'zashboard';
+      var verEl = document.getElementById(isZas ? 'dashZasVer' : 'dashMetaVer');
+      var badge = document.getElementById(isZas ? 'dashZasBadge' : 'dashMetaBadge');
+      var btn = document.getElementById(isZas ? 'dashZasBtn' : 'dashMetaBtn');
+      if (verEl) verEl.textContent = item.current ? ('v' + String(item.current).replace(/^v/i, '')) : '未安装';
+      // 「有版本更新」徽章（与 Clash核心 行同款），红色提醒由徽章承载
+      if (badge) {
+        badge.style.display = item.has_update ? '' : 'none';
+        badge.title = item.has_update && item.latest ? ('可更新至 v' + item.latest) : '';
+      }
       if (btn) {
         if (item.has_update) {
           btn.style.display = 'inline-flex';
@@ -6173,13 +6182,13 @@ function loadDashboardStatus() {
         }
       }
     });
-    // 状态行明确指出可更新的面板名称，避免只显示笼统的“有可用更新”。
+    // 状态行只保留中性信息（可更新名单/已是最新），红色提醒见各行徽章
     if (st) {
       var updateNames = (d.dashboards || []).filter(function(item) { return item.has_update; }).map(function(item) {
         return item.name === 'zashboard' ? 'Zashboard' : 'Metacubexd';
       });
-      st.style.color = anyUpdate ? 'var(--red)' : 'var(--dim)';
-      st.textContent = anyUpdate ? (updateNames.join('、') + ' 可更新') : t('settings.dashUpToDate');
+      st.style.color = 'var(--dim)';
+      st.textContent = anyUpdate ? ('可更新：' + updateNames.join('、')) : t('settings.dashUpToDate');
     }
   }).catch(function() {
     var st = document.getElementById('dashUpdateStatus');
