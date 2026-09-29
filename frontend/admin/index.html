@@ -879,6 +879,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .num-spin{position:relative;display:inline-flex;align-items:center;width:auto;max-width:100%;flex-shrink:0}
 .num-spin input[type=number]{width:100%;padding-right:46px;text-align:left;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:none}
 .num-spin-full{width:100%}
+.set-item .num-spin.num-spin-flex{flex:1;min-width:0}
+.set-item .num-spin.num-spin-flex input[type=number]{max-width:none}
 .num-spin-full input[type=number]{width:100%}
 .num-spin input[type=number]::-webkit-inner-spin-button,.num-spin input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
 .num-spin-btns{position:absolute;top:1px;right:1px;bottom:1px;display:flex;flex-direction:column;width:24px;overflow:hidden;border-bottom-right-radius:6px}
@@ -1994,7 +1996,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.port">端口配置</span></div>
-              <input type="number" class="set-input" id="setMixedPort" placeholder="7890" onchange="saveSetting('mixed-port')">
+              <input type="number" class="set-input num-flex" id="setMixedPort" placeholder="7890" onchange="saveSetting('mixed-port')">
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.externalController">外部控制器</span></div>
@@ -2730,8 +2732,9 @@ function initNumSteppers() {
     var wrap = document.createElement('div');
     var _w = inp.getBoundingClientRect().width;
     var _full = inp.classList.contains('num-full');
-    if (_w > 0 && !_full) inp.style.width = Math.round(_w) + 'px';
-    wrap.className = 'num-spin' + (_full ? ' num-spin-full' : '');
+    var _flex = inp.classList.contains('num-flex');
+    if (_w > 0 && !_full && !_flex) inp.style.width = Math.round(_w) + 'px';
+    wrap.className = 'num-spin' + (_full ? ' num-spin-full' : '') + (_flex ? ' num-spin-flex' : '');
     inp.parentNode.insertBefore(wrap, inp);
     wrap.appendChild(inp);
     var btns = document.createElement('span');
