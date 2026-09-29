@@ -3815,20 +3815,18 @@ function _hexA(hex, a) {  // #rrggbb → rgba()
   return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
 }
 // Catmull-Rom → 三次贝塞尔：张力固定，任意点密度下平滑度一致且无过冲
+// 平滑模式：二次曲线中点法（对齐 Clash Verge Rev）——以当前数据点为控制点、
+// 落到相邻两点中点。二次贝塞尔被约束在控制点凸包内，曲线必在数据点值域区间，
+// 不会像 Catmull-Rom 那样在 0 附近下冲（无需裁剪、无截断感）
 function _smoothStroke(ctx, pts, tension) {
   if (pts.length < 2) return;
   if (!trafficSmooth) {           // 线性模式：直线段
     for (var li = 1; li < pts.length; li++) ctx.lineTo(pts[li].x, pts[li].y);
     return;
   }
-  ctx.moveTo(pts[0].x, pts[0].y);
-  if (pts.length === 2) { ctx.lineTo(pts[1].x, pts[1].y); return; }
-  for (var i = 0; i < pts.length - 1; i++) {
-    var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 2, i + 2)];
-    ctx.bezierCurveTo(
-      p1.x + (p2.x - p0.x) * tension, p1.y + (p2.y - p0.y) * tension,
-      p2.x - (p3.x - p1.x) * tension, p2.y - (p3.y - p1.y) * tension,
-      p2.x, p2.y);
+  for (var i = 1; i < pts.length; i++) {
+    var nx = pts[Math.min(i + 1, pts.length - 1)];
+    ctx.quadraticCurveTo(pts[i].x, pts[i].y, (pts[i].x + nx.x) / 2, (pts[i].y + nx.y) / 2);
   }
 }
 function _niceMax(v) {  // Y 轴上限取整到好看刻度
@@ -3931,32 +3929,27 @@ function _drawTrafficFrame(ptsUp, ptsDown, maxV) {
     if (!pts.length) return;
     var first = pts[0], last = pts[pts.length - 1];
     var grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
-    grad.addColorStop(0, _hexA(color, 0.22));
+    grad.addColorStop(0, _hexA(color, 0.15));
     grad.addColorStop(1, _hexA(color, 0));
     ctx.beginPath();
-    _smoothStroke(ctx, pts, 0.2);
+    _smoothStroke(ctx, pts);
     ctx.lineTo(last.x, padT + plotH);
     ctx.lineTo(first.x, padT + plotH);
     ctx.closePath();
     ctx.fillStyle = grad;
     ctx.fill();
     ctx.beginPath();
-    _smoothStroke(ctx, pts, 0.2);
+    _smoothStroke(ctx, pts);
     ctx.strokeStyle = color;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 2.5;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
+    ctx.globalAlpha = 0.9;
     ctx.stroke();
+    ctx.globalAlpha = 1;
   };
-  // 裁剪到绘图区：数据值已钳到 >=0，但贝塞尔控制点仍可能让曲线在 0 附近
-  // 下冲出基线（表现为负值），此处统一裁掉，线与填充都不会越界
-  ctx.save();
-  ctx.beginPath();
-  ctx.rect(padL - 2, padT - 2, plotW + 4, plotH + 4);
-  ctx.clip();
   drawSeries(ptsDown, cDown);  // 下载在下层
   drawSeries(ptsUp, cUp);
-  ctx.restore();
 }
 function _seriesPts(win, maxV, getVal, interp) {
   var s = _setupTrafficCanvas();
