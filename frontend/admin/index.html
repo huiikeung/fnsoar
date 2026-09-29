@@ -164,7 +164,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .mini-btn{background:transparent;border:1px solid var(--accent);color:var(--accent2);border-radius:8px;padding:4px 12px;font-size:12px;font-weight:600;cursor:pointer;transition:all .12s}
 .mini-btn:hover{background:var(--accent);color:var(--on-accent)}
 .mini-btn-ic{width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:none;background:transparent;color:var(--dim);cursor:pointer;transition:all .12s}
-.mini-btn-ic:hover{background:var(--card2);color:var(--text)}
+.mini-btn-ic:hover{background:rgba(78,110,242,.09);color:var(--accent)}
 .mini-btn-ic svg{width:16px;height:16px;fill:currentColor}
 .hrow{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px}
 .hrow-ic{width:20px;text-align:center;font-size:13px;color:var(--dim);flex-shrink:0}
@@ -523,10 +523,10 @@ tbody tr:hover{background:var(--card2)}
 .set-item-chev:hover .set-chev{color:var(--dim)}
 .set-input{width:100px;max-width:140px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:14px;text-align:right;outline:none;font-variant-numeric:tabular-nums;transition:border-color .15s}
 .set-input.ext-input{width:140px;max-width:140px}
-.set-input:hover{border-color:var(--dim)}
+.set-input:hover{border-color:var(--accent);border-style:dashed}
 .set-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
 .set-select{padding:9px 34px 9px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);font-size:13.5px;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;max-width:150px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-.set-select:hover{border-color:var(--dim)}
+.set-select:hover{border-color:var(--accent);border-style:dashed}
 .set-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
 /* toggle */
 .toggle{position:relative;display:inline-flex;align-items:center;cursor:pointer;flex-shrink:0}
@@ -602,6 +602,7 @@ tbody tr:hover{background:var(--card2)}
 .mx-field-label{display:flex;align-items:center;gap:6px;min-height:18px;margin-bottom:7px;font-size:12px;font-weight:600;color:var(--mx-text)}
 .mx-help{display:grid;place-items:center;width:15px;height:15px;min-height:0;padding:0;border:1px solid #b6c0d0;border-radius:50%;background:transparent;color:var(--mx-muted);font-size:9px;font-weight:750;line-height:1;cursor:help}
 .mx-input{width:100%;background:var(--mx-ctl);border:1px solid var(--mx-line);color:var(--mx-text);border-radius:8px;padding:8px 10px;outline:none;font-size:12.5px;font-family:inherit;transition:border-color .15s,box-shadow .15s}
+.mx-input:hover{border-color:var(--accent);border-style:dashed}
 .mx-input:focus{border-color:rgba(98,127,230,.65);box-shadow:0 0 0 3px rgba(98,127,230,.1)}
 .mx-input:disabled{opacity:.6;cursor:not-allowed}
 .mx-input.num{width:110px;text-align:center}
@@ -829,8 +830,9 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .vcfg-row input[type=number]{-moz-appearance:textfield;appearance:none}
 .vcfg-row input[type=number]::-webkit-inner-spin-button,
 .vcfg-row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
-.num-spin{position:relative;display:inline-flex;align-items:center;width:132px;flex-shrink:0}
-.num-spin input[type=number]{width:100%;padding-right:46px;text-align:left;font-variant-numeric:tabular-nums}
+.num-spin{position:relative;display:inline-flex;align-items:center;width:auto;max-width:100%;flex-shrink:0}
+.num-spin input[type=number]{width:100%;padding-right:46px;text-align:left;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:none}
+.num-spin input[type=number]::-webkit-inner-spin-button,.num-spin input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
 .num-spin-btns{position:absolute;top:1px;right:1px;bottom:1px;display:flex;flex-direction:column;width:24px;overflow:hidden;border-bottom-right-radius:6px}
 .num-spin-btns button{flex:1;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-left:1px solid var(--border);color:var(--dim);padding:0;margin:0;cursor:pointer;line-height:0;transition:color .12s,background .12s}
 .num-spin-btns button:first-child{border-bottom:1px solid var(--border)}
@@ -1006,7 +1008,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               </div>
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="net.followPort">自动跟随 Mixed Port</strong><span data-i18n="net.followPortHint">端口变化后自动同步系统代理</span></div>
-                <label class="mx-switch"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked;document.getElementById('spPortRow').style.display=this.checked?'none':''"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked;document.getElementById('spPortRow').style.display=this.checked?'none':'';refreshNumSpinWidths()"><span></span></label>
               </div>
               <div class="mx-tgl" id="spPortRow" style="display:none">
                 <div class="mx-tgl-copy"><strong data-i18n="net.port">代理端口</strong><span data-i18n="net.portHint">关闭跟随后可手动指定</span></div>
@@ -2744,9 +2746,11 @@ function csBuild(selectEl) {
 
 // ── 自定义数字步进器（配置页 number 输入） ──────────
 function initNumSteppers() {
-  document.querySelectorAll('.vcfg-row input[type="number"]').forEach(function(inp) {
+  document.querySelectorAll('input[type="number"]:not(.no-spin)').forEach(function(inp) {
     if (inp.closest('.num-spin')) return;
     var wrap = document.createElement('div');
+    var _w = inp.getBoundingClientRect().width;
+    if (_w > 0) inp.style.width = Math.round(_w) + 'px';
     wrap.className = 'num-spin';
     inp.parentNode.insertBefore(wrap, inp);
     wrap.appendChild(inp);
@@ -2761,6 +2765,15 @@ function initNumSteppers() {
     btnsEls[0].addEventListener('click', function(e){ e.preventDefault(); stepNum(inp, 1); });
     btnsEls[1].addEventListener('mousedown', function(e){ e.preventDefault(); });
     btnsEls[1].addEventListener('click', function(e){ e.preventDefault(); stepNum(inp, -1); });
+  });
+}
+// 弹窗/隐藏区域显示后，为其中已包装的数字输入补齐固定宽度（包装时不可见则宽度为 0）
+function refreshNumSpinWidths() {
+  document.querySelectorAll('.num-spin').forEach(function(wrap) {
+    var inp = wrap.querySelector('input[type="number"]');
+    if (!inp || inp.style.width) return;
+    var w = inp.getBoundingClientRect().width;
+    if (w > 0) inp.style.width = Math.round(w) + 'px';
   });
 }
 function stepNum(inp, dir) {
@@ -3194,6 +3207,7 @@ function disableTun() {
 // ── 系统代理设置弹窗 ────────────────────
 async function openSysProxyModal() {
   document.getElementById('sysProxyModal').style.display = 'flex';
+  refreshNumSpinWidths();
   let d = netProxyData || {};
   try { const fresh = await fetchJSON('api/system-proxy'); if (fresh) { netProxyData = fresh; d = fresh; } } catch (e) {}
   const s = d.settings || {};
@@ -3292,6 +3306,7 @@ function saveSysProxyModal() {
 // ── TUN 设置弹窗 ────────────────────
 async function openTunModal() {
   document.getElementById('tunModal').style.display = 'flex';
+  refreshNumSpinWidths();
   // 打开时拉取最新 TUN 设置，保证弹窗与 config.yaml 源文件一致
   try { const fresh = await fetchJSON('api/tun'); if (fresh) { netTunData = fresh; renderNetworkTun(); } } catch (e) {}
   const s = (netTunData && netTunData.settings) || {};
@@ -3941,6 +3956,7 @@ async function runWebTest() {
     document.getElementById('provHomeInput').value = (p && p.home) ? p.home : (provHome[name] || '');
    document.getElementById('provName').disabled = false; // 允许编辑/重命名订阅名称
    document.getElementById('provModal').style.display = 'flex';
+  refreshNumSpinWidths();
    if (!name) setTimeout(() => document.getElementById('provUrl').focus(), 60);
  }
  function closeProvModal() { document.getElementById('provModal').style.display = 'none'; provEditing = null; }
@@ -7177,6 +7193,8 @@ function showExtCtrlPopup() {
     + '<span>' + t('save') + '</span></button>'
     + '</div></div>';
   document.body.appendChild(el);
+  initNumSteppers();  // 弹窗动态创建，重新初始化自定义上下箭头
+  refreshNumSpinWidths();
   // 加载当前值
   fetch('api/config').then(r => r.json()).then(function(d) {
     var cfg = d.config || '';
