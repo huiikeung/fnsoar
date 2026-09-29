@@ -740,6 +740,15 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .dns-ta-box{flex-direction:column;align-items:stretch;gap:7px;min-height:0}
 .dns-ta-box textarea{width:100%;min-height:88px;max-height:220px;resize:vertical;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;color:var(--text);outline:none;transition:border-color .15s}
 .dns-field.wide{grid-column:1/-1}
+/* GEO 数据文件卡片（配置页）：第一行 名称+状态+大小/时间，第二行 URL 输入 */
+.geo-cards{display:grid;gap:8px;margin-bottom:8px}
+.geo-card{border:1px solid var(--border);border-radius:10px;background:var(--card2);padding:10px 13px}
+.geo-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
+.geo-card-info{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap}
+.geo-card-name{font-size:12px;font-weight:600;color:var(--text)}
+.geo-card-name small{display:block;font-size:10px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:2px;line-height:1.4}
+.geo-card-meta{font-size:10.5px;color:var(--faint);line-height:1.4}
+.geo-card .geo-url-input{width:100%}
 .dns-ta-box textarea:focus{border-color:var(--accent)}
 .dns-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-soft);font-size:10.5px;color:var(--faint)}
 .dns-foot .core-btn{padding:5px 12px;font-size:11px}
@@ -1783,16 +1792,43 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-basic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="vcfg.geo">Geo 数据</span></div>
             <div style="padding:12px 16px 14px">
               <div class="dns-grid">
-                <div class="dns-field"><span class="dns-field-label">geoip<small>geox-url.geoip</small></span><input class="dns-input" id="vcfgGeoIp" onchange="saveGeoSection()"></div>
-                <div class="dns-field"><span class="dns-field-label">geosite<small>geox-url.geosite</small></span><input class="dns-input" id="vcfgGeoSite" onchange="saveGeoSection()"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="core.geoAuto">自动更新</span><small>geo-auto-update</small></span><label class="toggle"><input type="checkbox" id="vcfgGeoAuto" onchange="saveGeoSettings()"><span class="toggle-track"></span></label></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="core.geoInterval">更新周期</span><small>geo-update-interval</small></span><select class="dns-input" id="vcfgGeoInterval" onchange="saveGeoSettings()"><option value="12" data-i18n="core.interval12">12 小时</option><option value="24" data-i18n="core.interval24">24 小时</option><option value="72" data-i18n="core.interval72">3 天</option><option value="168" data-i18n="core.interval168">7 天</option></select></div>
               </div>
-              <div class="dns-grid">
-                <div class="dns-field"><span class="dns-field-label">mmdb<small>geox-url.mmdb</small></span><input class="dns-input" id="vcfgMmdb" onchange="saveGeoSection()"></div>
-                <div class="dns-field"><span class="dns-field-label">asn<small>geox-url.asn</small></span><input class="dns-input" id="vcfgAsn" onchange="saveGeoSection()"></div>
+              <div class="geo-cards">
+                <div class="geo-card">
+                  <div class="geo-card-head">
+                    <div class="geo-card-info"><span class="geo-card-name">geoip<small>geox-url.geoip</small></span><span class="geo-card-meta" id="geoMeta_geoip">--</span></div>
+                    <span class="geo-status" id="geoStatus_geoip">-</span>
+                  </div>
+                  <input class="dns-input geo-url-input" id="vcfgGeoIp" onchange="saveGeoSection()">
+                </div>
+                <div class="geo-card">
+                  <div class="geo-card-head">
+                    <div class="geo-card-info"><span class="geo-card-name">geosite<small>geox-url.geosite</small></span><span class="geo-card-meta" id="geoMeta_geosite">--</span></div>
+                    <span class="geo-status" id="geoStatus_geosite">-</span>
+                  </div>
+                  <input class="dns-input geo-url-input" id="vcfgGeoSite" onchange="saveGeoSection()">
+                </div>
+                <div class="geo-card">
+                  <div class="geo-card-head">
+                    <div class="geo-card-info"><span class="geo-card-name">mmdb<small>geox-url.mmdb</small></span><span class="geo-card-meta" id="geoMeta_mmdb">--</span></div>
+                    <span class="geo-status" id="geoStatus_mmdb">-</span>
+                  </div>
+                  <input class="dns-input geo-url-input" id="vcfgMmdb" onchange="saveGeoSection()">
+                </div>
+                <div class="geo-card">
+                  <div class="geo-card-head">
+                    <div class="geo-card-info"><span class="geo-card-name">asn<small>geox-url.asn</small></span><span class="geo-card-meta" id="geoMeta_asn">--</span></div>
+                    <span class="geo-status" id="geoStatus_asn">-</span>
+                  </div>
+                  <input class="dns-input geo-url-input" id="vcfgAsn" onchange="saveGeoSection()">
+                </div>
               </div>
               <div class="dns-foot">
-                <span data-i18n="vcfg.geoAutosave">已自动保存 · GEO 数据源地址修改即写入 config.yaml</span>
+                <span data-i18n="vcfg.geoAutosave">已自动保存 · GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效</span>
                 <div style="display:flex;gap:8px">
+                  <button class="core-btn" id="geoUpdateBtn" onclick="geoUpdateAll()" data-i18n="core.updateNow">立即更新</button>
                   <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
                   <button class="core-btn" onclick="resetConfigSection('geox-url')" data-i18n="dns.resetDefault">恢复默认值</button>
                 </div>
@@ -1879,10 +1915,6 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <svg viewBox="0 0 24 24"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5z"/></svg>
               <span data-i18n="core.tabConn">连接管理</span>
             </button>
-            <button class="core-tab" id="coreTabGeo" onclick="switchCoreTab('geo')">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm-1.5 5v5.25l4.5 2.67-.75 1.23L9 13.5V7h1.5z"/></svg>
-              <span data-i18n="core.tabGeo">GEO 数据</span>
-            </button>
           </div>
 
           <!-- ═══ 内核管理 ═══ -->
@@ -1958,22 +1990,6 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
           </div>
 
           <!-- ═══ GEO 数据 ═══ -->
-          <div class="core-panel" id="corePanelGeo">
-            <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label" data-i18n="core.geoAuto">自动更新</span></div>
-              <label class="toggle"><input type="checkbox" id="vcfgGeoAuto"><span class="toggle-track"></span></label>
-            </div>
-            <div class="set-item">
-              <div class="set-item-left"><span class="set-item-label" data-i18n="core.geoInterval">更新周期</span></div>
-              <select class="set-select" id="vcfgGeoInterval"><option value="12" data-i18n="core.interval12">12 小时</option><option value="24" data-i18n="core.interval24">24 小时</option><option value="72" data-i18n="core.interval72">3 天</option><option value="168" data-i18n="core.interval168">7 天</option></select>
-            </div>
-            <div class="core-actions">
-              <button class="core-btn" onclick="saveGeoSettings()" data-i18n="core.saveSettings">保存设置</button>
-              <button class="core-btn primary" id="geoUpdateBtn" onclick="geoUpdateAll()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span data-i18n="core.updateNow">立即更新</span></button>
-            </div>
-            <div id="geoFileList" style="margin-top:10px"></div>
-            <p style="font-size:11px;color:var(--faint);line-height:1.6;margin:8px 0 0" data-i18n="core.geoHint">GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。</p>
-          </div>
         </div>
       </div>
 
@@ -2349,8 +2365,6 @@ function showSection(name) {
   if (name === 'home') { loadDashboard(); refreshTun(); refreshNetworkCard(); }
   if (name === 'settings') {
     loadCoreStatus();
-    const gp = document.getElementById('corePanelGeo');
-    if (gp && gp.classList.contains('active')) loadGeoStatus();
   }
   if (name === 'groups') {
     // 秒开：优先恢复上次渲染快照（内存 > localStorage），数据后台刷新后原位重绘
@@ -2752,6 +2766,11 @@ function csBuild(selectEl) {
 }
 
 // ── 自定义数字步进器（配置页 number 输入） ──────────
+// 同步所有自定义下拉的显示文本（代码修改 select.value 后必须调用，
+// 否则 trigger 里显示的还是旧选项——如 GEO 更新周期从 24 改成 72 仍显示旧值）
+function csSyncAll() {
+  document.querySelectorAll('select').forEach(function(s) { if (s._csRefresh) s._csRefresh(); });
+}
 function initNumSteppers() {
   document.querySelectorAll('input[type="number"]:not(.no-spin)').forEach(function(inp) {
     if (inp.closest('.num-spin')) return;
@@ -5412,6 +5431,8 @@ function loadVcfg() {
     var vga = document.getElementById('vcfgGeoAuto'); if (vga) vga.checked = getBool('geo-auto-update');
     var vgi = document.getElementById('vcfgGeoInterval'); if (vgi) vgi.value = getVal('geo-update-interval', '24');
     loadVcfgSections(cfg);
+    renderGeoCards();  // GEO 文件状态/大小/更新时间（自设置页 GEO 标签页迁入）
+    csSyncAll();  // 同步自定义下拉显示文本（更新周期等）
   });
 }
 function saveProxyAuth() {
@@ -6133,6 +6154,7 @@ function loadSettings() {
     if (mp) document.getElementById('setMixedPort').value = mp[1];
     var ll = cfg.match(/^log-level:\s*(\w+)/m);
     if (ll) document.getElementById('setLogLevel').value = ll[1];
+    csSyncAll();  // 同步自定义下拉显示文本（日志等级等）
     // 加载外部控制器
     fetch('api/config').then(r => r.json()).then(function(d) {
       var cfg = d.config || '';
@@ -6784,6 +6806,22 @@ function renderCoreUpdateBadge() {
   badge.style.display = show ? '' : 'none';
   badge.title = show ? ('内核有新版本 v' + String(latest).replace(/^v/i, '') + '，点击更新') : '';
 }
+// GEO 文件状态渲染：填充配置页 4 个卡片的状态徽章与 大小 · 更新时间
+async function renderGeoCards() {
+  try {
+    const d = await fetchJSON('api/geo-status');
+    if (!d || !d.files) return;
+    d.files.forEach(function(f) {
+      var st = document.getElementById('geoStatus_' + f.key);
+      var meta = document.getElementById('geoMeta_' + f.key);
+      if (st) {
+        st.textContent = f.exists ? t('core.geoOk') : t('core.geoMissing');
+        st.className = 'geo-status ' + (f.exists ? 'ok' : 'missing');
+      }
+      if (meta) meta.textContent = f.exists ? (_fmtFileSize(f.size) + ' · ' + (f.mtime || '--')) : t('core.geoNoDownload');
+    });
+  } catch (e) { /* 忽略：状态留占位 */ }
+}
 function checkCoreUpdate() {
   var lv = document.getElementById('coreUpdLatest');
   if (lv) lv.textContent = '检查中…';
@@ -6827,12 +6865,9 @@ let _secretValue = '';
 function switchCoreTab(tab) {
   document.getElementById('coreTabManage').classList.toggle('active', tab === 'manage');
   document.getElementById('coreTabConn').classList.toggle('active', tab === 'conn');
-  document.getElementById('coreTabGeo').classList.toggle('active', tab === 'geo');
   document.getElementById('corePanelManage').classList.toggle('active', tab === 'manage');
   document.getElementById('corePanelConn').classList.toggle('active', tab === 'conn');
-  document.getElementById('corePanelGeo').classList.toggle('active', tab === 'geo');
   if (tab === 'conn') loadConnInfo();
-  if (tab === 'geo') loadGeoStatus();
 }
 
 function toggleCoreDetails() {
