@@ -24,6 +24,7 @@
   --green:#3fb950;
   --red:#f85149;
   --yellow:#d29922;
+  --blue:#3b82f6;      /* 流量图-下载 */
   --on-accent:#fff;      /* 强调色块上的文字 */
   --grid-line:rgba(255,255,255,.06); /* 流量图网格线 */
   --log-bg:#0a0a0c;      /* 日志区背景 */
@@ -45,7 +46,7 @@
   --accent2:#3b5bdb;
   --green:#2e9e4f;
   --red:#e03131;
-  --yellow:#b8860b;
+  --yellow:#b8860b;--blue:#3b82f6;
   --on-accent:#fff;
   --grid-line:rgba(0,0,0,.08);
   --log-bg:#f8f9fa;
@@ -292,11 +293,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .traf-card-header{display:flex;align-items:center;gap:8px}
 .traf-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0}
 .traf-dot.upload{background:var(--yellow)}
-.traf-dot.download{background:var(--green)}
+.traf-dot.download{background:var(--blue)}
 .traf-label{font-size:12px;color:var(--dim);font-weight:500}
 .traf-speed{font-size:22px;font-weight:700;color:var(--text);font-variant-numeric:tabular-nums}
 .traf-card.upload .traf-speed{color:var(--yellow)}
-.traf-card.download .traf-speed{color:var(--green)}
+.traf-card.download .traf-speed{color:var(--blue)}
 .traf-volume{font-size:11.5px;color:var(--dim)}.traf-volume span{color:var(--text);font-weight:600}
 @media(max-width:640px){.traffic-grid{grid-template-columns:1fr}}
 .traffic-chart-wrap{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px;overflow:hidden}
@@ -307,6 +308,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .traffic-range-seg .mode-btn:hover{color:var(--text);border-color:var(--faint)}
 .traffic-range-seg .mode-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
 .traffic-chart-wrap canvas{display:block;width:100%;height:220px}
+.traffic-axis{display:flex;justify-content:space-between;margin:2px 2px 0;font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums}
+.traffic-stats{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 0;font-size:10.5px;color:var(--faint)}
+.traffic-stats b{font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
+.traffic-smooth{padding:1px 7px;border:1px solid var(--border);border-radius:20px;font-size:10px}
 .traffic-legend{display:flex;gap:14px;justify-content:flex-end;margin:6px 4px 2px;font-size:11px;color:var(--faint)}
 .traffic-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
 .traffic-total{font-size:12px;color:var(--dim)}
@@ -1612,12 +1617,17 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="traffic-chart-head">
               <span class="traffic-chart-title" data-i18n="traffic.trend">速度趋势</span>
               <div class="traffic-range-seg">
-                <button class="mode-btn active" data-range="1" onclick="setTrafficRange(1)" data-i18n="traffic.range1">1 分钟</button>
+                <button class="mode-btn" data-range="1" onclick="setTrafficRange(1)" data-i18n="traffic.range1">1 分钟</button>
                 <button class="mode-btn" data-range="5" onclick="setTrafficRange(5)" data-i18n="traffic.range5">5 分钟</button>
-                <button class="mode-btn" data-range="10" onclick="setTrafficRange(10)" data-i18n="traffic.range10">10 分钟</button>
+                <button class="mode-btn active" data-range="10" onclick="setTrafficRange(10)" data-i18n="traffic.range10">10 分钟</button>
               </div>
             </div>
             <canvas id="trafficChart"></canvas>
+            <div class="traffic-axis" id="trafficAxis"><span id="tc0"></span><span id="tc1"></span><span id="tc2"></span><span id="tc3"></span><span id="tc4"></span></div>
+            <div class="traffic-stats">
+              <span>数据点: <b id="tsPts">0</b> | 压缩后: <b id="tsDrawn">0</b> | 帧率: <b id="tsFps">0</b></span>
+              <span class="traffic-smooth" data-i18n="traffic.smooth">平滑</span>
+            </div>
           </div>
         </div>
       </div>
@@ -3748,29 +3758,44 @@ let trafficHistory = [];            // {up, down}，最多 600 点（10 分钟�
 
 // 流量趋势图（参考 Clash Verge Rev）：窗口化数据 + 统一张力平滑曲线 + 渐变面积填充
 const TRAFFIC_MAX_POINTS = 600;   // 最多保留 10 分钟（约 1 点/秒）
-let trafficRange = 1;             // 当前显示窗口（分钟）
+let trafficRange = 10;            // 当前显示窗口（分钟，默认 10 分钟）
 
 function setTrafficRange(min) {
   if (min === trafficRange) return;
-  var fromWin = _trafficPrevWin || trafficHistory.slice(-(trafficRange * 60));
+  var rawWin = trafficHistory.slice(-(trafficRange * 60));   // 切换前的原始窗口
+  var fromWin = _trafficPrevWin || rawWin;
   var fromMax = _trafficPrevMax || 1;
   trafficRange = min;
   document.querySelectorAll('.traffic-range-seg .mode-btn').forEach(function(b) {
     b.classList.toggle('active', +b.dataset.range === min);
   });
-  var toWin = trafficHistory.slice(-(trafficRange * 60));
+  var rawTo = trafficHistory.slice(-(trafficRange * 60));
+  var toWin = _decimate(rawTo, TRAFFIC_MAX_DRAWN);
   var toMax = _winMax(toWin);
+  fromWin = _decimate(fromWin, TRAFFIC_MAX_DRAWN);
+  fromMax = _winMax(fromWin);
+  _updateTrafficStats(rawTo, toWin);   // 统计即时跟随，曲线随后形变追平
   if (fromWin.length < 2 || toWin.length < 2) { drawTrafficChart(); return; }
   // 线性平滑形变：旧窗口 → 新窗口（easeOutCubic，320ms）
   if (_trafficRAF) cancelAnimationFrame(_trafficRAF);
   var t0 = performance.now();
+  var done = false;
+  var _finish = function() {
+    if (done) return;
+    done = true;
+    _drawTrafficMorph(fromWin, toWin, fromMax, toMax, 1);
+    _trafficPrevWin = toWin; _trafficPrevMax = toMax;
+    _trafficRAF = 0;
+  };
   (function frame(now) {
+    if (done) return;
     var k = Math.min(1, (now - t0) / TRAFFIC_ANIM_MS);
     var e = 1 - Math.pow(1 - k, 3);
     _drawTrafficMorph(fromWin, toWin, fromMax, toMax, e);
     if (k < 1) _trafficRAF = requestAnimationFrame(frame);
-    else { _trafficRAF = 0; _trafficPrevWin = toWin; _trafficPrevMax = toMax; }
+    else _finish();
   })(t0);
+  setTimeout(_finish, TRAFFIC_ANIM_MS + 400);   // rAF 停摆兜底
 }
 
 function _cssColor(name, fallback) {
@@ -3824,6 +3849,33 @@ function _setupTrafficCanvas() {
 const TRAFFIC_ANIM_MS = 320;
 let _trafficRAF = 0, _trafficPrevWin = null, _trafficPrevMax = 1;
 
+const TRAFFIC_MAX_DRAWN = 150;   // 超过则等步长降采样（统计里的「压缩后」）
+let _trafficFps = 0, _trafficDrawCount = 0;
+function _decimate(win, maxPts) {
+  if (!win || win.length <= maxPts) return win || [];
+  var step = win.length / maxPts, out = [];
+  for (var i = 0; i < maxPts; i++) out.push(win[Math.min(win.length - 1, Math.round(i * step))]);
+  return out;
+}
+function _fmtHM(ts) {
+  var d = new Date(ts);
+  return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+}
+// 填充时间轴 + 统计行（数据点 / 压缩后 / 帧率）
+function _updateTrafficStats(win, drawn) {
+  var elPts = document.getElementById('tsPts'), elDrawn = document.getElementById('tsDrawn');
+  if (elPts) elPts.textContent = (win || []).length;
+  if (elDrawn) elDrawn.textContent = (drawn || []).length;
+  if (win && win.length > 1) {
+    var t0 = win[0].t || 0, t1 = win[win.length - 1].t || 0;
+    if (t0 && t1) {
+      for (var i = 0; i <= 4; i++) {
+        var el = document.getElementById('tc' + i);
+        if (el) el.textContent = _fmtHM(t0 + (t1 - t0) * i / 4);
+      }
+    }
+  }
+}
 function _winMax(win) {
   var m = 1;
   (win || []).forEach(function(p) { if (p.up > m) m = p.up; if (p.down > m) m = p.down; });
@@ -3841,7 +3893,7 @@ function _drawTrafficFrame(ptsUp, ptsDown, maxV) {
   var padL = 6, padR = 56, padT = 10, padB = 10;
   var plotW = W - padL - padR, plotH = H - padT - padB;
   ctx.clearRect(0, 0, W, H);
-  var cUp = _cssColor('--yellow', '#e0a341'), cDown = _cssColor('--green', '#3fb950');
+  var cUp = _cssColor('--yellow', '#e0a341'), cDown = _cssColor('--blue', '#3b82f6');
   var cGrid = _cssColor('--grid-line', 'rgba(128,128,128,0.14)');
   // 水平网格 + Y 轴刻度（半像素对齐，细线不虚）
   ctx.strokeStyle = cGrid;
@@ -3890,7 +3942,7 @@ function _seriesPts(win, maxV, getVal, interp) {
   var plotW = s.W - padL - padR, plotH = s.H - padT - padB;
   var n = win.length;
   return win.map(function(p, i) {
-    var v = getVal(p);
+    var v = Math.max(0, getVal(p));   // 速度不允许负值（平滑曲线在 0 附近会下冲）
     if (interp) {   // 跨窗口插值：旧窗口按归一化位置采样后逐点 lerp
       v = getVal(_sampleAt(interp.fromWin, i / Math.max(1, n - 1))) * (1 - interp.e) + v * interp.e;
     }
@@ -3900,16 +3952,21 @@ function _seriesPts(win, maxV, getVal, interp) {
 }
 function drawTrafficChart() {
   var win = trafficHistory.slice(-(trafficRange * 60));
-  var maxV = _winMax(win);
-  _drawTrafficFrame(_seriesPts(win, maxV, function(p) { return p.up; }), _seriesPts(win, maxV, function(p) { return p.down; }), maxV);
-  _trafficPrevWin = win; _trafficPrevMax = maxV;
+  var drawn = _decimate(win, TRAFFIC_MAX_DRAWN);
+  var maxV = _winMax(drawn);
+  _drawTrafficFrame(_seriesPts(drawn, maxV, function(p) { return p.up; }), _seriesPts(drawn, maxV, function(p) { return p.down; }), maxV);
+  _trafficPrevWin = drawn; _trafficPrevMax = maxV;
+  _trafficDrawCount++;
+  _updateTrafficStats(win, drawn);
 }
 // 范围切换形变：按归一化位置对旧窗口采样，与新窗口逐点插值
 function _drawTrafficMorph(fromWin, toWin, fromMax, toMax, e) {
+  var fw = _decimate(fromWin, TRAFFIC_MAX_DRAWN), tw = _decimate(toWin, TRAFFIC_MAX_DRAWN);
   var maxV = fromMax + (toMax - fromMax) * e;
-  var interp = { fromWin: fromWin, e: e };
-  _drawTrafficFrame(_seriesPts(toWin, maxV, function(p) { return p.up; }, interp),
-                    _seriesPts(toWin, maxV, function(p) { return p.down; }, interp), maxV);
+  var interp = { fromWin: fw, e: e };
+  _drawTrafficFrame(_seriesPts(tw, maxV, function(p) { return p.up; }, interp),
+                    _seriesPts(tw, maxV, function(p) { return p.down; }, interp), maxV);
+  _trafficDrawCount++;
 }
 window.addEventListener('resize', function() { if (trafficHistory.length) drawTrafficChart(); });
 
@@ -3924,7 +3981,7 @@ function startTraffic() {
     try {
       const d = JSON.parse(ev.data);
       const up = d.up || 0, down = d.down || 0;
-      trafficHistory.push({up, down});
+      trafficHistory.push({up: up, down: down, t: Date.now()});
       if (trafficHistory.length > TRAFFIC_MAX_POINTS) trafficHistory.shift();
       const elUp = document.getElementById('trafficUp');
       const elDown = document.getElementById('trafficDown');
@@ -3940,6 +3997,14 @@ function startTraffic() {
   ws.onerror = () => { try { ws.close(); } catch (e) {} };
   // 初始画一次空网格
   trafficHistory = [];
+  if (!window._trafficFpsTimer) {
+    window._trafficFpsTimer = setInterval(function() {
+      _trafficFps = _trafficDrawCount;
+      _trafficDrawCount = 0;
+      var el = document.getElementById('tsFps');
+      if (el) el.textContent = _trafficFps;
+    }, 1000);
+  }
   drawTrafficChart();
   // 定期拉取连接信息（总流量 + 活跃连接数）
   updateTrafficTotals();
@@ -6805,7 +6870,7 @@ var I18N = {
     'sidebar.logs':'日志','sidebar.test':'测试','sidebar.settings':'设置','sidebar.panels':'面板',
     'home.subscription':'订阅','home.currentNode':'当前节点','home.proxyMode':'代理模式',
     'home.webTest':'网站测试','home.ipInfo':'IP 信息','home.clashInfo':'Clash 信息',
-    'home.systemInfo':'系统信息','home.trafficStats':'流量统计','traffic.trend':'速度趋势','traffic.range1':'1 分钟','traffic.range5':'5 分钟','traffic.range10':'10 分钟',
+    'home.systemInfo':'系统信息','home.trafficStats':'流量统计','traffic.trend':'速度趋势','traffic.range1':'1 分钟','traffic.range5':'5 分钟','traffic.range10':'10 分钟','traffic.smooth':'平滑',
     'home.from':'来自','home.updated':'更新时间','home.used':'已使用 / 总量','home.expire':'到期时间',
     'home.proxy':'代理','home.refresh':'刷新','home.startTest':'开始测速',
     'home.proxyGroup':'代理组','home.node':'节点',
@@ -6975,7 +7040,7 @@ var I18N = {
     'sidebar.logs':'Logs','sidebar.test':'Test','sidebar.settings':'Settings','sidebar.panels':'Panels',
     'home.subscription':'Subscription','home.currentNode':'Current Node','home.proxyMode':'Proxy Mode',
     'home.webTest':'Site Test','home.ipInfo':'IP Info','home.clashInfo':'Clash Info',
-    'home.systemInfo':'System Info','home.trafficStats':'Traffic','traffic.trend':'Speed Trend','traffic.range1':'1 min','traffic.range5':'5 min','traffic.range10':'10 min',
+    'home.systemInfo':'System Info','home.trafficStats':'Traffic','traffic.trend':'Speed Trend','traffic.range1':'1 min','traffic.range5':'5 min','traffic.range10':'10 min','traffic.smooth':'Smooth',
     'home.from':'From','home.updated':'Updated','home.used':'Used / Total','home.expire':'Expiry',
     'home.proxy':'Proxy','home.refresh':'Refresh','home.startTest':'Start Test',
     'home.proxyGroup':'Proxy Group','home.node':'Node',
