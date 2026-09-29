@@ -541,6 +541,16 @@ tbody tr:hover{background:var(--card2)}
 /* 设置 */
 
 .set-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;align-content:start;padding-bottom:32px}
+@media(max-width:860px){
+  /* 窄屏（手机/侧栏折叠）：设置卡片收拢为单列，避免两列各 ~155px 导致
+     标签折行、下拉值与输入框 placeholder 被截断 */
+  .set-grid{grid-template-columns:1fr;gap:12px}
+}
+@media(max-width:480px){
+  .set-item{padding:8px 14px;gap:10px}
+  .set-item .set-select, .set-item .custom-select{max-width:none}
+  .set-item .set-input-fill{min-width:0}
+}
 .set-col{display:flex;flex-direction:column;gap:14px;min-width:0}
 .set-card{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;min-height:80px;box-shadow:0 1px 2px rgba(0,0,0,.04)}
 .set-title{font-size:15px;font-weight:600;color:var(--text);padding:18px 20px 10px;letter-spacing:-.1px}
