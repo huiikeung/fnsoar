@@ -3289,7 +3289,10 @@ function saveSysProxyModal() {
 }
 
 // ── TUN 设置弹窗 ────────────────────
-function openTunModal() {
+async function openTunModal() {
+  document.getElementById('tunModal').style.display = 'flex';
+  // 打开时拉取最新 TUN 设置，保证弹窗与 config.yaml 源文件一致
+  try { const fresh = await fetchJSON('api/tun'); if (fresh) { netTunData = fresh; renderNetworkTun(); } } catch (e) {}
   const s = (netTunData && netTunData.settings) || {};
   document.getElementById('tmStack').value = s.stack || 'mixed';
   document.getElementById('tmMtu').value = s.mtu || 1500;
@@ -5804,6 +5807,8 @@ function loadVcfgSections(cfg) {
   var tunSection = cfg.match(/^tun:\s*\n([\s\S]*?)(?=^\S|(?![\s\S]))/m);
   var tunText = tunSection ? tunSection[0] : '';
   var vtm = document.getElementById('vcfgTunMtu'); if (vtm) { var mm = tunText.match(/mtu:\s*(\d+)/); vtm.value = mm ? mm[1] : '1500'; }
+  var vtmr = document.getElementById('vcfgTunAutoRoute'); if (vtmr) vtmr.checked = /auto-route:\s*true/.test(tunText);
+  var vmad = document.getElementById('vcfgTunAutoDetect'); if (vmad) vmad.checked = /auto-detect-interface:\s*true/.test(tunText);
   var vtar = document.getElementById('vcfgTunAutoRedirect'); if (vtar) vtar.checked = /auto-redirect:\s*true/.test(tunText);
   var vtsr = document.getElementById('vcfgTunStrictRoute'); if (vtsr) vtsr.checked = /strict-route:\s*true/.test(tunText);
   var vtdh = document.getElementById('vcfgTunDnsHijack'); if (vtdh) vtdh.checked = /dns-hijack:\s*\n(\s+-)/.test(tunText) || /dns-hijack:\s*\[[^\]]/.test(tunText);
