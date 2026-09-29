@@ -563,7 +563,8 @@ tbody tr:hover{background:var(--card2)}
 .net-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border:1px solid var(--border);background:var(--card2);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;transition:all .14s;white-space:nowrap}
 .net-tab svg{width:15px;height:15px;fill:currentColor;flex-shrink:0}
 .net-tab:hover{color:var(--text);border-color:var(--accent);border-style:dashed}
-.net-tab.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.net-tab.active{background:transparent;border-color:var(--border-soft);color:var(--dim);box-shadow:none}
+.net-tab.active.on{border-color:rgba(63,185,80,.45);color:var(--green)}
 .net-banner{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.5;color:var(--dim);background:var(--card2);border:1px solid var(--border-soft);margin-bottom:12px}
 .net-banner svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;margin-top:2px}
 .net-banner.ok{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.25);color:var(--green)}
@@ -1469,18 +1470,18 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <span class="flex-sp"></span>
           </div>
           <div class="net-tabs">
-            <button class="net-tab active" id="netTabProxy" onclick="switchNetTab('proxy')">
+            <button class="net-tab" id="netTabProxy" onclick="switchNetTab('proxy')">
               <svg viewBox="0 0 24 24"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/></svg>
               <span data-i18n="net.tabProxy">系统代理</span>
               <span class="net-tab-dot" id="netTabProxyDot"></span>
             </button>
-            <button class="net-tab" id="netTabTun" onclick="switchNetTab('tun')">
+            <button class="net-tab active" id="netTabTun" onclick="switchNetTab('tun')">
               <svg viewBox="0 0 24 24"><path d="M7.77 6.76L6.23 5.48L0.82 12L6.23 18.52L7.77 17.24L3.42 12ZM7 13h2v-2H7v2zm10-2h-2v2h2v-2zm-6 2h2v-2h-2v2zM16.23 6.76L17.77 5.48L23.18 12L17.77 18.52L16.23 17.24L20.58 12Z"/></svg>
               <span data-i18n="net.tabTun">虚拟网卡模式</span>
               <span class="net-tab-dot" id="netTabTunDot"></span>
             </button>
           </div>
-          <div id="netPanelProxy">
+          <div id="netPanelProxy" style="display:none">
             <div class="net-banner" id="netProxyBanner">
               <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
               <span id="netProxyBannerText">…</span>
@@ -1493,7 +1494,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <label class="toggle"><input type="checkbox" id="netProxyToggle" onchange="toggleSysProxy(this.checked)"><span class="toggle-track"></span></label>
             </div>
           </div>
-          <div id="netPanelTun" style="display:none">
+          <div id="netPanelTun">
             <div class="net-banner" id="netTunBanner">
               <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
               <span id="netTunBannerText">…</span>
@@ -3309,7 +3310,7 @@ function toggleTun() {
 }
 
 // ── 网络设置卡片（系统代理 / 虚拟网卡 TUN） ────────────────────
-let netTab = 'proxy';
+let netTab = 'tun';  // 网络设置默认选中虚拟网卡模式
 let netProxyData = null;   // /api/system-proxy 响应
 let netTunData = null;     // /api/tun 响应
 let _noProxyTags = [];
