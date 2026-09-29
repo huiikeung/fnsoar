@@ -629,6 +629,20 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .mx-note strong{color:#b76b10;font-weight:700;white-space:nowrap}
 /* 代理说明条（system-proxy-modal-note） */
 .mx-note-accent{margin:0;padding:9px 11px;border:1px solid rgba(98,127,230,.18);border-radius:9px;background:rgba(98,127,230,.05);color:var(--mx-muted);font-size:10.5px;line-height:1.55}
+.mx-divider{display:flex;align-items:center;gap:10px;margin:16px 0 10px;color:var(--mx-muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em}
+.mx-divider:before,.mx-divider:after{content:'';flex:1;height:1px;background:var(--mx-line)}
+.mx-files{display:grid;gap:8px}
+.mx-file{border:1px solid var(--mx-line);border-radius:10px;background:var(--mx-inset);padding:10px 12px}
+.mx-file-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.mx-file-path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;font-weight:600;color:var(--mx-text);word-break:break-all}
+.mx-file-badge{flex:none;font-size:10px;font-weight:600;padding:2px 9px;border-radius:999px;border:1px solid var(--mx-line);background:var(--mx-inset);color:var(--mx-muted)}
+.mx-file-badge.on{border-color:rgba(45,185,116,.35);background:rgba(45,185,116,.08);color:var(--mx-good)}
+.mx-file-vars{margin-top:8px;display:grid;gap:3px}
+.mx-file-var{display:flex;align-items:center;gap:10px;font-size:10.5px;line-height:1.5}
+.mx-var-key{flex:none;min-width:104px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:600;color:var(--mx-text)}
+.mx-var-value{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--mx-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mx-var-line{flex:none;font-size:9.5px;color:var(--mx-muted);opacity:.75}
+.mx-file-empty{font-size:10.5px;color:var(--mx-muted);margin-top:6px}
 @media(max-width:640px){.mx-grid2,.mx-grid3{grid-template-columns:1fr}.mx-grid3>.mx-tgl{min-height:62px}}
 
 /* 设置页 - 内核设置 */
@@ -1025,6 +1039,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               </div>
             </div>
             <p class="mx-note-accent" data-i18n="net.sysProxyNote">fnOS 使用 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 和 NO_PROXY 环境变量；修改主要对新启动的进程与新登录会话生效。</p>
+            <div class="mx-divider"><span data-i18n="net.detectTitle">当前检测结果</span></div>
+            <div class="mx-files" id="spFiles"></div>
           </div>
         </div>
       </div>
@@ -1985,7 +2001,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div class="set-item-left"><span class="set-item-label" data-i18n="vcfg.dnsResolve">DNS 与解析</span></div>
               <span class="set-chev">›</span>
             </div>
-            <div class="set-item set-item-chev" onclick="showSection('config')">
+            <div class="set-item set-item-chev" onclick="openSysProxyModal()">
               <div class="set-item-left"><span class="set-item-label" data-i18n="vcfg.env">环境变量</span></div>
               <span class="set-chev">›</span>
             </div>
@@ -3175,8 +3191,10 @@ function disableTun() {
 }
 
 // ── 系统代理设置弹窗 ────────────────────
-function openSysProxyModal() {
-  const d = netProxyData || {};
+async function openSysProxyModal() {
+  document.getElementById('sysProxyModal').style.display = 'flex';
+  let d = netProxyData || {};
+  try { const fresh = await fetchJSON('api/system-proxy'); if (fresh) { netProxyData = fresh; d = fresh; } } catch (e) {}
   const s = d.settings || {};
   const tg = s.targets || {};
   document.getElementById('spEnabled').checked = !!d.enabled;
@@ -3194,7 +3212,7 @@ function openSysProxyModal() {
   document.getElementById('spAddr').textContent = s.follow_mixed_port
     ? ('http://127.0.0.1:' + (s.port || 7890) + ' · ' + t('net.followPort'))
     : ('http://127.0.0.1:' + (s.port || 7890));
-  document.getElementById('sysProxyModal').style.display = 'flex';
+  renderProxyFiles();
 }
 function closeSysProxyModal() { document.getElementById('sysProxyModal').style.display = 'none'; }
 
@@ -3212,6 +3230,27 @@ function renderNoProxyTags() {
     span.appendChild(btn);
     box.insertBefore(span, input);
   });
+}
+// 渲染「当前检测结果」：逐文件展示代理环境变量（存在性 / 可读性 / 变量清单 + 行号）
+function renderProxyFiles() {
+  const box = document.getElementById('spFiles');
+  if (!box) return;
+  const files = (netProxyData || {}).files || [];
+  if (!files.length) { box.innerHTML = '<div class="mx-file-empty">' + t('net.detectEmpty') + '</div>'; return; }
+  box.innerHTML = files.map(f => {
+    const vars = f.variables || [];
+    const active = f.exists && f.readable !== false && vars.length > 0;
+    const badge = !f.exists ? t('net.fileNotExist')
+      : f.readable === false ? t('net.fileUnreadable')
+      : vars.length ? t('net.fileDetected') : t('net.fileUnset');
+    const list = vars.length
+      ? '<div class="mx-file-vars">' + vars.map(v =>
+          '<div class="mx-file-var"><span class="mx-var-key">' + esc(v.key) + '</span><span class="mx-var-value" title="' + esc(v.value) + '">' + esc(v.value) + '</span><span class="mx-var-line">L' + esc(String(v.line || '')) + '</span></div>'
+        ).join('') + '</div>'
+      : '<div class="mx-file-empty">' + t('net.fileNoVars') + '</div>';
+    return '<div class="mx-file"><div class="mx-file-head"><span class="mx-file-path">' + esc(f.path || '-') + '</span>'
+      + '<span class="mx-file-badge' + (active ? ' on' : '') + '">' + badge + '</span></div>' + list + '</div>';
+  }).join('');
 }
 function addNoProxyTag() {
   const input = document.getElementById('spTagInput');
@@ -6325,7 +6364,7 @@ var I18N = {
     'net.enableEnv':'启用代理环境变量','net.enableEnvHint':'关闭时仅移除本应用管理的配置',
     'net.followPortHint':'端口变化后自动同步系统代理','net.port':'代理端口','net.portHint':'关闭跟随后可手动指定',
     'net.tgtEnv':'系统登录环境','net.tgtProfile':'登录 Shell','net.tgtBashrc':'Bash 交互环境',
-    'net.sysProxyNote':'fnOS 使用 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 和 NO_PROXY 环境变量；修改主要对新启动的进程与新登录会话生效。',
+    'net.sysProxyNote':'fnOS 使用 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 和 NO_PROXY 环境变量；修改主要对新启动的进程与新登录会话生效。','net.detectTitle':'当前检测结果','net.detectEmpty':'未获取到检测数据','net.fileNotExist':'不存在','net.fileUnreadable':'不可读','net.fileDetected':'已检测到代理设置','net.fileUnset':'未设置','net.fileNoVars':'未设置代理环境变量',
     'net.toastProxyOn':'系统代理已开启','net.toastProxyOff':'系统代理已关闭',
     'net.toastProxyFail':'系统代理操作失败: ','net.toastProxySaved':'系统代理设置已保存',
     'net.confirmProxyOff':'确定要关闭系统代理吗？将移除本应用写入的环境变量托管块。',
@@ -6495,7 +6534,7 @@ var I18N = {
     'net.enableEnv':'Enable proxy env vars','net.enableEnvHint':'When off, only this app’s managed block is removed',
     'net.followPortHint':'Auto-sync when the port changes','net.port':'Proxy port','net.portHint':'Manual port when follow is off',
     'net.tgtEnv':'Login environment','net.tgtProfile':'Login shell','net.tgtBashrc':'Bash interactive',
-    'net.sysProxyNote':'fnOS uses HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and NO_PROXY env vars; changes apply mainly to newly started processes and login sessions.',
+    'net.sysProxyNote':'fnOS uses HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and NO_PROXY env vars; changes apply mainly to newly started processes and login sessions.','net.detectTitle':'Detection Results','net.detectEmpty':'No detection data','net.fileNotExist':'Not found','net.fileUnreadable':'Unreadable','net.fileDetected':'Proxy vars detected','net.fileUnset':'Not set','net.fileNoVars':'No proxy env vars set',
     'net.toastProxyOn':'System proxy enabled','net.toastProxyOff':'System proxy disabled',
     'net.toastProxyFail':'System proxy failed: ','net.toastProxySaved':'System proxy settings saved',
     'net.confirmProxyOff':'Turn off the system proxy? This removes the managed env-var block written by this app.',
