@@ -624,9 +624,12 @@ tbody tr:hover{background:var(--card2)}
 .mx-help{position:relative;display:inline-grid;place-items:center;width:16px;height:16px;min-height:0;padding:0;border:none;background:transparent;color:var(--mx-muted);line-height:1;cursor:help;vertical-align:middle;flex:none;transition:color .12s}
 .mx-help:hover{color:var(--accent2)}
 .mx-help svg{width:14px;height:14px;fill:currentColor}
-.mx-tip{position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);width:max-content;max-width:250px;padding:9px 12px;background:var(--card);border:1px solid var(--mx-line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:11px;font-weight:400;color:var(--mx-sub);line-height:1.65;text-align:left;white-space:normal;opacity:0;visibility:hidden;transition:opacity .14s;z-index:60;pointer-events:none;text-transform:none;letter-spacing:normal}
+.mx-tip{position:absolute;bottom:calc(100% + 8px);left:0;width:max-content;max-width:250px;padding:9px 12px;background:var(--card);border:1px solid var(--mx-line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:11px;font-weight:400;color:var(--mx-sub);line-height:1.65;text-align:left;white-space:normal;opacity:0;visibility:hidden;transition:opacity .14s;z-index:60;pointer-events:none;text-transform:none;letter-spacing:normal}
+.mx-tip::after{content:'';position:absolute;top:100%;left:9px;margin-left:-5px;border:5px solid transparent;border-top-color:var(--mx-line)}
 .mx-tip b{display:block;margin-bottom:2px;font-size:11.5px;font-weight:600;color:var(--mx-text)}
 .mx-help:hover .mx-tip{opacity:1;visibility:visible}
+.mx-tip.tip-down{bottom:auto;top:calc(100% + 8px)}
+.mx-tip.tip-down::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--mx-line)}
 .mx-input{width:100%;background:var(--mx-ctl);border:1px solid var(--mx-line);color:var(--mx-text);border-radius:8px;padding:8px 10px;outline:none;font-size:12.5px;font-family:inherit;transition:border-color .15s,box-shadow .15s}
 .mx-input:hover{border-color:var(--accent);border-style:dashed}
 .mx-input:focus{border-color:rgba(98,127,230,.65);box-shadow:0 0 0 3px rgba(98,127,230,.1)}
@@ -2708,6 +2711,19 @@ function csBuild(selectEl) {
 function csSyncAll() {
   document.querySelectorAll('select').forEach(function(s) { if (s._csRefresh) s._csRefresh(); });
 }
+// 帮助提示（.mx-tip）靠近滚动容器顶部时自动向下翻转，避免被 mx-body 裁剪
+document.addEventListener('mouseover', function(e) {
+  var btn = e.target && e.target.closest ? e.target.closest('.mx-help') : null;
+  if (!btn) return;
+  var tip = btn.querySelector('.mx-tip');
+  if (!tip) return;
+  var sc = btn.closest('.mx-body') || btn.closest('.modal-card');
+  if (!sc) return;
+  var sr = sc.getBoundingClientRect();
+  var br = btn.getBoundingClientRect();
+  var flip = (br.top - sr.top) < (tip.offsetHeight + 16);
+  if (tip.classList.contains('tip-down') !== flip) tip.classList.toggle('tip-down', flip);
+});
 function initNumSteppers() {
   document.querySelectorAll('input[type="number"]:not(.no-spin)').forEach(function(inp) {
     if (inp.closest('.num-spin')) return;
