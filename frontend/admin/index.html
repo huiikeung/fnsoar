@@ -522,6 +522,7 @@ tbody tr:hover{background:var(--card2)}
 .set-chev{color:var(--faint);font-size:18px;line-height:1;flex-shrink:0;transition:color .12s}
 .set-item-chev:hover .set-chev{color:var(--dim)}
 .set-input{width:100px;max-width:140px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--card);color:var(--text);font-size:14px;text-align:right;outline:none;font-variant-numeric:tabular-nums;transition:border-color .15s}
+.set-input.ext-input{width:140px;max-width:140px}
 .set-input:hover{border-color:var(--dim)}
 .set-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
 .set-select{padding:9px 34px 9px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);font-size:13.5px;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;max-width:150px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
@@ -6112,8 +6113,9 @@ function loadSettings() {
     // 加载外部控制器
     fetch('api/config').then(r => r.json()).then(function(d) {
       var cfg = d.config || '';
-      var m = cfg.match(/external-controller:\s*[\\'\\"]?([^\\'\\"\\n]+)[\\'\\"]?/i);
-      document.getElementById('setExtCtrl').textContent = (m && m[1]) ? m[1] : '-';
+      var m = cfg.match(/external-controller:\s*['"]?([^'"\r\n]+)['"]?/i);
+      var ec = (m && m[1]) ? m[1].trim() : '';
+      document.getElementById('setExtCtrl').textContent = ec ? ('http://' + ec.replace(/^https?:\/\//i, '')) : '-';
     }).catch(function(){});
     // 加载版本（使用已有缓存）
     if (_versionData) {
@@ -7162,9 +7164,9 @@ function showExtCtrlPopup() {
     + '<span onclick="document.getElementById(\'extCtrlOverlay\').remove()" style="cursor:pointer;font-size:18px;color:var(--dim);line-height:1;padding:4px">&times;</span>'
     + '</div>'
     + '<div style="padding:4px 20px 12px">'
-    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.host') + '</span></div><input class="set-input" id="extCtrlHost" style="width:auto;flex:1;max-width:none;text-align:left" placeholder="0.0.0.0"></div>'
-    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.port') + '</span></div><input type="number" class="set-input" id="extCtrlPort" style="width:auto;flex:1;max-width:none;text-align:left" placeholder="9090"></div>'
-    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.secret') + '</span></div><input class="set-input" id="extCtrlSecret" style="width:auto;flex:1;max-width:none;text-align:left" placeholder="' + (t('settings.optional') || 'Optional') + '" value=""></div>'
+    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.host') + '</span></div><input class="set-input ext-input" id="extCtrlHost" placeholder="0.0.0.0"></div>'
+    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.port') + '</span></div><input type="number" class="set-input ext-input" id="extCtrlPort" placeholder="9090"></div>'
+    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.secret') + '</span></div><input class="set-input ext-input" id="extCtrlSecret" placeholder="' + (t('settings.optional') || 'Optional') + '" value=""></div>'
     + '</div>'
     + '<div style="padding:12px 20px 16px;display:flex;gap:8px">'
     + '<button class="btn" onclick="document.getElementById(\'extCtrlOverlay\').remove()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px">'
@@ -7178,10 +7180,10 @@ function showExtCtrlPopup() {
   // 加载当前值
   fetch('api/config').then(r => r.json()).then(function(d) {
     var cfg = d.config || '';
-    var m = cfg.match(/external-controller:\s*[\\'\\"]?([^\\'\\"\\n]+)[\\'\\"]?/i);
+    var m = cfg.match(/external-controller:\s*['"]?([^'"\r\n]+)['"]?/i);
     var h = '0.0.0.0', p = '9090';
     if (m && m[1]) { var parts = m[1].split(':'); h = parts[0] || '0.0.0.0'; p = parts[1] || '9090'; }
-    var sec = cfg.match(/secret\s*:\s*[\\'\\"]?([^\\'\\"\\n]*)[\\'\\"]?/);
+    var sec = cfg.match(/^secret\s*:\s*['\"]?([^'\"\r\n]*)['\"]?/mi);
     document.getElementById('extCtrlHost').value = h;
     document.getElementById('extCtrlPort').value = p;
     document.getElementById('extCtrlSecret').value = (sec && sec[1]) ? sec[1] : '';
@@ -7210,7 +7212,7 @@ function saveExtCtrl() {
     fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: lines.join('\n') }) })
       .then(r => r.json()).then(function(res) {
         showToast(res.message || t('toast.saved'), res.success ? 'success' : 'error');
-        if (res.success) { var ov = document.getElementById('extCtrlOverlay'); if (ov) ov.remove(); document.getElementById('setExtCtrl').textContent = host + ':' + port; }
+        if (res.success) { var ov = document.getElementById('extCtrlOverlay'); if (ov) ov.remove(); document.getElementById('setExtCtrl').textContent = 'http://' + host + ':' + port; }
       });
   });
 }
