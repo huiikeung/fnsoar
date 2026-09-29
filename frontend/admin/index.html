@@ -3177,11 +3177,21 @@ async function openSysProxyModal() {
   document.getElementById('spTgtEnv').checked = tg.environment !== false;
   document.getElementById('spTgtProfile').checked = tg.profile !== false;
   document.getElementById('spTgtBashrc').checked = tg.bashrc !== false;
-  document.getElementById('spStatus').textContent = d.enabled ? t('net.enabledOn') : t('net.enabledOff');
-  document.getElementById('spStatus').className = d.enabled ? 'ok' : '';
-  document.getElementById('spAddr').textContent = s.follow_mixed_port
-    ? ('http://127.0.0.1:' + (s.port || 7890) + ' · ' + t('net.followPort'))
-    : ('http://127.0.0.1:' + (s.port || 7890));
+  renderSysProxyStatus(d);
+}
+// 渲染系统代理摘要 + 「当前检测结果」（打开弹窗与自动保存成功后共用）
+function renderSysProxyStatus(d) {
+  if (!d) return;
+  var s = d.settings || {};
+  var st = document.getElementById('spStatus');
+  if (st) { st.textContent = d.enabled ? t('net.enabledOn') : t('net.enabledOff'); st.className = d.enabled ? 'ok' : ''; }
+  var ad = document.getElementById('spAddr');
+  if (ad) {
+    ad.textContent = s.follow_mixed_port
+      ? ('http://127.0.0.1:' + (s.port || 7890) + ' · ' + t('net.followPort'))
+      : ('http://127.0.0.1:' + (s.port || 7890));
+  }
+  netProxyData = d;
   renderProxyFiles();
 }
 function closeSysProxyModal() { document.getElementById('sysProxyModal').style.display = 'none'; }
@@ -3255,6 +3265,7 @@ function saveSysProxyModal() {
     .then(r => r.json())
     .then(d => {
       if (d.success === false && d.error) throw new Error(d.error);
+      renderSysProxyStatus(d);  // 自动保存后立即刷新摘要与「当前检测结果」
       showToast(t('net.toastProxySaved'), 'success');
       refreshNetworkCard();
     })
