@@ -311,7 +311,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .traffic-axis{display:flex;justify-content:space-between;margin:2px 2px 0;font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums}
 .traffic-stats{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 0;font-size:10.5px;color:var(--faint)}
 .traffic-stats b{font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
-.traffic-smooth{padding:1px 7px;border:1px solid var(--border);border-radius:20px;font-size:10px}
+.traffic-smooth{padding:2px 8px;border:1px solid var(--border);border-radius:20px;font-size:10px;background:var(--card);color:var(--dim);cursor:pointer;transition:all .13s;font-family:inherit}
+.traffic-smooth:hover{border-color:var(--faint);color:var(--text)}
 .traffic-legend{display:flex;gap:14px;justify-content:flex-end;margin:6px 4px 2px;font-size:11px;color:var(--faint)}
 .traffic-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
 .traffic-total{font-size:12px;color:var(--dim)}
@@ -1626,7 +1627,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="traffic-axis" id="trafficAxis"><span id="tc0"></span><span id="tc1"></span><span id="tc2"></span><span id="tc3"></span><span id="tc4"></span></div>
             <div class="traffic-stats">
               <span>数据点: <b id="tsPts">0</b> | 压缩后: <b id="tsDrawn">0</b> | 帧率: <b id="tsFps">0</b></span>
-              <span class="traffic-smooth" data-i18n="traffic.smooth">平滑</span>
+              <button class="traffic-smooth" id="trafficSmoothTag" onclick="toggleTrafficSmooth()" data-i18n="traffic.smooth">平滑</button>
             </div>
           </div>
         </div>
@@ -3813,6 +3814,10 @@ function _hexA(hex, a) {  // #rrggbb → rgba()
 // Catmull-Rom → 三次贝塞尔：张力固定，任意点密度下平滑度一致且无过冲
 function _smoothStroke(ctx, pts, tension) {
   if (pts.length < 2) return;
+  if (!trafficSmooth) {           // 线性模式：直线段
+    for (var li = 1; li < pts.length; li++) ctx.lineTo(pts[li].x, pts[li].y);
+    return;
+  }
   ctx.moveTo(pts[0].x, pts[0].y);
   if (pts.length === 2) { ctx.lineTo(pts[1].x, pts[1].y); return; }
   for (var i = 0; i < pts.length - 1; i++) {
@@ -3847,6 +3852,7 @@ function _setupTrafficCanvas() {
   return { canvas: canvas, ctx: ctx, W: w, H: h };
 }
 const TRAFFIC_ANIM_MS = 320;
+let trafficSmooth = true;         // 曲线模式：true=平滑（贝塞尔） false=线性（直线）
 let _trafficRAF = 0, _trafficPrevWin = null, _trafficPrevMax = 1;
 
 const TRAFFIC_MAX_DRAWN = 150;   // 超过则等步长降采样（统计里的「压缩后」）
@@ -3875,6 +3881,13 @@ function _updateTrafficStats(win, drawn) {
       }
     }
   }
+}
+// 平滑/线性切换（参考 Verge 的平滑开关）
+function toggleTrafficSmooth() {
+  trafficSmooth = !trafficSmooth;
+  var el = document.getElementById('trafficSmoothTag');
+  if (el) el.textContent = t(trafficSmooth ? 'traffic.smooth' : 'traffic.linear');
+  drawTrafficChart();
 }
 function _winMax(win) {
   var m = 1;
@@ -3944,7 +3957,7 @@ function _seriesPts(win, maxV, getVal, interp) {
   return win.map(function(p, i) {
     var v = Math.max(0, getVal(p));   // 速度不允许负值（平滑曲线在 0 附近会下冲）
     if (interp) {   // 跨窗口插值：旧窗口按归一化位置采样后逐点 lerp
-      v = getVal(_sampleAt(interp.fromWin, i / Math.max(1, n - 1))) * (1 - interp.e) + v * interp.e;
+      v = Math.max(0, getVal(_sampleAt(interp.fromWin, i / Math.max(1, n - 1))) * (1 - interp.e) + v * interp.e);
     }
     return { x: padL + plotW * i / Math.max(1, n - 1),
              y: padT + plotH - (v / maxV) * plotH };
@@ -3980,7 +3993,8 @@ function startTraffic() {
   ws.onmessage = ev => {
     try {
       const d = JSON.parse(ev.data);
-      const up = d.up || 0, down = d.down || 0;
+      // 钳负：引擎计数器重置时 /traffic 会推负 delta，卡片与曲线都不应出现负值
+      const up = Math.max(0, d.up || 0), down = Math.max(0, d.down || 0);
       trafficHistory.push({up: up, down: down, t: Date.now()});
       if (trafficHistory.length > TRAFFIC_MAX_POINTS) trafficHistory.shift();
       const elUp = document.getElementById('trafficUp');
@@ -6870,7 +6884,7 @@ var I18N = {
     'sidebar.logs':'日志','sidebar.test':'测试','sidebar.settings':'设置','sidebar.panels':'面板',
     'home.subscription':'订阅','home.currentNode':'当前节点','home.proxyMode':'代理模式',
     'home.webTest':'网站测试','home.ipInfo':'IP 信息','home.clashInfo':'Clash 信息',
-    'home.systemInfo':'系统信息','home.trafficStats':'流量统计','traffic.trend':'速度趋势','traffic.range1':'1 分钟','traffic.range5':'5 分钟','traffic.range10':'10 分钟','traffic.smooth':'平滑',
+    'home.systemInfo':'系统信息','home.trafficStats':'流量统计','traffic.trend':'速度趋势','traffic.range1':'1 分钟','traffic.range5':'5 分钟','traffic.range10':'10 分钟','traffic.smooth':'平滑','traffic.linear':'线性',
     'home.from':'来自','home.updated':'更新时间','home.used':'已使用 / 总量','home.expire':'到期时间',
     'home.proxy':'代理','home.refresh':'刷新','home.startTest':'开始测速',
     'home.proxyGroup':'代理组','home.node':'节点',
@@ -7040,7 +7054,7 @@ var I18N = {
     'sidebar.logs':'Logs','sidebar.test':'Test','sidebar.settings':'Settings','sidebar.panels':'Panels',
     'home.subscription':'Subscription','home.currentNode':'Current Node','home.proxyMode':'Proxy Mode',
     'home.webTest':'Site Test','home.ipInfo':'IP Info','home.clashInfo':'Clash Info',
-    'home.systemInfo':'System Info','home.trafficStats':'Traffic','traffic.trend':'Speed Trend','traffic.range1':'1 min','traffic.range5':'5 min','traffic.range10':'10 min','traffic.smooth':'Smooth',
+    'home.systemInfo':'System Info','home.trafficStats':'Traffic','traffic.trend':'Speed Trend','traffic.range1':'1 min','traffic.range5':'5 min','traffic.range10':'10 min','traffic.smooth':'Smooth','traffic.linear':'Linear',
     'home.from':'From','home.updated':'Updated','home.used':'Used / Total','home.expire':'Expiry',
     'home.proxy':'Proxy','home.refresh':'Refresh','home.startTest':'Start Test',
     'home.proxyGroup':'Proxy Group','home.node':'Node',
