@@ -25,6 +25,7 @@
   --red:#f85149;
   --yellow:#d29922;
   --blue:#3b82f6;      /* 流量图-下载 */
+  --purple:#8b5cf6;    /* 代理模式-全局 */
   --on-accent:#fff;      /* 强调色块上的文字 */
   --grid-line:rgba(255,255,255,.06); /* 流量图网格线 */
   --log-bg:#0a0a0c;      /* 日志区背景 */
@@ -46,7 +47,7 @@
   --accent2:#3b5bdb;
   --green:#2e9e4f;
   --red:#e03131;
-  --yellow:#b8860b;--blue:#3b82f6;
+  --yellow:#b8860b;--blue:#3b82f6;--purple:#7c4dcc;
   --on-accent:#fff;
   --grid-line:rgba(0,0,0,.08);
   --log-bg:#f8f9fa;
@@ -574,9 +575,20 @@ tbody tr:hover{background:var(--card2)}
 .net-banner{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.5;color:var(--dim);background:var(--card2);border:1px solid var(--border-soft);margin-bottom:12px}
 .net-banner svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;margin-top:2px}
 .net-banner.ok{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.25);color:var(--green)}
-.mode-tabs{margin-bottom:8px}
-.mode-tabs .net-tab.active{color:var(--accent);border-color:rgba(78,110,242,.45);background:transparent}
-.mode-tabs .net-tab.active::after{background:var(--accent)}
+.mode-tabs{margin-bottom:10px}
+.mode-tabs .net-tab{padding:14px 10px;font-size:13.5px;gap:8px;border-radius:12px}
+.mode-tabs .net-tab svg{width:17px;height:17px}
+/* 三种模式各自主题色：选中 pill 文字/边框 + 连接线 */
+#home-mode.mt-rule .net-tab.active{color:var(--accent);border-color:rgba(78,110,242,.45)}
+#home-mode.mt-rule .net-tab.active::after{background:var(--accent)}
+#home-mode.mt-global .net-tab.active{color:var(--purple);border-color:rgba(139,92,246,.45)}
+#home-mode.mt-global .net-tab.active::after{background:var(--purple)}
+#home-mode.mt-direct .net-tab.active{color:var(--green);border-color:rgba(63,185,80,.45)}
+#home-mode.mt-direct .net-tab.active::after{background:var(--green)}
+/* 提示横幅跟随主题色 */
+#home-mode.mt-rule .net-banner{background:rgba(78,110,242,.08);border-color:rgba(78,110,242,.22);color:var(--accent)}
+#home-mode.mt-global .net-banner{background:rgba(139,92,246,.08);border-color:rgba(139,92,246,.22);color:var(--purple)}
+#home-mode.mt-direct .net-banner{background:rgba(63,185,80,.08);border-color:rgba(63,185,80,.22);color:var(--green)}
 .net-banner.warn{background:rgba(210,153,34,.1);border-color:rgba(210,153,34,.25);color:var(--yellow)}
 .net-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2)}
 .net-dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex-shrink:0;transition:background .2s,box-shadow .2s}
@@ -1452,7 +1464,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
         </div>
 
         <!-- 代理模式（长方形块） -->
-        <div class="hcard" id="home-mode">
+        <div class="hcard mt-rule" id="home-mode">
           <div class="hcard-title">
             <span class="hcard-ic mode"><svg viewBox="0 0 24 24"><path d="M20.2 5.9l.8-.8C19.6 3.7 17.8 3 16 3s-3.6.7-5 2.1l.8.8C13 4.8 14.5 4.2 16 4.2s3 .6 4.2 1.7zm-.9.9c-.9-.9-2.1-1.4-3.3-1.4s-2.4.5-3.3 1.4l.8.8c.7-.7 1.6-1 2.5-1s1.8.3 2.5 1l.8-.8zM19 13h-2V9h-2v4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM7 18H5v-2h2v2zm12 0H9v-2h10v2z"/></svg></span>
             <span class="hcard-name">代理模式</span>
@@ -3180,6 +3192,12 @@ function typeLabel(t) {
 function updateModeDesc(mode) {
   const el = document.getElementById('modeDesc');
   if (el) el.textContent = t('mode.desc.' + mode) || '';
+  // 主题色跟随模式（选中 pill / 连接线 / 提示横幅三处联动）
+  const card = document.getElementById('home-mode');
+  if (card) {
+    card.classList.remove('mt-rule', 'mt-global', 'mt-direct');
+    card.classList.add('mt-' + (mode || 'rule'));
+  }
 }
 
 // ── 模式切换 ───────────────────────────────
