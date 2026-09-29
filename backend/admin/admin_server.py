@@ -39,24 +39,29 @@ SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
 CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
 # ── 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 ──────────────
 PROFILE_EXT_FILE = f"{TRIM_PKGVAR}/profile-ext.json"
-DEFAULT_MERGE_CONFIG = """# Profile Enhancement Merge Template for Clash Verge
+DEFAULT_MERGE_CONFIG = """# 全局扩展覆写模板（对所有订阅生效，深合并进 config.yaml）
+# 语义：字典递归合并；列表整体覆盖。取消注释或自行增删后保存生效。
 
-profile:
-  store-selected: true
-
-# 前置规则
-prepend-rules:
-  # AI 镜像站点
-  - DOMAIN-SUFFIX,zw.puua,DIRECT
-
-# 前置规则集
+# 前置规则集：中国网站直连（Loyalsoldier 社区列表，按天更新）
 prepend-rule-providers:
   china_sites:
     type: http
     behavior: domain
     url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt"
+    path: ./ruleset/china_sites.yaml
+    interval: 86400
+
+# 前置规则（置于规则列表最前，优先匹配）
+prepend-rules:
+  # 中国网站直连
+  - RULE-SET,china_sites,DIRECT
+  # AI 镜像站点直连示例（国内可直连的 AI 镜像，按需取消注释）
+  # - DOMAIN-SUFFIX,wzw.pp.ua,DIRECT
+  # - DOMAIN-SUFFIX,runanytime.hxi.me,DIRECT
+  # - DOMAIN-SUFFIX,fu520.top,DIRECT
 """
-DEFAULT_GLOBAL_SCRIPT = """// Define main function
+DEFAULT_GLOBAL_SCRIPT = """// Define main function (script entry)
+
 function main(config, profileName) {
   return config;
 }
