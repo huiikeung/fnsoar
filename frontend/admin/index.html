@@ -1561,7 +1561,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
         <div class="modal-card pe-modal">
           <div class="modal-title">全局扩展覆写配置</div>
           <div class="modal-body">
-            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅生效，在应用设置之后合并；后续的全局脚本、订阅扩展配置和订阅脚本仍可修改结果。<br>执行顺序：订阅原文 → 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 订阅扩展配置 → 订阅扩展脚本 → 应用设置回写<br>注意：由应用设置接管的字段最终以应用设置为准，在扩展配置或脚本中修改这些字段不会生效。</span></div>
+            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅的配置写入生效；应用设置已随配置合入，本模板在其之上深合并（字典递归合并、列表整体覆盖）。<br>执行顺序：订阅原文 + 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在此模板中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
             <div class="ce-wrap"><div class="ce-gutter" id="peMergeGutter"></div><textarea class="ce-area" id="peMergeText" spellcheck="false" wrap="off" placeholder="# 在此编写 YAML 合并模板" oninput="ceSync('peMerge')" onscroll="ceScroll('peMerge')"></textarea></div>
           </div>
           <div class="pe-foot">
@@ -1578,7 +1578,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
         <div class="modal-card pe-modal">
           <div class="modal-title">全局扩展脚本</div>
           <div class="modal-body">
-            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅生效，接收全局扩展配置合并后的结果；后续的订阅扩展配置和订阅脚本仍可修改结果。<br>执行顺序：订阅原文 → 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 订阅扩展配置 → 订阅扩展脚本 → 应用设置回写<br>注意：由应用设置接管的字段最终以应用设置为准，在扩展配置或脚本中修改这些字段不会生效。</span></div>
+            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅的配置写入生效，在全局扩展配置合并之后由本机 node 执行（超时 10 秒，node 缺失或报错时跳过、不影响保存）。<br>函数签名：<b>function main(config, profileName) { return config; }</b>，返回修改后的配置对象。<br>执行顺序：订阅原文 + 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在脚本中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
             <div class="ce-wrap"><div class="ce-gutter" id="peScriptGutter"></div><textarea class="ce-area" id="peScriptText" spellcheck="false" wrap="off" placeholder="// function main(config, profileName) { return config; }" oninput="ceSync('peScript')" onscroll="ceScroll('peScript')"></textarea></div>
           </div>
           <div class="pe-foot">

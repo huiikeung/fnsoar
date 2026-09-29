@@ -39,6 +39,17 @@ SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
 CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
 # ── 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 ──────────────
 PROFILE_EXT_FILE = f"{TRIM_PKGVAR}/profile-ext.json"
+# 应用设置接管的字段：全局扩展（合并/脚本）改不动这些，最终以应用设置为准
+APP_MANAGED_KEYS = (
+    "mode", "log-level", "tcp-concurrent", "find-process-mode",
+    "external-controller", "external-ui", "external-ui-url", "secret",
+    "geo-auto-update", "geo-update-interval",
+    "mixed-port", "port", "socks-port", "redir-port", "tproxy-port",
+    "bind-address", "allow-lan", "ipv6", "unified-delay", "host-transparent",
+    "profile", "geodata-mode", "geodata-loader", "global-ua",
+    "keep-alive-interval", "authentication",
+)
+APP_MANAGED_SECTIONS = ("tun", "dns", "sniffer", "geox-url", "x-fnsoar")
 DEFAULT_MERGE_CONFIG = """# 全局扩展覆写模板（对所有订阅生效，深合并进 config.yaml）
 # 语义：字典递归合并；列表整体覆盖。取消注释或自行增删后保存生效。
 
@@ -575,11 +586,30 @@ def _run_profile_script(config_text, script):
         return config_text
 
 def _apply_profile_ext(cfg_text):
-    """配置写库前应用全局扩展：先深合并 merge 模板，再执行全局脚本。
-    任一步无实质变化则保持原文（不触发 YAML 重排/注释丢失）。"""
+    """配置写库前应用全局扩展（执行顺序与弹窗声明一致）：
+    订阅原文 + 应用设置（已在 cfg_text 中）→ 全局扩展配置（深合并）
+    → 全局扩展脚本（node）→ 应用设置回写（设置字段恢复为扩展前的值）。
+    未配置扩展时原文返回；任一步无实质变化不触发 YAML 重排。"""
     ext = _read_profile_ext()
-    text = cfg_text
     merge = (ext.get("merge_config") or "").strip()
+    script = (ext.get("script") or "").strip()
+    if not merge and not script:
+        return cfg_text
+    text = cfg_text
+    # 1) 快照「应用设置接管」字段（扩展前的值即应用设置）
+    snap = {}
+    try:
+        base = yaml.safe_load(text) or {}
+        if isinstance(base, dict):
+            for k in APP_MANAGED_KEYS:
+                if k in base:
+                    snap[k] = base[k]
+            for s in APP_MANAGED_SECTIONS:
+                if s in base:
+                    snap[s] = base[s]
+    except Exception:
+        snap = {}
+    # 2) 全局扩展配置：深合并
     if merge:
         try:
             base = yaml.safe_load(text) or {}
@@ -590,9 +620,18 @@ def _apply_profile_ext(cfg_text):
                     text = yaml.safe_dump(merged, allow_unicode=True, sort_keys=False)
         except Exception as e:
             print("[profile-ext] 合并模板解析失败: " + str(e)[:300], file=sys.stderr)
-    script = (ext.get("script") or "").strip()
+    # 3) 全局扩展脚本
     if script:
         text = _run_profile_script(text, ext.get("script") or "")
+    # 4) 应用设置回写：设置字段恢复为扩展前快照（扩展改不动）
+    if snap:
+        try:
+            final = yaml.safe_load(text) or {}
+            if isinstance(final, dict) and any(final.get(k) != v for k, v in snap.items()):
+                final.update(snap)
+                text = yaml.safe_dump(final, allow_unicode=True, sort_keys=False)
+        except Exception as e:
+            print("[profile-ext] 应用设置回写失败: " + str(e)[:300], file=sys.stderr)
     return text
 
 def write_config(content):
