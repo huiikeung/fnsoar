@@ -220,11 +220,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .custom-select-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
 .mode-big{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
 .mode-big-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px 8px;border-radius:12px;border:1.5px solid var(--border);background:var(--card2);color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;transition:all .12s}
-.mode-big-btn:hover{border-color:var(--faint)}
+.mode-big-btn:hover{border-color:var(--accent);border-style:dashed}
 .mode-big-btn.active{border-color:var(--accent);background:var(--accent);color:var(--on-accent)}
 .mbig-ic{font-size:22px}
 .mbig-ic svg{width:24px;height:24px;fill:currentColor;stroke:none;display:block;margin:auto}
-.mode-desc{border:1px solid rgba(78,110,242,.4);background:rgba(78,110,242,.08);border-radius:10px;padding:9px 12px;font-size:12px;color:var(--accent2);line-height:1.5}
+.mode-desc{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--border-soft);background:var(--card2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--dim);line-height:1.6}
+.mode-desc-ic{width:14px;height:14px;flex-shrink:0;margin-top:2.5px;fill:currentColor;opacity:.65}
 
 /* ── 网站测试风格 ────────────────── */
 .test-scroll{max-height:200px;overflow-y:auto;overflow-x:hidden}
@@ -280,6 +281,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .info-item{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;min-width:0;overflow:hidden}
 .i-label{font-size:11px;color:var(--dim);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .i-val{font-size:13px;font-weight:600;line-height:1.4;overflow:hidden;text-overflow:ellipsis;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.i-val.iv-row{display:flex;align-items:center;justify-content:space-between;gap:8px;-webkit-line-clamp:unset}
+.iv-num{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600}
+.iv-pct{flex:none;font-size:10px;font-weight:600;color:var(--dim);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1px 6px;white-space:nowrap;line-height:1.5}
 .traffic-speed-row{display:flex;gap:14px;margin-bottom:12px;flex-wrap:wrap}
 .traffic-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
 .traf-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;flex-direction:column;gap:8px}
@@ -551,7 +555,7 @@ tbody tr:hover{background:var(--card2)}
 .net-tabs{display:flex;gap:8px;margin:0 0 12px}
 .net-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border:1px solid var(--border);background:var(--card2);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;transition:all .14s;white-space:nowrap}
 .net-tab svg{width:15px;height:15px;fill:currentColor;flex-shrink:0}
-.net-tab:hover{color:var(--text);border-color:var(--dim)}
+.net-tab:hover{color:var(--text);border-color:var(--accent);border-style:dashed}
 .net-tab.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 .net-banner{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.5;color:var(--dim);background:var(--card2);border:1px solid var(--border-soft);margin-bottom:12px}
 .net-banner svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;margin-top:2px}
@@ -1287,7 +1291,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <span class="mbig-ic"><svg viewBox="0 0 24 24"><path d="M13,2L3,14H12L10,22L21,10H12L13,2Z"/></svg></span><span>直连</span>
             </button>
           </div>
-          <div class="mode-desc" id="modeDesc">基于预设规则智能判断流量走向，提供灵活的代理策略</div>
+          <div class="mode-desc"><svg class="mode-desc-ic" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span id="modeDesc">基于预设规则智能判断流量走向，提供灵活的代理策略</span></div>
         </div>
 
         <!-- 网络设置（系统代理 / 虚拟网卡 TUN） -->
@@ -1395,8 +1399,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
           </div>
           <div class="info-grid info-scroll" id="sysInfo" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
             <div class="info-item"><div class="i-label">CPU 使用率</div><div class="i-val" id="siCpu">-</div></div>
-            <div class="info-item"><div class="i-label">内存使用</div><div class="i-val" id="siMem">-</div></div>
-            <div class="info-item"><div class="i-label">磁盘使用</div><div class="i-val" id="siDisk">-</div></div>
+            <div class="info-item"><div class="i-label">内存使用</div><div class="i-val iv-row" id="siMem">-</div></div>
+            <div class="info-item"><div class="i-label">磁盘使用</div><div class="i-val iv-row" id="siDisk">-</div></div>
             <div class="info-item"><div class="i-label">系统负载</div><div class="i-val" id="siLoad">-</div></div>
             <div class="info-item"><div class="i-label">运行时间</div><div class="i-val" id="siUptime">-</div></div>
             <div class="info-item"><div class="i-label">主机名</div><div class="i-val" id="siHost">-</div></div>
@@ -3513,6 +3517,27 @@ function fmtSpeed(b) {
   if (b < 1048576) return (b/1024).toFixed(1) + ' KB/s';
   return (b/1048576).toFixed(2) + ' MB/s';
 }
+// 用量一行显示：紧凑用量 + 百分比徽章（同单位时省略重复单位；大数字减少小数位）
+function _fmtCompact(bytes) {
+  var parts = fmtBytes(bytes).split(' ');
+  var num = parseFloat(parts[0]);
+  var unit = parts[1] || '';
+  var v;
+  if (num < 10) v = num.toFixed(2);
+  else if (num < 100) v = num.toFixed(1);
+  else v = String(Math.round(num));
+  return v + (unit ? ' ' + unit : '');
+}
+function _fmtUsedTotal(used, total) {
+  var a = _fmtCompact(used), b = _fmtCompact(total);
+  var ua = a.split(' ')[1];
+  if (ua && b.split(' ')[1] === ua) return a.split(' ')[0] + ' / ' + b;
+  return a + ' / ' + b;
+}
+function _ivRow(used, total, pct) {
+  return '<span class="iv-num">' + esc(_fmtUsedTotal(used, total)) + '</span>'
+    + '<span class="iv-pct">' + pct + '%</span>';
+}
 function fmtUptime(secs) {
   const h = Math.floor(secs/3600), m = Math.floor(secs%3600/60), s = secs%60;
   if (h > 0) return h + 'h ' + m + 'm';
@@ -3615,10 +3640,10 @@ async function loadSystemInfo() {
   if (!d) return;
   if (d.cpu_percent != null) document.getElementById('siCpu').textContent = d.cpu_percent + '%';
   if (d.mem_percent != null && d.mem_total) {
-    document.getElementById('siMem').textContent = d.mem_percent + '% · ' + fmtBytes(d.mem_used) + ' / ' + fmtBytes(d.mem_total);
+    document.getElementById('siMem').innerHTML = _ivRow(d.mem_used, d.mem_total, d.mem_percent);
   }
   if (d.disk_percent != null && d.disk_total) {
-    document.getElementById('siDisk').textContent = d.disk_percent + '% · ' + fmtBytes(d.disk_used) + ' / ' + fmtBytes(d.disk_total);
+    document.getElementById('siDisk').innerHTML = _ivRow(d.disk_used, d.disk_total, d.disk_percent);
   }
   if (d.load1) document.getElementById('siLoad').textContent = d.load1 + ' / ' + d.load5 + ' / ' + d.load15;
   if (d.uptime) document.getElementById('siUptime').textContent = fmtUptime(Math.floor(d.uptime));
