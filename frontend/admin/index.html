@@ -228,13 +228,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .mode-desc-ic{width:14px;height:14px;flex-shrink:0;margin-top:2.5px;fill:currentColor;opacity:.65}
 
 /* ── 网站测试风格 ────────────────── */
-.test-scroll{max-height:200px;overflow-y:auto;overflow-x:hidden}
+.test-scroll{max-height:260px;overflow-y:auto;overflow-x:hidden}
 .test-scroll::-webkit-scrollbar{width:5px}
 .test-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.test-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:transparent;color:var(--dim);cursor:pointer;transition:all .12s}
-.test-icon-btn:hover{background:var(--card2);color:var(--text)}
-.test-icon-btn:disabled{opacity:.4;cursor:not-allowed}
-.test-icon-btn svg{width:18px;height:18px}
 .test-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
 @media(max-width:640px){.test-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:420px){.test-grid{grid-template-columns:repeat(2,1fr)}}
@@ -243,6 +239,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .test-card.active{border-color:var(--accent);background:rgba(78,110,242,.1)}
 .test-card-ic{width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#fff;flex-shrink:0;margin-bottom:6px}
 .test-card-ic.g{background:transparent}
+.test-card-add{min-height:119px;justify-content:center;padding:10px 8px;border:1px dashed var(--border);background:transparent;cursor:pointer}
+.test-card-add .test-card-name{display:none}
+.test-card-add:hover{border-color:var(--accent);border-style:dashed;background:rgba(78,110,242,.09)}
+.test-card-add .test-card-ic.add{background:transparent;border:1px solid var(--border);color:var(--dim);border-radius:50%;width:44px;height:44px;margin-bottom:0}
+.test-card-add .test-card-ic.add svg{width:20px;height:20px;fill:currentColor}
+.test-card-add:hover .test-card-ic.add{color:var(--accent);border-color:var(--accent)}
 .test-card-ic.y{background:transparent}
 .test-card-ic.gh{background:transparent}
 .test-card-ic.cf{background:transparent}
@@ -552,7 +554,12 @@ tbody tr:hover{background:var(--card2)}
 .toggle input:checked+.toggle-track{background:var(--accent)}
 .toggle input:checked+.toggle-track::after{transform:translateX(18px);box-shadow:0 1px 3px rgba(0,0,0,.2),0 0 0 1px rgba(0,0,0,.06)}
 /* ── 网络设置卡片（系统代理 / 虚拟网卡 TUN） ── */
-.net-tabs{display:flex;gap:8px;margin:0 0 12px}
+.net-tabs{display:flex;gap:8px;margin:0 0 8px}
+.net-tab-dot{display:none;width:6px;height:6px;border-radius:50%;background:var(--green);flex:none;margin-left:1px}
+.net-tab.on .net-tab-dot{display:inline-block}
+.net-tab{position:relative}
+.net-tab.active::after{content:'';position:absolute;left:50%;bottom:-8px;width:2px;height:8px;transform:translateX(-50%);background:var(--faint);border-radius:0 0 1px 1px;transition:background .15s}
+.net-tab.active.on::after{background:var(--green)}
 .net-tab{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px 10px;border:1px solid var(--border);background:var(--card2);border-radius:10px;font-size:12.5px;font-weight:600;color:var(--dim);cursor:pointer;transition:all .14s;white-space:nowrap}
 .net-tab svg{width:15px;height:15px;fill:currentColor;flex-shrink:0}
 .net-tab:hover{color:var(--text);border-color:var(--accent);border-style:dashed}
@@ -1189,6 +1196,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <span class="mx-close" onclick="closeSysProxyModal()" title="关闭">&times;</span>
           </div>
           <div class="mx-body">
+            <div class="net-banner" id="spModalBanner"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span id="spModalBannerText">-</span></div>
             <div>
               <div class="mx-cap" style="margin-bottom:6px" data-i18n="net.currentProxy">当前系统代理</div>
               <div class="mx-summary">
@@ -1239,6 +1247,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <p class="mx-note-accent" data-i18n="net.sysProxyNote">fnOS 使用 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 和 NO_PROXY 环境变量；修改主要对新启动的进程与新登录会话生效。</p>
             <div class="mx-divider"><span data-i18n="net.detectTitle">当前检测结果</span></div>
             <div class="mx-files" id="spFiles"></div>
+            <div class="mx-note"><svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:var(--accent2);flex-shrink:0;margin-top:2px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span><strong data-i18n="net.spAboutTitle">关于系统代理（环境变量方式）</strong>　<span data-i18n="net.spAbout" data-i18n-html>通过向 /etc/environment、/etc/profile、/etc/bash.bashrc 写入 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY 环境变量，让<b>读取这些变量的程序</b>经 127.0.0.1 端口走代理。<br>✅ <b>生效</b>：新登录的终端会话，以及从这些会话启动的程序（curl / apt / git / pip 等）<br>❌ <b>不生效</b>：fnOS 系统服务、Docker 容器（容器不继承宿主环境变量，需单独为 Docker 配代理）<br>🔗 <b>与虚拟网卡（TUN）的关系</b>：TUN 开启时全部流量（含命令行、Docker、系统服务）已走代理，此项为可选补充；TUN 关闭时由它负责让命令行等程序走代理。两者不冲突，可按需同时开启。</span></span></div>
           </div>
         </div>
       </div>
@@ -1299,11 +1308,11 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             </div>
             <div class="mx-note">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:#b76b10;flex-shrink:0;margin-top:1px"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
-              <span><strong data-i18n="net.attention">注意</strong>　<span data-i18n="net.tunNote">TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。</span></span>
+              <span><strong data-i18n="net.attention">注意</strong>　<span data-i18n="net.tunNote" data-i18n-html>TUN 通过创建虚拟网卡并接管系统路由与 DNS 流向实现<b>透明代理</b>：所有从 NAS 发出的流量（命令行、Docker 容器、系统服务）按规则分流，程序无需任何配置。默认关闭；若配置不可用可能影响 NAS 访问互联网。已内置「自动检测出口网卡 + 关闭自动重定向」防自环保护，一般无需改动。</span></span>
             </div>
             <div class="mx-note">
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:#4a7bd6;flex-shrink:0;margin-top:1px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-              <span><strong data-i18n="net.tunHostRedirTitle">与系统代理的关系</strong>　<span data-i18n="net.tunHostRedirNote">两者不必同时开：关闭 TUN 时引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）；只有需要 UDP/QUIC 或完整 DNS 分流时才开 TUN。系统代理（环境变量）则只影响命令行等主动读变量的程序。</span></span>
+              <span><strong data-i18n="net.tunHostRedirTitle">与系统代理的关系</strong>　<span data-i18n="net.tunHostRedirNote" data-i18n-html>两者不必同时开，也不互相依赖：<br>• <b>只开 TUN</b>：全部流量（命令行 / Docker / 系统服务）走代理，最彻底——日常推荐<br>• <b>只开系统代理</b>：仅新终端会话里读环境变量的程序走代理，覆盖最小<br>• <b>关闭 TUN 时</b>引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）<br>需要 UDP/QUIC 或完整 DNS 分流时才开 TUN；系统代理（环境变量）只影响命令行等主动读变量的程序。</span></span>
             </div>
           </div>
         </div>
@@ -1463,10 +1472,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <button class="net-tab active" id="netTabProxy" onclick="switchNetTab('proxy')">
               <svg viewBox="0 0 24 24"><path d="M21 2H3c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h7v2H8v2h8v-2h-2v-2h7c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H3V4h18v12z"/></svg>
               <span data-i18n="net.tabProxy">系统代理</span>
+              <span class="net-tab-dot" id="netTabProxyDot"></span>
             </button>
             <button class="net-tab" id="netTabTun" onclick="switchNetTab('tun')">
               <svg viewBox="0 0 24 24"><path d="M7.77 6.76L6.23 5.48L0.82 12L6.23 18.52L7.77 17.24L3.42 12ZM7 13h2v-2H7v2zm10-2h-2v2h2v-2zm-6 2h2v-2h-2v2zM16.23 6.76L17.77 5.48L23.18 12L17.77 18.52L16.23 17.24L20.58 12Z"/></svg>
               <span data-i18n="net.tabTun">虚拟网卡模式</span>
+              <span class="net-tab-dot" id="netTabTunDot"></span>
             </button>
           </div>
           <div id="netPanelProxy">
@@ -1503,8 +1514,8 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <span class="hcard-ic test"><svg viewBox="0 0 24 24"><path d="M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z"/></svg></span>
             <span class="hcard-name">网站测试</span>
             <span class="flex-sp"></span>
-            <button class="test-icon-btn" id="testBtn" onclick="runWebTest()" title="测速"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.9 5c-.17 0-.32.09-.41.23l-.07.15-5.18 11.65c-.16.29-.26.61-.26.96 0 1.11.9 2.01 2.01 2.01.96 0 1.77-.68 1.96-1.59l.01-.03L16.4 5.5c0-.28-.22-.5-.5-.5M2.06 10.06c.51.51 1.33.55 1.89.09 2.76-2.26 6.24-3.18 9.58-2.76l1.19-2.68c-4.35-.78-8.96.3-12.57 3.25-.64.53-.68 1.51-.09 2.1m19.88 0c.59-.59.55-1.57-.1-2.1-1.36-1.11-2.86-1.95-4.44-2.53l-.53 2.82c1.13.47 2.19 1.09 3.17 1.89.58.46 1.39.43 1.9-.08m-4.03 4.03c.6-.6.56-1.63-.14-2.12-.46-.33-.94-.61-1.44-.86l-.55 2.92c.11.07.22.14.32.22.57.4 1.33.32 1.81-.16m-11.83-.01c.5.5 1.27.54 1.85.13.94-.66 2.01-1.06 3.1-1.22l1.28-2.88c-2.13-.06-4.28.54-6.09 1.84-.69.51-.74 1.53-.14 2.13"/></svg></button>
-            <button class="test-icon-btn" onclick="openTestAddModal()" title="添加"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></button>
+            <button class="mini-btn mini-btn-ic" id="testBtn" onclick="runWebTest()" title="测速" aria-label="测速"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.9 5c-.17 0-.32.09-.41.23l-.07.15-5.18 11.65c-.16.29-.26.61-.26.96 0 1.11.9 2.01 2.01 2.01.96 0 1.77-.68 1.96-1.59l.01-.03L16.4 5.5c0-.28-.22-.5-.5-.5M2.06 10.06c.51.51 1.33.55 1.89.09 2.76-2.26 6.24-3.18 9.58-2.76l1.19-2.68c-4.35-.78-8.96.3-12.57 3.25-.64.53-.68 1.51-.09 2.1m19.88 0c.59-.59.55-1.57-.1-2.1-1.36-1.11-2.86-1.95-4.44-2.53l-.53 2.82c1.13.47 2.19 1.09 3.17 1.89.58.46 1.39.43 1.9-.08m-4.03 4.03c.6-.6.56-1.63-.14-2.12-.46-.33-.94-.61-1.44-.86l-.55 2.92c.11.07.22.14.32.22.57.4 1.33.32 1.81-.16m-11.83-.01c.5.5 1.27.54 1.85.13.94-.66 2.01-1.06 3.1-1.22l1.28-2.88c-2.13-.06-4.28.54-6.09 1.84-.69.51-.74 1.53-.14 2.13"/></svg></button>
+            <button class="mini-btn mini-btn-ic" onclick="showSection('test')" title="前往测试页" aria-label="前往测试页"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z"/></svg></button>
           </div>
           <div class="test-scroll" id="testScroll"></div>
         </div>
@@ -3352,6 +3363,8 @@ function renderNetworkProxy() {
   _netDot('netProxyDot', on ? 'on' : 'off');
   const tgEl = document.getElementById('netProxyToggle');
   if (tgEl) tgEl.checked = on;
+  const pTab = document.getElementById('netTabProxy');
+  if (pTab) pTab.classList.toggle('on', on);  // 标签绿点 + 连接线变绿
   // TUN 开启时全部流量已走代理，系统代理只是可选补充——按 TUN 状态给不同提示
   const _tunOn = !!(netTunData && netTunData.enable);
   if (on) {
@@ -3372,6 +3385,8 @@ function renderNetworkTun() {
   _netDot('netTunDot', on ? 'on' : 'off');
   const tgEl = document.getElementById('netTunToggle');
   if (tgEl) tgEl.checked = on;
+  const tTab = document.getElementById('netTabTun');
+  if (tTab) tTab.classList.toggle('on', on);
   const st = document.getElementById('setTun');
   if (st) st.checked = on;
   const ciTun = document.getElementById('ciTun');
@@ -3441,6 +3456,18 @@ async function openSysProxyModal() {
   document.getElementById('spTgtProfile').checked = tg.profile !== false;
   document.getElementById('spTgtBashrc').checked = tg.bashrc !== false;
   renderSysProxyStatus(d);
+  renderSpModalBanner(d);
+}
+// 系统代理弹窗顶部提示：与首页网络卡片同款四态（按 TUN 是否开启）
+function renderSpModalBanner(d) {
+  var bar = document.getElementById('spModalBanner');
+  var tx = document.getElementById('spModalBannerText');
+  if (!bar || !tx) return;
+  var on = !!(d && d.enabled);
+  var tunOn = !!(netTunData && netTunData.enable);
+  tx.textContent = t(tunOn ? (on ? 'net.bannerProxyOnTun' : 'net.bannerProxyOffTun')
+                            : (on ? 'net.bannerProxyOn' : 'net.bannerProxyOff'));
+  bar.className = 'net-banner' + (on ? ' ok' : '');
 }
 // 首页网络卡片底部信息项：标签 + 等宽 chip
 function _netMetaItem(k, v) {
@@ -3609,6 +3636,8 @@ function saveSysProxyModal() {
       if (d.success === false && d.error) throw new Error(d.error);
       renderSysProxyStatus(d);  // 自动保存后立即刷新摘要与「当前检测结果」
       showToast(t('net.toastProxySaved'), 'success');
+      renderSysProxyStatus(d);
+      renderSpModalBanner(d);  // 开关切换后顶部提示立刻跟随
       refreshNetworkCard();
     })
     .catch(e => showToast((e.message || t('net.saveFailed')), 'error'))
@@ -4017,6 +4046,9 @@ function renderTestItems() {
     html += '<button class="test-card-del" onclick="event.stopPropagation();deleteTestItem(this.closest(\'.test-card\').dataset.key)">&times;</button>';
     html += '</div>';
   });
+  html += '<div class="test-card test-card-add" onclick="openTestAddModal()" title="' + (t('test.add') || '添加') + '">'
+    + '<span class="test-card-ic add"><svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></span>'
+    + '<span class="test-card-name">' + (t('test.add') || '添加') + '</span></div>';
   html += '</div>';
   scroll.innerHTML = html;
 }
@@ -6713,7 +6745,7 @@ var I18N = {
     'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
-    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动','core.title':'内核设置','core.tabManage':'内核管理','core.tabConn':'连接管理','core.tabGeo':'GEO 数据','core.subTitle':'核心版本与运行方式','core.viewDetails':'查看详情','core.binary':'二进制','core.configPath':'启动配置','core.redetect':'重新检测','core.stop':'停止内核','core.stopped':'内核已停止','core.stopFail':'停止失败: ','core.portFix':'端口占用处理','core.portFixHint':'可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。','core.modifyPort':'修改端口','core.sshHelp':'高级排查（SSH 命令）','core.copy':'复制','core.copied':'已复制到剪贴板','core.sshStep1T':'查找占用进程','core.sshStep1D':'在 NAS 的 SSH 终端执行，查看输出中的进程名和 pid=数字。','core.sshStep2T':'核对应用用途','core.sshStep2D':'将命令中的 PID 替换为上一步查到的进程号，确认它是可以停止的服务。','core.sshStep3T':'停止已确认的进程','core.sshStep3D':'同样替换 PID。等待几秒，再执行第一条命令，确认端口已释放，然后点击「重新检测」或「启动内核」。','core.sshDockerNote':'如果占用者是 Docker 容器，请在飞牛 Docker 页面停止对应容器或修改端口映射，不要直接结束 docker-proxy。受服务管理器控制的进程可能自动重启，应通过原服务停止。','core.sshSubForceT':'进程仍未退出时','core.sshSubForceD':'先重新查询并核对 PID，确认仍是同一进程后才强制结束；强制结束不会执行正常清理。','core.sshSubNetT':'系统没有 ss 命令时','core.sshSubNetD':'可用 netstat 查看监听列表，找到本地地址末尾为 {port} 的行及其 PID/程序名。','core.controller':'控制器','core.interval12':'12 小时','core.interval24':'24 小时','core.interval72':'3 天','core.interval168':'7 天','core.connSettings':'连接设置','core.connSub':'连接当前 Core 的 Controller API','core.autoManage':'自动管理','core.portSettings':'端口设置','core.delayUrl':'延迟测试 URL','core.delayTimeout':'超时（毫秒）','core.delayHint':'用于节点延迟测速的请求地址与超时；修改后自动保存。','core.hcSaved':'测速参数已保存','core.geoDownload':'下载','core.geoSource':'来源','core.geoNoDownload':'未下载','core.geoNoSource':'未配置下载地址','core.geoDownloadFail':'下载失败: ','core.version':'内核版本','core.start':'启动内核','core.restart':'重启内核','core.checkUpdate':'检查更新','core.updateAvailable':'有版本更新','core.started':'内核已启动','core.restarted':'内核已重启','core.startFail':'启动失败: ','core.restartFail':'重启失败: ','core.portConflict':'控制器端口 {port} 被其他进程占用，内核可能无法启动。可前往「配置 → 外部控制」修改监听端口。','core.secret':'密钥','core.secretSet':'已设置','core.secretUnset':'未设置','core.goConfig':'前往配置','core.test':'测试连接','core.testOk':'连接成功','core.testFail':'连接失败，引擎未响应','core.geoAuto':'自动更新','core.geoInterval':'更新周期','core.saveSettings':'保存设置','core.geoSaved':'GEO 设置已保存，服务正在重启...','core.geoOk':'可用','core.geoMissing':'缺失','core.updateNow':'立即更新','core.saveFailed':'保存失败: ','core.geoHint':'GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。','core.connHint':'Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。',
+    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动','core.title':'内核设置','core.tabManage':'内核管理','core.tabConn':'连接管理','core.tabGeo':'GEO 数据','core.subTitle':'核心版本与运行方式','core.viewDetails':'查看详情','core.binary':'二进制','core.configPath':'启动配置','core.redetect':'重新检测','core.stop':'停止内核','core.stopped':'内核已停止','core.stopFail':'停止失败: ','core.portFix':'端口占用处理','core.portFixHint':'可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。','core.modifyPort':'修改端口','core.sshHelp':'高级排查（SSH 命令）','core.copy':'复制','core.copied':'已复制到剪贴板','core.sshStep1T':'查找占用进程','core.sshStep1D':'在 NAS 的 SSH 终端执行，查看输出中的进程名和 pid=数字。','core.sshStep2T':'核对应用用途','core.sshStep2D':'将命令中的 PID 替换为上一步查到的进程号，确认它是可以停止的服务。','core.sshStep3T':'停止已确认的进程','core.sshStep3D':'同样替换 PID。等待几秒，再执行第一条命令，确认端口已释放，然后点击「重新检测」或「启动内核」。','core.sshDockerNote':'如果占用者是 Docker 容器，请在飞牛 Docker 页面停止对应容器或修改端口映射，不要直接结束 docker-proxy。受服务管理器控制的进程可能自动重启，应通过原服务停止。','core.sshSubForceT':'进程仍未退出时','core.sshSubForceD':'先重新查询并核对 PID，确认仍是同一进程后才强制结束；强制结束不会执行正常清理。','core.sshSubNetT':'系统没有 ss 命令时','core.sshSubNetD':'可用 netstat 查看监听列表，找到本地地址末尾为 {port} 的行及其 PID/程序名。','core.controller':'控制器','core.interval12':'12 小时','core.interval24':'24 小时','core.interval72':'3 天','core.interval168':'7 天','core.connSettings':'连接设置','core.connSub':'连接当前 Core 的 Controller API','core.autoManage':'自动管理','core.portSettings':'端口设置','core.delayUrl':'延迟测试 URL','core.delayTimeout':'超时（毫秒）','core.delayHint':'用于节点延迟测速的请求地址与超时；修改后自动保存。','core.hcSaved':'测速参数已保存','core.geoDownload':'下载','core.geoSource':'来源','core.geoNoDownload':'未下载','core.geoNoSource':'未配置下载地址','core.geoDownloadFail':'下载失败: ','core.version':'内核版本','core.start':'启动内核','core.restart':'重启内核','core.checkUpdate':'检查更新','core.updateAvailable':'有版本更新','core.started':'内核已启动','core.restarted':'内核已重启','core.startFail':'启动失败: ','core.restartFail':'重启失败: ','core.portConflict':'控制器端口 {port} 被其他进程占用，内核可能无法启动。可前往「配置 → 外部控制」修改监听端口。','core.secret':'密钥','core.secretSet':'已设置','core.secretUnset':'未设置','core.goConfig':'前往配置','core.test':'测试连接','core.testOk':'连接成功','core.testFail':'连接失败，引擎未响应','core.geoAuto':'自动更新','test.add':'添加','core.geoInterval':'更新周期','core.saveSettings':'保存设置','core.geoSaved':'GEO 设置已保存，服务正在重启...','core.geoOk':'可用','core.geoMissing':'缺失','core.updateNow':'立即更新','core.saveFailed':'保存失败: ','core.geoHint':'GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。','core.connHint':'Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。',
     'dns.master':'DNS 覆写','dns.masterHint':'默认关闭；关闭时只保存 DNS 模板，不写入当前启动配置',
 'dns.tabBasic':'基础设置','dns.tabNs':'解析服务器','dns.tabFake':'Fake IP 与域名策略','dns.tabFb':'回退过滤','dns.tabHosts':'Hosts 映射',
 'dns.listen':'DNS 监听地址','dns.enhanced':'增强模式','dns.fakeIpRange':'Fake IP IPv4 范围','dns.fakeIpRange6':'Fake IP IPv6 范围',
@@ -6740,7 +6772,7 @@ var I18N = {
     'net.enableEnv':'启用代理环境变量','net.enableEnvHint':'关闭时仅移除本应用管理的配置',
     'net.followPortHint':'端口变化后自动同步系统代理','net.port':'代理端口','net.portHint':'关闭跟随后可手动指定',
     'net.tgtEnv':'系统登录环境','net.tgtProfile':'登录 Shell','net.tgtBashrc':'Bash 交互环境',
-    'net.sysProxyNote':'fnOS 使用 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 和 NO_PROXY 环境变量；修改主要对新启动的进程与新登录会话生效。','net.detectTitle':'当前检测结果','net.detectEmpty':'未获取到检测数据','net.fileNotExist':'不存在','net.fileUnreadable':'不可读','net.fileDetected':'已检测到代理设置','net.fileUnset':'未设置','net.fileNoVars':'未设置代理环境变量',
+    'net.sysProxyNote':'fnOS 使用 HTTP_PROXY、HTTPS_PROXY、ALL_PROXY 和 NO_PROXY 环境变量；修改主要对新启动的进程与新登录会话生效。','net.spAboutTitle':"关于系统代理（环境变量方式）",'net.spAbout':"通过向 /etc/environment、/etc/profile、/etc/bash.bashrc 写入 HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY 环境变量，让<b>读取这些变量的程序</b>经 127.0.0.1 端口走代理。<br>✅ <b>生效</b>：新登录的终端会话，以及从这些会话启动的程序（curl / apt / git / pip 等）<br>❌ <b>不生效</b>：fnOS 系统服务、Docker 容器（容器不继承宿主环境变量，需单独为 Docker 配代理）<br>🔗 <b>与虚拟网卡（TUN）的关系</b>：TUN 开启时全部流量（含命令行、Docker、系统服务）已走代理，此项为可选补充；TUN 关闭时由它负责让命令行等程序走代理。两者不冲突，可按需同时开启。",'net.detectTitle':'当前检测结果','net.detectEmpty':'未获取到检测数据','net.fileNotExist':'不存在','net.fileUnreadable':'不可读','net.fileDetected':'已检测到代理设置','net.fileUnset':'未设置','net.fileNoVars':'未设置代理环境变量',
     'net.toastProxyOn':'系统代理已开启','net.toastProxyOff':'系统代理已关闭',
     'net.toastProxyFail':'系统代理操作失败: ','net.toastProxySaved':'系统代理设置已保存',
     'net.confirmProxyOff':'确定要关闭系统代理吗？将移除本应用写入的环境变量托管块。',
@@ -6754,7 +6786,7 @@ var I18N = {
     'net.dnsHijack':'DNS 劫持','net.dnsHijackHint':'劫持 53 端口到 Mihomo DNS',
     'net.strictRoute':'严格路由','net.strictRouteHint':'减少泄漏；复杂网络可能影响其它虚拟网卡',
     'net.exclude':'排除自定义网段','net.excludeHint':'每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。',
-    'net.tunNote':'TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。','net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':'两者不必同时开：关闭 TUN 时引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）；只有需要 UDP/QUIC 或完整 DNS 分流时才开 TUN。系统代理（环境变量）则只影响命令行等主动读变量的程序。',
+    'net.tunNote':"TUN 通过创建虚拟网卡并接管系统路由与 DNS 流向实现<b>透明代理</b>：所有从 NAS 发出的流量（命令行、Docker 容器、系统服务）按规则分流，程序无需任何配置。默认关闭；若配置不可用可能影响 NAS 访问互联网。已内置「自动检测出口网卡 + 关闭自动重定向」防自环保护，一般无需改动。",'net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':"两者不必同时开，也不互相依赖：<br>• <b>只开 TUN</b>：全部流量（命令行 / Docker / 系统服务）走代理，最彻底——日常推荐<br>• <b>只开系统代理</b>：仅新终端会话里读环境变量的程序走代理，覆盖最小<br>• <b>关闭 TUN 时</b>引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）<br>需要 UDP/QUIC 或完整 DNS 分流时才开 TUN；系统代理（环境变量）只影响命令行等主动读变量的程序。",
     'common.cancel':'取消','common.save':'保存',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
@@ -6883,7 +6915,7 @@ var I18N = {
     'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
-    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start','core.title':'Core Settings','core.tabManage':'Core','core.tabConn':'Connection','core.tabGeo':'GEO Data','core.subTitle':'Core version and run mode','core.viewDetails':'Details','core.binary':'Binary','core.configPath':'Startup config','core.redetect':'Re-detect','core.stop':'Stop Core','core.stopped':'Core stopped','core.stopFail':'Stop failed: ','core.portFix':'Port Conflict','core.portFixHint':'Change the managed core startup port directly to keep the existing service. Config is backed up and validated, and the connection is verified after start.','core.modifyPort':'Change Port','core.sshHelp':'Advanced (SSH commands)','core.copy':'Copy','core.copied':'Copied to clipboard','core.sshStep1T':'Find the occupying process','core.sshStep1D':'Run in the NAS SSH terminal and check the process name and pid= in the output.','core.sshStep2T':'Verify the process','core.sshStep2D':'Replace PID with the process number found in the previous step and confirm it is a service that can be stopped.','core.sshStep3T':'Stop the confirmed process','core.sshStep3D':'Replace PID as well. Wait a few seconds, run the first command again to confirm the port is released, then click Re-detect or Start Core.','core.sshDockerNote':'If the occupier is a Docker container, stop the container or change its port mapping in the fnOS Docker page instead of killing docker-proxy directly. Processes controlled by a service manager may auto-restart; stop them via the original service.','core.sshSubForceT':'When the process still does not exit','core.sshSubForceD':'Re-query and verify the PID first; force kill only after confirming it is still the same process. Forced termination skips normal cleanup.','core.sshSubNetT':'When the ss command is unavailable','core.sshSubNetD':'Use netstat to list listeners and find the line whose local address ends with {port}, along with its PID/program name.','core.controller':'Controller','core.interval12':'12 hours','core.interval24':'24 hours','core.interval72':'3 days','core.interval168':'7 days','core.connSettings':'Connection','core.connSub':'Connect to the current core Controller API','core.autoManage':'Auto-managed','core.portSettings':'Port Settings','core.delayUrl':'Healthcheck URL','core.delayTimeout':'Timeout (ms)','core.delayHint':'URL and timeout used for node delay tests; saved automatically.','core.hcSaved':'Healthcheck settings saved','core.geoDownload':'Download','core.geoSource':'Source','core.geoNoDownload':'Not downloaded','core.geoNoSource':'No source configured','core.geoDownloadFail':'Download failed: ','core.version':'Core Version','core.start':'Start Core','core.restart':'Restart Core','core.checkUpdate':'Check Updates','core.updateAvailable':'Update available','core.started':'Core started','core.restarted':'Core restarted','core.startFail':'Start failed: ','core.restartFail':'Restart failed: ','core.portConflict':'Controller port {port} is used by another process; the core may fail to start. Change the listen port in Config → External Controller.','core.secret':'Secret','core.secretSet':'Set','core.secretUnset':'Not set','core.goConfig':'Go to Config','core.test':'Test Connection','core.testOk':'Connected','core.testFail':'Connection failed, engine not responding','core.geoAuto':'Auto Update','core.geoInterval':'Interval','core.saveSettings':'Save Settings','core.geoSaved':'GEO settings saved, restarting service...','core.geoOk':'Available','core.geoMissing':'Missing','core.updateNow':'Update Now','core.saveFailed':'Save failed: ','core.geoHint':'GEO files live in /vol1/@appdata/fnnas.fnsoar/; restart the core after updating. Download sources can be edited in Config → Geo Data.','core.connHint':'Controller is the API endpoint the panel uses to talk to the engine. Edit the listen port or Secret in Config → External Controller.',
+    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start','core.title':'Core Settings','core.tabManage':'Core','core.tabConn':'Connection','core.tabGeo':'GEO Data','core.subTitle':'Core version and run mode','core.viewDetails':'Details','core.binary':'Binary','core.configPath':'Startup config','core.redetect':'Re-detect','core.stop':'Stop Core','core.stopped':'Core stopped','core.stopFail':'Stop failed: ','core.portFix':'Port Conflict','core.portFixHint':'Change the managed core startup port directly to keep the existing service. Config is backed up and validated, and the connection is verified after start.','core.modifyPort':'Change Port','core.sshHelp':'Advanced (SSH commands)','core.copy':'Copy','core.copied':'Copied to clipboard','core.sshStep1T':'Find the occupying process','core.sshStep1D':'Run in the NAS SSH terminal and check the process name and pid= in the output.','core.sshStep2T':'Verify the process','core.sshStep2D':'Replace PID with the process number found in the previous step and confirm it is a service that can be stopped.','core.sshStep3T':'Stop the confirmed process','core.sshStep3D':'Replace PID as well. Wait a few seconds, run the first command again to confirm the port is released, then click Re-detect or Start Core.','core.sshDockerNote':'If the occupier is a Docker container, stop the container or change its port mapping in the fnOS Docker page instead of killing docker-proxy directly. Processes controlled by a service manager may auto-restart; stop them via the original service.','core.sshSubForceT':'When the process still does not exit','core.sshSubForceD':'Re-query and verify the PID first; force kill only after confirming it is still the same process. Forced termination skips normal cleanup.','core.sshSubNetT':'When the ss command is unavailable','core.sshSubNetD':'Use netstat to list listeners and find the line whose local address ends with {port}, along with its PID/program name.','core.controller':'Controller','core.interval12':'12 hours','core.interval24':'24 hours','core.interval72':'3 days','core.interval168':'7 days','core.connSettings':'Connection','core.connSub':'Connect to the current core Controller API','core.autoManage':'Auto-managed','core.portSettings':'Port Settings','core.delayUrl':'Healthcheck URL','core.delayTimeout':'Timeout (ms)','core.delayHint':'URL and timeout used for node delay tests; saved automatically.','core.hcSaved':'Healthcheck settings saved','core.geoDownload':'Download','core.geoSource':'Source','core.geoNoDownload':'Not downloaded','core.geoNoSource':'No source configured','core.geoDownloadFail':'Download failed: ','core.version':'Core Version','core.start':'Start Core','core.restart':'Restart Core','core.checkUpdate':'Check Updates','core.updateAvailable':'Update available','core.started':'Core started','core.restarted':'Core restarted','core.startFail':'Start failed: ','core.restartFail':'Restart failed: ','core.portConflict':'Controller port {port} is used by another process; the core may fail to start. Change the listen port in Config → External Controller.','core.secret':'Secret','core.secretSet':'Set','core.secretUnset':'Not set','core.goConfig':'Go to Config','core.test':'Test Connection','core.testOk':'Connected','core.testFail':'Connection failed, engine not responding','core.geoAuto':'Auto Update','test.add':'Add','core.geoInterval':'Interval','core.saveSettings':'Save Settings','core.geoSaved':'GEO settings saved, restarting service...','core.geoOk':'Available','core.geoMissing':'Missing','core.updateNow':'Update Now','core.saveFailed':'Save failed: ','core.geoHint':'GEO files live in /vol1/@appdata/fnnas.fnsoar/; restart the core after updating. Download sources can be edited in Config → Geo Data.','core.connHint':'Controller is the API endpoint the panel uses to talk to the engine. Edit the listen port or Secret in Config → External Controller.',
     'dns.master':'DNS Override','dns.masterHint':'Off by default; when off, only the DNS template is saved and not written to the running config',
 'dns.tabBasic':'Basic','dns.tabNs':'Nameservers','dns.tabFake':'Fake IP & Policy','dns.tabFb':'Fallback Filter','dns.tabHosts':'Hosts',
 'dns.listen':'DNS Listen','dns.enhanced':'Enhanced Mode','dns.fakeIpRange':'Fake IP IPv4 Range','dns.fakeIpRange6':'Fake IP IPv6 Range',
@@ -6910,7 +6942,7 @@ var I18N = {
     'net.enableEnv':'Enable proxy env vars','net.enableEnvHint':'When off, only this app’s managed block is removed',
     'net.followPortHint':'Auto-sync when the port changes','net.port':'Proxy port','net.portHint':'Manual port when follow is off',
     'net.tgtEnv':'Login environment','net.tgtProfile':'Login shell','net.tgtBashrc':'Bash interactive',
-    'net.sysProxyNote':'fnOS uses HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and NO_PROXY env vars; changes apply mainly to newly started processes and login sessions.','net.detectTitle':'Detection Results','net.detectEmpty':'No detection data','net.fileNotExist':'Not found','net.fileUnreadable':'Unreadable','net.fileDetected':'Proxy vars detected','net.fileUnset':'Not set','net.fileNoVars':'No proxy env vars set',
+    'net.sysProxyNote':'fnOS uses HTTP_PROXY, HTTPS_PROXY, ALL_PROXY and NO_PROXY env vars; changes apply mainly to newly started processes and login sessions.','net.spAboutTitle':"About System Proxy (env vars)",'net.spAbout':"Writes HTTP_PROXY / HTTPS_PROXY / ALL_PROXY / NO_PROXY to /etc/environment, /etc/profile and /etc/bash.bashrc so that <b>programs reading these vars</b> use the 127.0.0.1 proxy.<br>✅ <b>Works for</b>: new terminal sessions and programs started from them (curl / apt / git / pip)<br>❌ <b>Does not cover</b>: fnOS system services, Docker containers (containers do not inherit host env vars)<br>🔗 <b>Relation to TUN</b>: with TUN on, all traffic (CLI, Docker, services) is already proxied — this is optional; with TUN off this is what proxies CLI tools. They do not conflict.",'net.detectTitle':'Detection Results','net.detectEmpty':'No detection data','net.fileNotExist':'Not found','net.fileUnreadable':'Unreadable','net.fileDetected':'Proxy vars detected','net.fileUnset':'Not set','net.fileNoVars':'No proxy env vars set',
     'net.toastProxyOn':'System proxy enabled','net.toastProxyOff':'System proxy disabled',
     'net.toastProxyFail':'System proxy failed: ','net.toastProxySaved':'System proxy settings saved',
     'net.confirmProxyOff':'Turn off the system proxy? This removes the managed env-var block written by this app.',
@@ -6924,7 +6956,7 @@ var I18N = {
     'net.dnsHijack':'DNS hijack','net.dnsHijackHint':'Hijack port 53 to the Mihomo DNS module',
     'net.strictRoute':'Strict route','net.strictRouteHint':'Reduces leaks; may affect other virtual NICs',
     'net.exclude':'Excluded CIDRs','net.excludeHint':'One IPv4/IPv6 CIDR per line; leave empty to exclude nothing.',
-    'net.tunNote':'TUN modifies fnOS system routes and DNS flow. Off by default; an unusable config may affect the NAS internet access.','net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':'You do not need both: when TUN is off, the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP is not proxied). Enable TUN only when you need UDP/QUIC or full DNS splitting. The system proxy (env vars) only affects programs that read them, such as the CLI.',
+    'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",
     'common.cancel':'Cancel','common.save':'Save',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
@@ -6996,6 +7028,8 @@ function applyLanguage(lang) {
       el.placeholder = txt;
     } else if (el.tagName === 'OPTION') {
       el.textContent = txt;
+    } else if (el.hasAttribute('data-i18n-html')) {
+      el.innerHTML = txt;
     } else {
       el.textContent = txt;
     }
