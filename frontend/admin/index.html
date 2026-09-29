@@ -905,6 +905,25 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .prov-import-input:focus{border-color:var(--accent)}
 .prov-import-input::placeholder{color:var(--faint)}
 .prov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
+.pe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}
+.pe-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card2);min-width:0}
+.pe-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:13px;background:rgba(78,110,242,.12);color:var(--accent2);border:1px solid rgba(78,110,242,.25)}
+.pe-info{flex:1;min-width:0}
+.pe-name{font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.pe-tag{font-size:10px;font-weight:600;color:var(--dim);background:var(--card);border:1px solid var(--border);border-radius:20px;padding:1px 8px}
+.pe-desc{font-size:11px;color:var(--faint);margin-top:3px;line-height:1.5}
+.pe-btn{flex:none;padding:6px 14px;font-size:12px;font-weight:600;border-radius:8px;border:1px solid var(--accent);background:transparent;color:var(--accent2);cursor:pointer;transition:all .12s}
+.pe-btn:hover{background:var(--accent);color:var(--on-accent)}
+/* 全局扩展编辑弹窗 */
+.pe-modal{width:min(760px,96vw)}
+.pe-note{display:flex;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(78,110,242,.08);border:1px solid rgba(78,110,242,.25);font-size:11.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
+.pe-note svg{width:14px;height:14px;flex:none;margin-top:3px;fill:var(--accent2)}
+/* 轻量代码编辑器（行号槽 + textarea） */
+.ce-wrap{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card2);height:330px}
+.ce-gutter{flex:none;width:40px;padding:10px 6px 10px 0;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;color:var(--faint);background:var(--card);overflow:hidden;white-space:pre;user-select:none}
+.ce-area{flex:1;min-width:0;padding:10px 12px;border:0;background:transparent;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;resize:none;outline:none;white-space:pre;overflow:auto}
+.pe-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:14px;flex-wrap:wrap}
+.pe-foot-right{display:flex;gap:8px}
 .prov-card{position:relative;background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 16px 14px;transition:border-color .15s,transform .15s,box-shadow .15s;display:flex;flex-direction:column;gap:12px}
 .prov-card:hover{border-color:var(--faint);transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.12)}
 .prov-card.syncing{opacity:.75;pointer-events:none}
@@ -1488,6 +1507,25 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
       </div>
       <!-- 订阅卡片列表 -->
       <div class="prov-grid" id="provGrid"></div>
+      <!-- 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 -->
+      <div class="pe-grid">
+        <div class="pe-card">
+          <div class="pe-ic">M</div>
+          <div class="pe-info">
+            <div class="pe-name">全局扩展覆写配置<span class="pe-tag">Merge</span></div>
+            <div class="pe-desc">应用到所有配置，先递归合并</div>
+          </div>
+          <button class="pe-btn" onclick="openPeModal('merge')">编辑</button>
+        </div>
+        <div class="pe-card">
+          <div class="pe-ic">JS</div>
+          <div class="pe-info">
+            <div class="pe-name">全局扩展脚本<span class="pe-tag">Script</span></div>
+            <div class="pe-desc">全局覆写后、单配置增强前执行</div>
+          </div>
+          <button class="pe-btn" onclick="openPeModal('script')">编辑</button>
+        </div>
+      </div>
       <!-- 添加 / 编辑订阅弹窗 -->
       <div class="modal-backdrop" id="provModal" style="display:none" onclick="if(event.target===this)closeProvModal()">
         <div class="modal-card">
@@ -1509,6 +1547,41 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
         </div>
       </div>
 
+    
+      <!-- 全局扩展覆写配置 编辑弹窗 -->
+      <div class="modal-backdrop" id="peMergeModal" style="display:none" onclick="if(event.target===this)closePeModal('merge')">
+        <div class="modal-card pe-modal">
+          <div class="modal-title">全局扩展覆写配置</div>
+          <div class="modal-body">
+            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅生效，在应用设置之后合并；后续的全局脚本、订阅扩展配置和订阅脚本仍可修改结果。<br>执行顺序：订阅原文 → 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 订阅扩展配置 → 订阅扩展脚本 → 应用设置回写<br>注意：由应用设置接管的字段最终以应用设置为准，在扩展配置或脚本中修改这些字段不会生效。</span></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="peMergeGutter"></div><textarea class="ce-area" id="peMergeText" spellcheck="false" wrap="off" placeholder="# 在此编写 YAML 合并模板" oninput="ceSync('peMerge')" onscroll="ceScroll('peMerge')"></textarea></div>
+          </div>
+          <div class="pe-foot">
+            <button class="btn btn-ghost" onclick="resetPe('merge')">重置为默认值</button>
+            <div class="pe-foot-right">
+              <button class="btn btn-ghost" onclick="closePeModal('merge')">取消</button>
+              <button class="btn btn-primary" onclick="savePe('merge')">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- 全局扩展脚本 编辑弹窗 -->
+      <div class="modal-backdrop" id="peScriptModal" style="display:none" onclick="if(event.target===this)closePeModal('script')">
+        <div class="modal-card pe-modal">
+          <div class="modal-title">全局扩展脚本</div>
+          <div class="modal-body">
+            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅生效，接收全局扩展配置合并后的结果；后续的订阅扩展配置和订阅脚本仍可修改结果。<br>执行顺序：订阅原文 → 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 订阅扩展配置 → 订阅扩展脚本 → 应用设置回写<br>注意：由应用设置接管的字段最终以应用设置为准，在扩展配置或脚本中修改这些字段不会生效。</span></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="peScriptGutter"></div><textarea class="ce-area" id="peScriptText" spellcheck="false" wrap="off" placeholder="// function main(config, profileName) { return config; }" oninput="ceSync('peScript')" onscroll="ceScroll('peScript')"></textarea></div>
+          </div>
+          <div class="pe-foot">
+            <button class="btn btn-ghost" onclick="resetPe('script')">重置为默认值</button>
+            <div class="pe-foot-right">
+              <button class="btn btn-ghost" onclick="closePeModal('script')">取消</button>
+              <button class="btn btn-primary" onclick="savePe('script')">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- 连接 -->
@@ -2333,6 +2406,7 @@ function showSection(name) {
     if (snap && !grid.querySelector('.prov-card')) grid.innerHTML = snap;
     loadProviders(!!grid.querySelector('.prov-card'));
   }
+    loadProfileExt();  // 全局扩展（合并模板/脚本）
   if (name === 'connections') { loadConnections(); startConnPolling(); }
   if (name === 'rules') loadRules();
   if (name === 'logs') { loadLogs(); startLogPolling(); }
@@ -3227,6 +3301,68 @@ function renderSysProxyStatus(d) {
 }
 function closeSysProxyModal() { document.getElementById('sysProxyModal').style.display = 'none'; }
 
+// ── 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 ──────────
+var _peData = { merge: '', script: '', defaults: { merge: '', script: '' }, loaded: false };
+function loadProfileExt() {
+  fetch('api/profile-ext').then(function(r) { return r.json(); }).then(function(d) {
+    if (!d || !d.ok) return;
+    _peData.merge = d.merge || '';
+    _peData.script = d.script || '';
+    _peData.defaults = d.defaults || _peData.defaults;
+    _peData.loaded = true;
+  }).catch(function() {});
+}
+function _peEls(kind) {
+  var merge = kind === 'merge';
+  return {
+    modal: document.getElementById(merge ? 'peMergeModal' : 'peScriptModal'),
+    text: document.getElementById(merge ? 'peMergeText' : 'peScriptText'),
+    gutter: merge ? 'peMerge' : 'peScript'
+  };
+}
+function openPeModal(kind) {
+  if (!_peData.loaded) loadProfileExt();
+  var e = _peEls(kind);
+  e.text.value = (kind === 'merge' ? _peData.merge : _peData.script) || '';
+  e.modal.style.display = 'flex';
+  ceSync(e.gutter);
+}
+function closePeModal(kind) { _peEls(kind).modal.style.display = 'none'; }
+function resetPe(kind) {
+  var e = _peEls(kind);
+  e.text.value = (kind === 'merge' ? _peData.defaults.merge : _peData.defaults.script) || '';
+  ceSync(e.gutter);
+  showToast('已填入默认模板，保存后生效', 'info');
+}
+function savePe(kind) {
+  var e = _peEls(kind);
+  var text = e.text.value;
+  if (kind === 'merge') _peData.merge = text; else _peData.script = text;
+  fetch('api/profile-ext', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ merge_config: _peData.merge, script: _peData.script }) })
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      if (d.success === false) throw new Error(d.error || '保存失败');
+      showToast('全局扩展已保存，下次保存配置时生效', 'success');
+      closePeModal(kind);
+    })
+    .catch(function(err) { showToast((err.message || '保存失败'), 'error'); });
+}
+// 轻量编辑器：行号同步 + 滚动联动
+function ceSync(name) {
+  var ta = document.getElementById(name + 'Text');
+  var g = document.getElementById(name + 'Gutter');
+  if (!ta || !g) return;
+  var lines = ta.value.split('\n').length;
+  var s = '';
+  for (var i = 1; i <= lines; i++) s += i + '\n';
+  g.textContent = s;
+}
+function ceScroll(name) {
+  var ta = document.getElementById(name + 'Text');
+  var g = document.getElementById(name + 'Gutter');
+  if (ta && g) g.scrollTop = ta.scrollTop;
+}
 function renderNoProxyTags() {
   const box = document.getElementById('spTags');
   const input = document.getElementById('spTagInput');

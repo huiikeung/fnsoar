@@ -37,6 +37,30 @@ SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
                                 f"/vol1/@appcenter/{TRIM_APPNAME}/fnsoar.sock")
 
 CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
+# ── 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 ──────────────
+PROFILE_EXT_FILE = f"{TRIM_PKGVAR}/profile-ext.json"
+DEFAULT_MERGE_CONFIG = """# Profile Enhancement Merge Template for Clash Verge
+
+profile:
+  store-selected: true
+
+# 前置规则
+prepend-rules:
+  # AI 镜像站点
+  - DOMAIN-SUFFIX,zw.puua,DIRECT
+
+# 前置规则集
+prepend-rule-providers:
+  china_sites:
+    type: http
+    behavior: domain
+    url: "https://raw.githubusercontent.com/Loyalsoldier/clash-rules/release/direct.txt"
+"""
+DEFAULT_GLOBAL_SCRIPT = """// Define main function
+function main(config, profileName) {
+  return config;
+}
+"""
 ICONS_FILE    = f"{TRIM_PKGVAR}/icons.yaml"
 ICON_DIR      = f"{TRIM_PKGVAR}/icons"
 
@@ -471,6 +495,100 @@ def install_dashboard(name):
             shutil.rmtree(tmpdir, ignore_errors=True)
         return {"success": False, "error": str(e), "version": latest, "previous": current}
 
+
+def _read_profile_ext():
+    """读取全局扩展配置（合并模板 + 脚本）。文件缺失时返回默认模板。"""
+    try:
+        with open(PROFILE_EXT_FILE, "r", encoding="utf-8") as f:
+            d = json.load(f) or {}
+    except Exception:
+        d = {}
+    # 默认空：未配置时不改动用户配置；模板仅作为「重置为默认值」的初始内容
+    return {
+        "merge_config": d.get("merge_config", ""),
+        "script": d.get("script", ""),
+    }
+
+def _save_profile_ext(data):
+    try:
+        os.makedirs(os.path.dirname(PROFILE_EXT_FILE), exist_ok=True)
+        tmp = PROFILE_EXT_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump({"merge_config": data.get("merge_config", ""),
+                       "script": data.get("script", "")}, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, PROFILE_EXT_FILE)
+        return True
+    except Exception:
+        return False
+
+def _deep_merge(base, patch):
+    """递归合并：dict 深合并，其余类型（list/标量）直接覆盖。"""
+    if isinstance(base, dict) and isinstance(patch, dict):
+        out = dict(base)
+        for k, v in patch.items():
+            out[k] = _deep_merge(base[k], v) if k in base else v
+        return out
+    return patch
+
+def _find_node_bin():
+    for cand in ("/var/apps/nodejs_v24/target/bin/node", "/var/apps/nodejs_v22/target/bin/node",
+                 "/usr/local/bin/node", "/usr/bin/node"):
+        if os.path.exists(cand):
+            return cand
+    return None
+
+def _run_profile_script(config_text, script):
+    """执行全局扩展脚本（签名同 Clash Verge：main(config, profileName)）。
+    node 不可用或脚本异常时原样返回，不影响保存。"""
+    node = _find_node_bin()
+    if not node:
+        print("[profile-ext] 未找到 node，跳过全局扩展脚本", file=sys.stderr)
+        return config_text
+    import json as _json
+    try:
+        cfg_obj = yaml.safe_load(config_text) or {}
+    except Exception:
+        return config_text
+    wrapper = script + """
+;process.stdout.write(JSON.stringify((typeof main === 'function' ? main(JSON.parse(require('fs').readFileSync(0,'utf8')), process.argv[2] || '') : JSON.parse(require('fs').readFileSync(0,'utf8')))));"""
+    try:
+        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as tf:
+            tf.write(wrapper)
+            js_path = tf.name
+        r = subprocess.run([node, js_path, "fnsoar"], input=_json.dumps(cfg_obj),
+                           capture_output=True, text=True, timeout=10)
+        os.unlink(js_path)
+        if r.returncode != 0:
+            print("[profile-ext] 脚本执行失败: " + (r.stderr or "")[:300], file=sys.stderr)
+            return config_text
+        out = _json.loads(r.stdout)
+        if out == cfg_obj:
+            return config_text  # 无变化：保持原文，避免 YAML 重排
+        return yaml.safe_dump(out, allow_unicode=True, sort_keys=False)
+    except Exception as e:
+        print("[profile-ext] 脚本异常: " + str(e)[:300], file=sys.stderr)
+        return config_text
+
+def _apply_profile_ext(cfg_text):
+    """配置写库前应用全局扩展：先深合并 merge 模板，再执行全局脚本。
+    任一步无实质变化则保持原文（不触发 YAML 重排/注释丢失）。"""
+    ext = _read_profile_ext()
+    text = cfg_text
+    merge = (ext.get("merge_config") or "").strip()
+    if merge:
+        try:
+            base = yaml.safe_load(text) or {}
+            patch = yaml.safe_load(merge) or {}
+            if isinstance(base, dict) and isinstance(patch, dict):
+                merged = _deep_merge(base, patch)
+                if merged != base:
+                    text = yaml.safe_dump(merged, allow_unicode=True, sort_keys=False)
+        except Exception as e:
+            print("[profile-ext] 合并模板解析失败: " + str(e)[:300], file=sys.stderr)
+    script = (ext.get("script") or "").strip()
+    if script:
+        text = _run_profile_script(text, ext.get("script") or "")
+    return text
 
 def write_config(content):
     """Save config safely via /var/apps/<app>/etc path (writable)."""
@@ -3266,6 +3384,12 @@ class AdminHandler(BaseHTTPRequestHandler):
                                     "ipv6_udp_blocked": bool(running and ipv6_available and not tun_enabled)})
         if path == "/api/config":
             return self._send_json({"config": read_config()})
+        if path == "/api/profile-ext":
+            ext = _read_profile_ext()
+            return self._send_json({"ok": True, "merge": ext["merge_config"],
+                                    "script": ext["script"],
+                                    "defaults": {"merge": DEFAULT_MERGE_CONFIG,
+                                                 "script": DEFAULT_GLOBAL_SCRIPT}})
         if path == "/api/proxy-providers":
             yaml_text = read_config()
             providers = extract_proxy_providers(yaml_text)
@@ -4091,10 +4215,18 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json(meta)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/profile-ext":
+            try:
+                data = json.loads(body) if body else {}
+                ok = _save_profile_ext(data)
+                return self._send_json({"success": ok, "message": "全局扩展已保存" if ok else "保存失败"})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/config":
             try:
                 data = json.loads(body) if body else {}
                 cfg_text = data.get("config", "")
+                cfg_text = _apply_profile_ext(cfg_text)  # 全局扩展：合并模板 + 脚本
                 if write_config(cfg_text):
                     stop_service()
                     time.sleep(1)
