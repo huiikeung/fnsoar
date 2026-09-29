@@ -565,7 +565,10 @@ tbody tr:hover{background:var(--card2)}
 .net-row-name{font-size:13px;font-weight:600;color:var(--text)}
 .net-row .mini-btn-ic{width:28px;height:28px}
 .net-row .mini-btn-ic svg{width:14px;height:14px}
-.net-meta{margin-top:10px;font-size:11.5px;color:var(--faint);line-height:1.6}
+.net-meta{display:flex;flex-wrap:wrap;align-items:center;gap:7px 18px;margin-top:12px;font-size:11.5px;color:var(--faint);line-height:1.6}
+.net-meta-item{display:inline-flex;align-items:center;gap:7px;min-width:0;max-width:100%}
+.net-meta-k{color:var(--faint);white-space:nowrap}
+.net-meta-v{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--dim);background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:2px 9px}
 .net-meta b{color:var(--dim);font-weight:600}
 /* ── 设置弹窗（浅色卡片，参考 Clash-for-fnos 系统代理/TUN 设置弹窗） ── */
 :root{--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;--mx-panel:#ffffff;
@@ -1301,7 +1304,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <span data-i18n="net.tabProxy">系统代理</span>
             </button>
             <button class="net-tab" id="netTabTun" onclick="switchNetTab('tun')">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
+              <svg viewBox="0 0 24 24"><path d="M7.77 6.76L6.23 5.48.82 12l5.41 6.52 1.54-1.28L3.42 12l4.35-5.24zM7 13h2v-2H7v2zm10-2h-2v2h2v-2zm-6 2h2v-2h-2v2zm4.23 2.52l1.54 1.28L23.18 12l-5.41-6.52-1.54 1.28L20.58 12l-4.35 5.24z"/></svg>
               <span data-i18n="net.tabTun">虚拟网卡模式</span>
             </button>
           </div>
@@ -3083,9 +3086,8 @@ function renderNetworkProxy() {
   const scopeCount = ['environment', 'profile', 'bashrc'].filter(k => tg[k] !== false).length;
   const addr = _actualProxyAddr(s);
   const meta = document.getElementById('netProxyMeta');
-  if (meta) meta.innerHTML = t('net.metaProxy')
-    .replace('{addr}', '<b>' + addr + '</b>')
-    .replace('{scope}', '<b>' + scopeCount + '</b>');
+  if (meta) meta.innerHTML = _netMetaItem(t('net.serviceAddr'), addr)
+    + _netMetaItem(t('net.scope'), scopeCount + ' ' + t('net.filesUnit'));
 }
 
 function renderNetworkTun() {
@@ -3106,9 +3108,8 @@ function renderNetworkTun() {
     _netBanner('netTunBanner', 'netTunBannerText', t('net.bannerTunOff'), 'warn');
   }
   const meta = document.getElementById('netTunMeta');
-  if (meta) meta.innerHTML = t('net.metaTun')
-    .replace('{stack}', '<b>' + (s.stack || 'mixed') + '</b>')
-    .replace('{mtu}', '<b>' + (s.mtu || 1500) + '</b>');
+  if (meta) meta.innerHTML = _netMetaItem(t('net.stack'), s.stack || 'mixed')
+    + _netMetaItem('MTU', s.mtu || 1500);
 }
 
 async function toggleSysProxy(on) {
@@ -3178,6 +3179,11 @@ async function openSysProxyModal() {
   document.getElementById('spTgtProfile').checked = tg.profile !== false;
   document.getElementById('spTgtBashrc').checked = tg.bashrc !== false;
   renderSysProxyStatus(d);
+}
+// 首页网络卡片底部信息项：标签 + 等宽 chip
+function _netMetaItem(k, v) {
+  return '<span class="net-meta-item"><span class="net-meta-k">' + esc(k) + '</span>'
+    + '<span class="net-meta-v" title="' + esc(String(v)) + '">' + esc(String(v)) + '</span></span>';
 }
 // 从检测结果取「实际写入文件」的代理地址；未开启时回退按设置计算的默认值。
 // 避免设置里的 port 过期（用户在别处改了 mixed-port）导致显示与文件不一致。
@@ -6380,7 +6386,7 @@ var I18N = {
     'net.metaTun':'协议栈 {stack} · MTU {mtu}',
     'net.followPort':'跟随混合端口',
     'net.sysProxySettings':'系统代理设置','net.tunSettings':'虚拟网卡（TUN）设置',
-    'net.currentStatus':'当前状态','net.currentProxy':'当前系统代理','net.attention':'注意','net.options':'选项','net.bypass':'代理绕过设置（NO_PROXY）','net.bypassHint':'保存为 NO_PROXY；多个条目会以英文逗号分隔。','net.scope':'应用范围',
+    'net.currentStatus':'当前状态','net.currentProxy':'当前系统代理','net.attention':'注意','net.options':'选项','net.bypass':'代理绕过设置（NO_PROXY）','net.bypassHint':'保存为 NO_PROXY；多个条目会以英文逗号分隔。','net.scope':'应用范围','net.stack':'协议栈','net.filesUnit':'个文件',
     'net.enabled':'开启状态','net.enabledOn':'已开启','net.enabledOff':'已关闭','net.serviceAddr':'服务地址','net.enabledHint':'当前生效状态','net.envFiles':'托管块状态','net.envActive':'已托管','net.envNone':'未托管','net.envMissing':'文件不存在','net.envNoVars':'未检测到代理变量',
     'net.enableEnv':'启用代理环境变量','net.enableEnvHint':'关闭时仅移除本应用管理的配置',
     'net.followPortHint':'端口变化后自动同步系统代理','net.port':'代理端口','net.portHint':'关闭跟随后可手动指定',
@@ -6550,7 +6556,7 @@ var I18N = {
     'net.metaTun':'Stack {stack} · MTU {mtu}',
     'net.followPort':'Follow Mixed Port',
     'net.sysProxySettings':'System Proxy Settings','net.tunSettings':'TUN Settings',
-    'net.currentStatus':'Status','net.currentProxy':'Current System Proxy','net.attention':'Note','net.options':'Options','net.bypass':'Bypass (NO_PROXY)','net.bypassHint':'Saved as NO_PROXY; multiple entries are comma-separated.','net.scope':'Scope',
+    'net.currentStatus':'Status','net.currentProxy':'Current System Proxy','net.attention':'Note','net.options':'Options','net.bypass':'Bypass (NO_PROXY)','net.bypassHint':'Saved as NO_PROXY; multiple entries are comma-separated.','net.scope':'Scope','net.stack':'Stack','net.filesUnit':'files',
     'net.enabled':'State','net.enabledOn':'Enabled','net.enabledOff':'Disabled','net.serviceAddr':'Service address','net.enabledHint':'Current effective state','net.envFiles':'Managed Blocks','net.envActive':'Managed','net.envNone':'Not managed','net.envMissing':'File missing','net.envNoVars':'No proxy variables found',
     'net.enableEnv':'Enable proxy env vars','net.enableEnvHint':'When off, only this app’s managed block is removed',
     'net.followPortHint':'Auto-sync when the port changes','net.port':'Proxy port','net.portHint':'Manual port when follow is off',
