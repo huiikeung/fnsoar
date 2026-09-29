@@ -901,6 +901,14 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 #configYaml::-webkit-scrollbar-thumb:hover{background:rgba(78,110,242,.55);border:3px solid transparent;background-clip:content-box}
 #configYaml::-webkit-scrollbar-thumb:active{background:var(--accent);border:3px solid transparent;background-clip:content-box}
 #configYaml::-webkit-scrollbar-corner{background:transparent}
+/* 配置页（可视配置列表较高，与编辑源文件一致显示滚动条） */
+body.cfg-page .main{scrollbar-width:auto}
+body.cfg-page .main::-webkit-scrollbar{display:block;width:12px}
+body.cfg-page .main::-webkit-scrollbar-track{background:transparent;border-radius:10px}
+body.cfg-page .main::-webkit-scrollbar-thumb{background:rgba(139,145,158,.35);border-radius:10px;border:3px solid transparent;background-clip:content-box}
+body.cfg-page .main::-webkit-scrollbar-thumb:hover{background:rgba(78,110,242,.55);border:3px solid transparent;background-clip:content-box}
+body.cfg-page .main::-webkit-scrollbar-thumb:active{background:var(--accent);border:3px solid transparent;background-clip:content-box}
+body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .con-raw-btn{display:inline-flex;align-items:center;gap:5px;padding:5px 12px;border-radius:7px;border:1px solid var(--border);background:var(--card2);color:var(--dim);font-size:12px;cursor:pointer;transition:all .12s;font-family:inherit}
 .con-raw-btn:hover{background:var(--card);color:var(--text);border-color:var(--accent)}
 @media(max-width:760px){.vcfg-grid{grid-template-columns:1fr}}
@@ -917,6 +925,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .pe-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card);min-width:0;transition:border-color .15s}
 .pe-card:hover{border-color:var(--faint)}
 .filter-sec{margin-bottom:8px}
+.filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
+.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}
 .filter-empty{font-size:11px;color:var(--faint);padding:2px 0}
 .pe-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:13px;background:rgba(78,110,242,.12);color:var(--accent2);border:1px solid rgba(78,110,242,.25)}
 .pe-info{flex:1;min-width:0}
@@ -1954,7 +1964,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                 </div>
               </div>
             </div>
-          <div class="vcfg-card" style="grid-column:1/-1">
+          </div>
+            <div class="vcfg-card" style="grid-column:1/-1">
             <div class="vcfg-card-title"><span class="vcfg-ic cfg-adv"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 4H21V6H3V4ZM3 11H15V13H3V11ZM3 18H11V20H3V18ZM17 10V7L21 11L17 15V12H14V10H17Z"/></svg></span><span data-i18n="vcfg.filter">订阅节点过滤</span></div>
             <div style="padding:12px 16px 14px">
               <div class="dns-grid" style="margin-bottom:10px">
@@ -1974,8 +1985,9 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                   <span class="dns-field-label"><span data-i18n="vcfg.filterRe">名称正则</span><small>exclude-name-regex · 命中任一即过滤，PCRE 忽略大小写</small></span>
                   <div class="mx-bypass">
                     <div class="mx-bypass-editor" id="sfReTags">
-                      <input type="text" id="sfReInput" placeholder="输入正则表达式，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('re')}">
+                      <input type="text" id="sfReInput" placeholder="输入正则，如 traffic.*expire，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('re')}">
                     </div>
+                    <small class="filter-ex">示例：<code>traffic.*expire</code> 匹配 “Traffic-Expire-30d”；<code>^(剩余|流量).*GB</code> 匹配以「剩余/流量」开头且含 GB 的节点名</small>
                   </div>
                 </div>
               </div>
@@ -1983,10 +1995,10 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                 <span data-i18n="vcfg.filterAutosave">已自动保存 · 修改后下次导入/更新订阅时生效</span>
                 <div style="display:flex;gap:8px">
                   <button class="core-btn" onclick="showConfigRaw()" data-i18n="dns.viewRaw">查看原始配置</button>
+                  <button class="core-btn" onclick="resetConfigSection('x-fnsoar')" data-i18n="dns.resetDefault">恢复默认值</button>
                 </div>
               </div>
-            </div>
-          </div>
+              </div>
           
           </div>
       </div>
@@ -2423,6 +2435,7 @@ function initHamburgerDrag() {
 
 // ── 页面切换 ────────────────────────────────
 function showSection(name) {
+  document.body.classList.remove('cfg-page');
   document.querySelectorAll('.section-webui, .main > section').forEach(s => s.style.display = 'none');
   // 底部服务/TUN按钮有独立运行态，页面切换不能清掉它们的 active/绿色状态。
   document.querySelectorAll('.nav .nav-item').forEach(n => n.classList.remove('active'));
@@ -2465,8 +2478,11 @@ function showSection(name) {
   if (name === 'logs') { loadLogs(); startLogPolling(); }
   if (name === 'test') loadUnlock();
   if (name === 'settings') loadSettings();
-  if (name === 'config') { loadVcfg(); }
+  if (name === 'config') {
+    document.body.classList.add('cfg-page');
+    loadVcfg();
     loadFilter();  // 订阅过滤规则
+  }
   // 离开连接/日志页面时停止轮询
   if (name !== 'connections') stopConnPolling();
   if (name !== 'logs') stopLogPolling();
@@ -4796,7 +4812,9 @@ function updateBackTopVisibility() {
   const inGlobalGroups = document.getElementById('section-groups').style.display !== 'none' && currentMode === 'global';
   const logBox = document.getElementById('logScrollBox');
   const inLogs = document.getElementById('section-logs').style.display !== 'none';
+  const inConfig = document.getElementById('section-config').style.display !== 'none';
   const scrolled = (inGlobalGroups && main && main.scrollTop > 280) ||
+                   (inConfig && main && main.scrollTop > 280) ||
                    (inLogs && logBox && logBox.scrollTop > 280);
   btn.classList.toggle('show', scrolled);
 }
