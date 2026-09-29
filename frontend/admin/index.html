@@ -576,6 +576,8 @@ tbody tr:hover{background:var(--card2)}
 .mx-head h3{min-width:0;margin:0;overflow:hidden;color:var(--mx-text);font-size:15px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
 .mx-head-actions{display:flex;align-items:center;gap:8px;flex:none}
 .mx-head-actions button{height:30px;min-height:30px;padding:0 13px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:all .14s;font-family:inherit;border:1px solid var(--mx-line)}
+.mx-close{flex:none;cursor:pointer;font-size:20px;color:var(--mx-muted);line-height:1;padding:4px 6px;border-radius:8px;transition:all .12s}
+.mx-close:hover{color:var(--mx-text);background:var(--mx-inset)}
 .mx-cancel{background:var(--mx-ctl);color:var(--mx-sub)}
 .mx-cancel:hover{border-color:#b9c4d4;color:var(--mx-text)}
 .mx-save{background:linear-gradient(135deg,#2dbd74,#43d17b);border-color:transparent;color:#fff}
@@ -1019,10 +1021,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
         <div class="modal-card mx-modal">
           <div class="mx-head">
             <h3 data-i18n="net.sysProxySettings">系统代理设置</h3>
-            <div class="mx-head-actions">
-              <button class="mx-cancel" onclick="closeSysProxyModal()" data-i18n="common.cancel">取消</button>
-              <button class="mx-save" id="spSaveBtn" onclick="saveSysProxyModal()" data-i18n="common.save">保存</button>
-            </div>
+            <span class="mx-close" onclick="closeSysProxyModal()" title="关闭">&times;</span>
           </div>
           <div class="mx-body">
             <div>
@@ -1035,15 +1034,15 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="mx-grid2">
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="net.enableEnv">启用代理环境变量</strong><span data-i18n="net.enableEnvHint">关闭时仅移除本应用管理的配置</span></div>
-                <label class="mx-switch"><input type="checkbox" id="spEnabled"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="spEnabled" onchange="saveSysProxyModal()"><span></span></label>
               </div>
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="net.followPort">自动跟随 Mixed Port</strong><span data-i18n="net.followPortHint">端口变化后自动同步系统代理</span></div>
-                <label class="mx-switch"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked;document.getElementById('spPortRow').style.display=this.checked?'none':'';refreshNumSpinWidths()"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked;document.getElementById('spPortRow').style.display=this.checked?'none':'';refreshNumSpinWidths();saveSysProxyModal()"><span></span></label>
               </div>
               <div class="mx-tgl" id="spPortRow" style="display:none">
                 <div class="mx-tgl-copy"><strong data-i18n="net.port">代理端口</strong><span data-i18n="net.portHint">关闭跟随后可手动指定</span></div>
-                <input type="number" class="mx-input num" id="spPort" min="1" max="65535" value="7890">
+                <input type="number" class="mx-input num" id="spPort" min="1" max="65535" value="7890" onchange="saveSysProxyModal()">
               </div>
             </div>
             <div>
@@ -1060,15 +1059,15 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div class="mx-grid3">
                 <div class="mx-tgl">
                   <div class="mx-tgl-copy"><strong data-i18n="net.tgtEnv">系统登录环境</strong><span class="mono">/etc/environment</span></div>
-                  <label class="mx-switch"><input type="checkbox" id="spTgtEnv"><span></span></label>
+                  <label class="mx-switch"><input type="checkbox" id="spTgtEnv" onchange="saveSysProxyModal()"><span></span></label>
                 </div>
                 <div class="mx-tgl">
                   <div class="mx-tgl-copy"><strong data-i18n="net.tgtProfile">登录 Shell</strong><span class="mono">/etc/profile</span></div>
-                  <label class="mx-switch"><input type="checkbox" id="spTgtProfile"><span></span></label>
+                  <label class="mx-switch"><input type="checkbox" id="spTgtProfile" onchange="saveSysProxyModal()"><span></span></label>
                 </div>
                 <div class="mx-tgl">
                   <div class="mx-tgl-copy"><strong data-i18n="net.tgtBashrc">Bash 交互环境</strong><span class="mono">/etc/bash.bashrc</span></div>
-                  <label class="mx-switch"><input type="checkbox" id="spTgtBashrc"><span></span></label>
+                  <label class="mx-switch"><input type="checkbox" id="spTgtBashrc" onchange="saveSysProxyModal()"><span></span></label>
                 </div>
               </div>
             </div>
@@ -1083,10 +1082,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
         <div class="modal-card mx-modal">
           <div class="mx-head">
             <h3 data-i18n="net.tunSettings">虚拟网卡(TUN)设置</h3>
-            <div class="mx-head-actions">
-              <button class="mx-cancel" onclick="closeTunModal()" data-i18n="common.cancel">取消</button>
-              <button class="mx-save" id="tmSaveBtn" onclick="saveTunModal()" data-i18n="common.save">保存</button>
-            </div>
+            <span class="mx-close" onclick="closeTunModal()" title="关闭">&times;</span>
           </div>
           <div class="mx-body">
             <div class="mx-banner" id="tmBanner">
@@ -1096,44 +1092,44 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="mx-grid2">
               <div class="mx-field">
                 <div class="mx-field-label">TUN Stack <button class="mx-help" type="button" title="TUN Stack">?</button></div>
-                <select class="mx-input" id="tmStack"><option value="mixed" data-i18n="vcfg.stackMixed">mixed（推荐）</option><option value="system" data-i18n="vcfg.stackSystem">system</option><option value="gvisor" data-i18n="vcfg.stackGvisor">gVisor</option></select>
+                <select class="mx-input" id="tmStack" onchange="saveTunModal()"><option value="mixed" data-i18n="vcfg.stackMixed">mixed（推荐）</option><option value="system" data-i18n="vcfg.stackSystem">system</option><option value="gvisor" data-i18n="vcfg.stackGvisor">gVisor</option></select>
                 <div class="mx-field-note" data-i18n="net.stackHint">mixed：TCP 使用 System，UDP 使用 gVisor，兼顾稳定性与兼容性。</div>
               </div>
               <div class="mx-field">
                 <div class="mx-field-label">MTU <button class="mx-help" type="button" title="MTU">?</button></div>
-                <input type="number" class="mx-input num-full" id="tmMtu" min="1280" max="65535" value="1500">
+                <input type="number" class="mx-input num-full" id="tmMtu" min="1280" max="65535" value="1500" onchange="saveTunModal()">
                 <div class="mx-field-note" data-i18n="net.mtuHint">默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。</div>
               </div>
             </div>
             <div class="mx-grid2">
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="net.autoRoute">自动路由</strong><span data-i18n="net.autoRouteHint">自动把系统流量路由到 TUN</span></div>
-                <label class="mx-switch"><input type="checkbox" id="tmAutoRoute"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="tmAutoRoute" onchange="saveTunModal()"><span></span></label>
               </div>
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong>Auto Redirect</strong><span data-i18n="net.autoRedirectHint">Linux 自动配置 nftables/iptables TCP 重定向</span></div>
-                <label class="mx-switch"><input type="checkbox" id="tmAutoRedirect"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="tmAutoRedirect" onchange="saveTunModal()"><span></span></label>
               </div>
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="net.autoDetect">自动检测出口网卡</strong><span data-i18n="net.autoDetectHint">自动选择实际的外网出口接口</span></div>
-                <label class="mx-switch"><input type="checkbox" id="tmAutoDetect"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="tmAutoDetect" onchange="saveTunModal()"><span></span></label>
               </div>
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="net.dnsHijack">DNS 劫持</strong><span data-i18n="net.dnsHijackHint">劫持 UDP/TCP 53 到 Mihomo DNS 模块</span></div>
-                <label class="mx-switch"><input type="checkbox" id="tmDnsHijack"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="tmDnsHijack" onchange="saveTunModal()"><span></span></label>
               </div>
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="net.strictRoute">严格路由</strong><span data-i18n="net.strictRouteHint">减少流量/DNS 泄漏；复杂网络可能影响其他虚拟网卡</span></div>
-                <label class="mx-switch"><input type="checkbox" id="tmStrictRoute"><span></span></label>
+                <label class="mx-switch"><input type="checkbox" id="tmStrictRoute" onchange="saveTunModal()"><span></span></label>
               </div>
               <div class="mx-tgl">
                 <div class="mx-tgl-copy"><strong data-i18n="vcfg.tunDevice">设备名称</strong><span class="mono">tun.device</span></div>
-                <input type="text" class="mx-input num" id="tmDevice" placeholder="tun" style="width:96px">
+                <input type="text" class="mx-input num" id="tmDevice" placeholder="tun" style="width:96px" onchange="saveTunModal()">
               </div>
             </div>
             <div>
               <div class="mx-cap" style="margin-bottom:6px">排除自定义网段 <button class="mx-help" type="button" title="排除自定义网段">?</button></div>
-              <textarea class="mx-input" id="tmExclude" rows="3" placeholder="192.168.0.0/16&#10;10.0.0.0/8"></textarea>
+              <textarea class="mx-input" id="tmExclude" rows="3" onchange="saveTunModal()" placeholder="192.168.0.0/16&#10;10.0.0.0/8"></textarea>
               <div class="mx-field-note" data-i18n="net.excludeHint">每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。</div>
             </div>
             <div class="mx-note">
@@ -3200,7 +3196,7 @@ function renderNoProxyTags() {
     span.textContent = tag;
     const btn = document.createElement('button');
     btn.textContent = '×';
-    btn.onclick = () => { _noProxyTags.splice(i, 1); renderNoProxyTags(); };
+    btn.onclick = () => { _noProxyTags.splice(i, 1); renderNoProxyTags(); saveSysProxyModal(); };
     span.appendChild(btn);
     box.insertBefore(span, input);
   });
@@ -3234,9 +3230,16 @@ function addNoProxyTag() {
   if (!_noProxyTags.includes(v)) _noProxyTags.push(v);
   input.value = '';
   renderNoProxyTags();
+  saveSysProxyModal();
 }
 
+// 自动保存：变更即写入并生效；并发时合并（保存中再变更则完成后补存一次）
+let _spSaving = false, _spDirty = false;
 function saveSysProxyModal() {
+  _spDirty = true;
+  if (_spSaving) return;
+  _spSaving = true;
+  _spDirty = false;
   const body = {
     enabled: document.getElementById('spEnabled').checked,
     follow_mixed_port: document.getElementById('spFollow').checked,
@@ -3248,18 +3251,18 @@ function saveSysProxyModal() {
       bashrc: document.getElementById('spTgtBashrc').checked
     }
   };
-  const btn = document.getElementById('spSaveBtn');
-  btn.disabled = true;
   fetch('api/system-proxy', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     .then(r => r.json())
     .then(d => {
       if (d.success === false && d.error) throw new Error(d.error);
       showToast(t('net.toastProxySaved'), 'success');
-      closeSysProxyModal();
       refreshNetworkCard();
     })
     .catch(e => showToast((e.message || t('net.saveFailed')), 'error'))
-    .finally(() => { btn.disabled = false; });
+    .finally(() => {
+      _spSaving = false;
+      if (_spDirty) saveSysProxyModal();  // 补存保存期间的后续变更
+    });
 }
 
 // ── TUN 设置弹窗 ────────────────────
@@ -3296,11 +3299,21 @@ async function openTunModal() {
 }
 function closeTunModal() { document.getElementById('tunModal').style.display = 'none'; }
 
+// 自动保存：变更即写入并重启引擎生效；防抖 700ms 合并连续操作，保存中再变更则补存
+let _tunSaveTimer = null, _tunSaving = false, _tunDirty = false;
 function saveTunModal() {
   const mtu = parseInt(document.getElementById('tmMtu').value || '1500', 10);
   if (!Number.isInteger(mtu) || mtu < 1280 || mtu > 65535) {
     showToast(t('net.mtuInvalid'), 'error'); return;
   }
+  _tunDirty = true;
+  clearTimeout(_tunSaveTimer);
+  _tunSaveTimer = setTimeout(_tunDoSave, 700);
+}
+function _tunDoSave() {
+  if (_tunSaving) return;
+  _tunSaving = true;
+  _tunDirty = false;
   const dnsOn = document.getElementById('tmDnsHijack').checked;
   const prevDns = (netTunData && netTunData.settings && netTunData.settings['dns-hijack']) || [];
   const exclude = document.getElementById('tmExclude').value
@@ -3316,18 +3329,18 @@ function saveTunModal() {
     'strict-route': document.getElementById('tmStrictRoute').checked,
     'route-exclude-address': exclude
   }};
-  const btn = document.getElementById('tmSaveBtn');
-  btn.disabled = true;
   fetch('api/tun-settings', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
     .then(r => r.json())
     .then(d => {
       if (!d.success) throw new Error(d.error || '');
       showToast(d.message || t('net.toastTunSaved'), 'success');
-      closeTunModal();
       refreshNetworkCard();
     })
     .catch(e => showToast((e.message || t('net.saveFailed')), 'error'))
-    .finally(() => { btn.disabled = false; });
+    .finally(() => {
+      _tunSaving = false;
+      if (_tunDirty) _tunDoSave();  // 补存保存期间的后续变更
+    });
 }
 
 // ── 流量统计（/traffic WebSocket + 实时曲线图） ──
@@ -7244,9 +7257,9 @@ function showExtCtrlPopup() {
     + '<span onclick="document.getElementById(\'extCtrlOverlay\').remove()" style="cursor:pointer;font-size:18px;color:var(--dim);line-height:1;padding:4px">&times;</span>'
     + '</div>'
     + '<div style="padding:4px 20px 12px">'
-    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.host') + '</span></div><input class="set-input ext-input" id="extCtrlHost" placeholder="0.0.0.0"></div>'
-    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.port') + '</span></div><input type="number" class="set-input ext-input" id="extCtrlPort" placeholder="9090"></div>'
-    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.secret') + '</span></div><input class="set-input ext-input" id="extCtrlSecret" placeholder="' + (t('settings.optional') || 'Optional') + '" value=""></div>'
+    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.host') + '</span></div><input class="set-input ext-input" id="extCtrlHost" placeholder="0.0.0.0" onchange="saveExtCtrl()"></div>'
+    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.port') + '</span></div><input type="number" class="set-input ext-input" id="extCtrlPort" placeholder="9090" onchange="saveExtCtrl()"></div>'
+    + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.secret') + '</span></div><input class="set-input ext-input" id="extCtrlSecret" onchange="saveExtCtrl()" placeholder="' + (t('settings.optional') || 'Optional') + '" value=""></div>'
     + '</div>'
     // 高级排查（SSH 命令）：自「内核设置-内核管理」迁入——控制器端口占用排查与控制器端口同属一处
     + '<div style="padding:2px 20px 4px">'
@@ -7255,14 +7268,7 @@ function showExtCtrlPopup() {
     + t('core.sshHelp') + '</button>'
     + '<div id="sshHelpBox" style="display:none;margin-top:8px"></div>'
     + '</div>'
-    + '<div style="padding:12px 20px 16px;display:flex;gap:8px">'
-    + '<button class="btn" onclick="document.getElementById(\'extCtrlOverlay\').remove()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px">'
-    + '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>'
-    + '<span>' + t('cancel') + '</span></button>'
-    + '<button class="btn btn-primary" onclick="saveExtCtrl()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px">'
-    + '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>'
-    + '<span>' + t('save') + '</span></button>'
-    + '</div></div>';
+    + '</div>';
   document.body.appendChild(el);
   initNumSteppers();  // 弹窗动态创建，重新初始化自定义上下箭头
   refreshNumSpinWidths();
@@ -7279,7 +7285,13 @@ function showExtCtrlPopup() {
   }).catch(function(){});
 }
 
+// 自动保存：失焦即写入并生效（防抖 600ms 合并连续输入）
+var _extSaveTimer = null;
 function saveExtCtrl() {
+  clearTimeout(_extSaveTimer);
+  _extSaveTimer = setTimeout(_extCtrlDoSave, 600);
+}
+function _extCtrlDoSave() {
   var host = document.getElementById('extCtrlHost').value.trim() || '0.0.0.0';
   var port = document.getElementById('extCtrlPort').value.trim() || '9090';
   var secret = document.getElementById('extCtrlSecret').value.trim();
@@ -7301,7 +7313,7 @@ function saveExtCtrl() {
     fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: lines.join('\n') }) })
       .then(r => r.json()).then(function(res) {
         showToast(res.message || t('toast.saved'), res.success ? 'success' : 'error');
-        if (res.success) { var ov = document.getElementById('extCtrlOverlay'); if (ov) ov.remove(); document.getElementById('setExtCtrl').textContent = 'http://' + host + ':' + port; }
+        if (res.success) { var sv = document.getElementById('setExtCtrl'); if (sv) sv.textContent = 'http://' + host + ':' + port; }
       });
   });
 }
