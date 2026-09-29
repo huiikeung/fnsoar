@@ -861,6 +861,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .vcfg-row input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
 .num-spin{position:relative;display:inline-flex;align-items:center;width:auto;max-width:100%;flex-shrink:0}
 .num-spin input[type=number]{width:100%;padding-right:46px;text-align:left;font-variant-numeric:tabular-nums;-moz-appearance:textfield;appearance:none}
+.num-spin-full{width:100%}
+.num-spin-full input[type=number]{width:100%}
 .num-spin input[type=number]::-webkit-inner-spin-button,.num-spin input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;appearance:none;margin:0}
 .num-spin-btns{position:absolute;top:1px;right:1px;bottom:1px;display:flex;flex-direction:column;width:24px;overflow:hidden;border-bottom-right-radius:6px}
 .num-spin-btns button{flex:1;display:flex;align-items:center;justify-content:center;background:transparent;border:0;border-left:1px solid var(--border);color:var(--dim);padding:0;margin:0;cursor:pointer;line-height:0;transition:color .12s,background .12s}
@@ -1099,7 +1101,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               </div>
               <div class="mx-field">
                 <div class="mx-field-label">MTU <button class="mx-help" type="button" title="MTU">?</button></div>
-                <input type="number" class="mx-input" id="tmMtu" min="1280" max="65535" value="1500">
+                <input type="number" class="mx-input num-full" id="tmMtu" min="1280" max="65535" value="1500">
                 <div class="mx-field-note" data-i18n="net.mtuHint">默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。</div>
               </div>
             </div>
@@ -2706,8 +2708,9 @@ function initNumSteppers() {
     if (inp.closest('.num-spin')) return;
     var wrap = document.createElement('div');
     var _w = inp.getBoundingClientRect().width;
-    if (_w > 0) inp.style.width = Math.round(_w) + 'px';
-    wrap.className = 'num-spin';
+    var _full = inp.classList.contains('num-full');
+    if (_w > 0 && !_full) inp.style.width = Math.round(_w) + 'px';
+    wrap.className = 'num-spin' + (_full ? ' num-spin-full' : '');
     inp.parentNode.insertBefore(wrap, inp);
     wrap.appendChild(inp);
     var btns = document.createElement('span');
@@ -2727,7 +2730,7 @@ function initNumSteppers() {
 function refreshNumSpinWidths() {
   document.querySelectorAll('.num-spin').forEach(function(wrap) {
     var inp = wrap.querySelector('input[type="number"]');
-    if (!inp || inp.style.width) return;
+    if (!inp || inp.style.width || inp.classList.contains('num-full')) return;
     var w = inp.getBoundingClientRect().width;
     if (w > 0) inp.style.width = Math.round(w) + 'px';
   });
