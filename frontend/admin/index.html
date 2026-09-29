@@ -1561,10 +1561,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <span class="hcard-name">Clash 信息</span>
           </div>
           <div class="info-grid" id="clashInfo">
-            <div class="info-item"><div class="i-label">版本</div><div class="i-val" id="ciVersion">-</div></div>
+            <div class="info-item"><div class="i-label">内核版本</div><div class="i-val" id="ciVersion">-</div></div>
             <div class="info-item"><div class="i-label">内核</div><div class="i-val" id="ciMeta">-</div></div>
             <div class="info-item"><div class="i-label">模式</div><div class="i-val" id="ciMode">-</div></div>
+            <div class="info-item"><div class="i-label">代理地址</div><div class="i-val" id="ciProxyAddr">-</div></div>
             <div class="info-item"><div class="i-label">混合端口</div><div class="i-val" id="ciPort">-</div></div>
+            <div class="info-item"><div class="i-label">规则数量</div><div class="i-val" id="ciRuleCount">-</div></div>
             <div class="info-item"><div class="i-label">允许局域网</div><div class="i-val" id="ciAllowLan">-</div></div>
             <div class="info-item"><div class="i-label">TUN</div><div class="i-val" id="ciTun">-</div></div>
           </div>
@@ -4197,9 +4199,19 @@ async function loadClashInfo() {
     document.getElementById('ciMeta').textContent = v.meta ? 'Meta' : 'Clash';
   }
   if (c) {
-    document.getElementById('ciPort').textContent = (c['mixed-port'] || c.port || '-');
+    var mp = c['mixed-port'] || c.port || '';
+    document.getElementById('ciPort').textContent = mp || '-';
+    // 代理地址：允许局域网时是 bind-address（默认 0.0.0.0），否则仅本机
+    var bind = (c['bind-address'] || '').replace(/^\*$/, '0.0.0.0');
+    var host = c['allow-lan'] ? (bind || '0.0.0.0') : '127.0.0.1';
+    document.getElementById('ciProxyAddr').textContent = mp ? (host + ':' + mp) : '-';
     document.getElementById('ciAllowLan').textContent = c['allow-lan'] ? '已开启' : '已关闭';
   }
+  // 规则数量（引擎 /rules）
+  try {
+    var r = await fetchJSON('rules');
+    if (r && Array.isArray(r.rules)) document.getElementById('ciRuleCount').textContent = r.rules.length + ' 条';
+  } catch (e) {}
   if (m) document.getElementById('ciMode').textContent = m.mode || '-';
   if (t) document.getElementById('ciTun').textContent = t.enable ? '已启用' : '已关闭';
 }
