@@ -300,6 +300,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .traf-volume{font-size:11.5px;color:var(--dim)}.traf-volume span{color:var(--text);font-weight:600}
 @media(max-width:640px){.traffic-grid{grid-template-columns:1fr}}
 .traffic-chart-wrap{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:8px;overflow:hidden}
+.traffic-chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:2px 4px 8px;flex-wrap:wrap}
+.traffic-chart-title{font-size:12px;font-weight:600;color:var(--dim)}
+.traffic-range-seg{display:flex;gap:4px}
+.traffic-range-seg .mode-btn{padding:4px 11px;border-radius:7px;border:1px solid var(--border);background:var(--card);color:var(--dim);font-size:11px;font-weight:600;cursor:pointer;transition:all .13s}
+.traffic-range-seg .mode-btn:hover{color:var(--text);border-color:var(--faint)}
+.traffic-range-seg .mode-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.traffic-chart-wrap canvas{display:block;width:100%;height:220px}
+.traffic-legend{display:flex;gap:14px;justify-content:flex-end;margin:6px 4px 2px;font-size:11px;color:var(--faint)}
+.traffic-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
 .traffic-chart-wrap canvas{width:100%;height:auto;display:block}
 .traffic-total{font-size:12px;color:var(--dim)}
 .traffic-total b{color:var(--text);font-weight:700}
@@ -1601,6 +1610,14 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             </div>
           </div>
           <div class="traffic-chart-wrap">
+            <div class="traffic-chart-head">
+              <span class="traffic-chart-title" data-i18n="traffic.trend">速度趋势</span>
+              <div class="traffic-range-seg">
+                <button class="mode-btn active" data-range="1" onclick="setTrafficRange(1)" data-i18n="traffic.range1">1 分钟</button>
+                <button class="mode-btn" data-range="5" onclick="setTrafficRange(5)" data-i18n="traffic.range5">5 分钟</button>
+                <button class="mode-btn" data-range="10" onclick="setTrafficRange(10)" data-i18n="traffic.range10">10 分钟</button>
+              </div>
+            </div>
             <canvas id="trafficChart" width="1100" height="220"></canvas>
           </div>
         </div>
@@ -2791,7 +2808,7 @@ async function renderModeCfgAsync() {
   const cfg = await fetchJSON('api/mode');
   if (!cfg || !cfg.mode) return;
   document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
   updateModeDesc(cfg.mode);
 }
 
@@ -3175,7 +3192,7 @@ function setMode(mode) {
   // 立即反馈（乐观更新），然后请求后端热切换
   const prevMode = currentMode;
   document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   currentMode = mode;
   updateModeDesc(mode);
   fetch('api/mode', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({mode}) })
@@ -3191,7 +3208,7 @@ function setMode(mode) {
         // 回滚 UI 到真实模式
         currentMode = prevMode;
         document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+        document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
         updateModeDesc(currentMode);
         loadDashboard();
         renderGroups();
@@ -3727,64 +3744,116 @@ function _tunDoSave() {
 }
 
 // ── 流量统计（/traffic WebSocket + 实时曲线图） ──
-const TRAFFIC_POINTS = 90;          // 曲线保留点数（约 90 秒）
-let trafficHistory = [];            // {up, down}
+
+let trafficHistory = [];            // {up, down}，最多 600 点（10 分钟）
+
+// 流量趋势图（参考 Clash Verge Rev）：窗口化数据 + 统一张力平滑曲线 + 渐变面积填充
+const TRAFFIC_MAX_POINTS = 600;   // 最多保留 10 分钟（约 1 点/秒）
+let trafficRange = 1;             // 当前显示窗口（分钟）
+
+function setTrafficRange(min) {
+  trafficRange = min;
+  document.querySelectorAll('.traffic-range-seg .mode-btn').forEach(function(b) {
+    b.classList.toggle('active', +b.dataset.range === min);
+  });
+  drawTrafficChart();
+}
+
+function _cssColor(name, fallback) {
+  try {
+    var v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  } catch (e) { return fallback; }
+}
+function _hexA(hex, a) {  // #rrggbb → rgba()
+  var h = hex.replace('#', '');
+  if (h.length === 3) h = h.split('').map(function(c) { return c + c; }).join('');
+  var n = parseInt(h, 16);
+  return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+}
+// Catmull-Rom → 三次贝塞尔：张力固定，任意点密度下平滑度一致且无过冲
+function _smoothStroke(ctx, pts, tension) {
+  if (pts.length < 2) return;
+  ctx.moveTo(pts[0].x, pts[0].y);
+  if (pts.length === 2) { ctx.lineTo(pts[1].x, pts[1].y); return; }
+  for (var i = 0; i < pts.length - 1; i++) {
+    var p0 = pts[Math.max(0, i - 1)], p1 = pts[i], p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 2, i + 2)];
+    ctx.bezierCurveTo(
+      p1.x + (p2.x - p0.x) * tension, p1.y + (p2.y - p0.y) * tension,
+      p2.x - (p3.x - p1.x) * tension, p2.y - (p3.y - p1.y) * tension,
+      p2.x, p2.y);
+  }
+}
+function _niceMax(v) {  // Y 轴上限取整到好看刻度
+  if (v <= 0) return 1024;
+  var exp = Math.floor(Math.log(v) / Math.LN10);
+  var base = Math.pow(10, exp);
+  var n = v / base;
+  var step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  return step * base;
+}
 
 function drawTrafficChart() {
-  const canvas = document.getElementById('trafficChart');
+  var canvas = document.getElementById('trafficChart');
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  const W = canvas.width, H = canvas.height;
-  const padL = 8, padR = 8, padT = 10, padB = 8;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var padL = 8, padR = 52, padT = 10, padB = 10;
   ctx.clearRect(0, 0, W, H);
-  // 自适应 Y 轴上限（取历史最大值向上取整）
-  let maxV = 1;
-  trafficHistory.forEach(p => { if (p.up > maxV) maxV = p.up; if (p.down > maxV) maxV = p.down; });
-  maxV = Math.max(1024, Math.ceil(maxV * 1.15));
-  const plotW = W - padL - padR, plotH = H - padT - padB;
-  // 网格线
-  ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--grid-line').trim() || 'rgba(255,255,255,0.06)';
+  var cUp = _cssColor('--yellow', '#e0a341'), cDown = _cssColor('--green', '#3fb950');
+  var cGrid = _cssColor('--grid-line', 'rgba(128,128,128,0.12)');
+  // 取当前窗口数据（不足一屏时从左侧补起）
+  var win = trafficHistory.slice(-(trafficRange * 60));
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  var maxV = 1;
+  win.forEach(function(p) { if (p.up > maxV) maxV = p.up; if (p.down > maxV) maxV = p.down; });
+  maxV = _niceMax(Math.max(maxV * 1.2, 1024));
+  // 水平网格 + Y 轴刻度
+  ctx.strokeStyle = cGrid;
+  ctx.fillStyle = _cssColor('--faint', '#8b919e');
   ctx.lineWidth = 1;
-  for (let i = 0; i <= 4; i++) {
-    const y = padT + plotH * i / 4;
+  ctx.font = '10px ui-monospace,SFMono-Regular,Menlo,monospace';
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  for (var i = 0; i <= 4; i++) {
+    var y = padT + plotH * i / 4;
+    ctx.globalAlpha = i === 4 ? 0.9 : 0.55;
     ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(W - padR, y); ctx.stroke();
+    ctx.globalAlpha = 0.85;
+    ctx.fillText(fmtSpeed(maxV * (4 - i) / 4), W - padR + 6, y);
   }
-  // 绘制曲线（平滑贝塞尔）
-  const drawLine = (getVal, color) => {
+  ctx.globalAlpha = 1;
+  // 曲线 + 渐变面积（上传/下载）
+  var drawSeries = function(getVal, color) {
+    if (!win.length) return;
+    var pts = win.map(function(p, i) {
+      return { x: padL + plotW * i / Math.max(1, win.length - 1),
+               y: padT + plotH - (getVal(p) / maxV) * plotH };
+    });
+    var last = pts[pts.length - 1];
+    var grad = ctx.createLinearGradient(0, padT, 0, padT + plotH);
+    grad.addColorStop(0, _hexA(color, 0.26));
+    grad.addColorStop(1, _hexA(color, 0));
+    ctx.beginPath();
+    _smoothStroke(ctx, pts, 0.2);
+    ctx.lineTo(last.x, padT + plotH);
+    ctx.lineTo(pts[0].x, padT + plotH);
+    ctx.closePath();
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.beginPath();
+    _smoothStroke(ctx, pts, 0.2);
     ctx.strokeStyle = color;
     ctx.lineWidth = 2;
     ctx.lineJoin = 'round';
     ctx.lineCap = 'round';
-    const pts = [];
-    for (let i = 0; i < trafficHistory.length; i++) {
-      const x = padL + plotW * i / (TRAFFIC_POINTS - 1);
-      const v = getVal(trafficHistory[i]);
-      const y = padT + plotH - (v / maxV) * plotH;
-      pts.push({x, y});
-    }
-    if (pts.length < 2) {
-      if (pts.length === 1) { ctx.moveTo(pts[0].x, pts[0].y); ctx.lineTo(pts[0].x, pts[0].y); }
-      ctx.stroke();
-      return;
-    }
-    ctx.beginPath();
-    ctx.moveTo(pts[0].x, pts[0].y);
-    for (let i = 0; i < pts.length - 1; i++) {
-      const p0 = pts[Math.max(0, i - 1)];
-      const p1 = pts[i];
-      const p2 = pts[i + 1];
-      const p3 = pts[Math.min(pts.length - 1, i + 2)];
-      const t = 0.3;
-      const cp1x = p1.x + (p2.x - p0.x) * t / 6;
-      const cp1y = p1.y + (p2.y - p0.y) * t / 6;
-      const cp2x = p2.x - (p3.x - p1.x) * t / 6;
-      const cp2y = p2.y - (p3.y - p1.y) * t / 6;
-      ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, p2.x, p2.y);
-    }
+    ctx.shadowColor = _hexA(color, 0.35);
+    ctx.shadowBlur = 6;
     ctx.stroke();
+    ctx.shadowBlur = 0;
   };
-  drawLine(p => p.up, '#e0a341');    // 上传 - 黄色
-  drawLine(p => p.down, '#3fb950');  // 下载 - 绿色
+  drawSeries(function(p) { return p.down; }, cDown);  // 下载在下层
+  drawSeries(function(p) { return p.up; }, cUp);
 }
 
 function startTraffic() {
@@ -3799,7 +3868,7 @@ function startTraffic() {
       const d = JSON.parse(ev.data);
       const up = d.up || 0, down = d.down || 0;
       trafficHistory.push({up, down});
-      if (trafficHistory.length > TRAFFIC_POINTS) trafficHistory.shift();
+      if (trafficHistory.length > TRAFFIC_MAX_POINTS) trafficHistory.shift();
       const elUp = document.getElementById('trafficUp');
       const elDown = document.getElementById('trafficDown');
       if (elUp) elUp.textContent = fmtSpeed(up);
@@ -4550,7 +4619,7 @@ async function loadGroups() {
     } catch (e) {}
   })();
   if (c && c.mode) currentMode = c.mode;
-  document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
   renderGroups();
 }
 // 单个节点测速：真实订阅节点走 /providers/proxies/{provider}/{name}/healthcheck
@@ -4878,7 +4947,7 @@ function setGroupView(v) {
 function syncGroupView() {
   const seg = document.getElementById('gviewSeg');
   if (seg) {
-    seg.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.view === groupView));
+    seg.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.view === groupView));
   }
   if (!proxiesData) return;
   const types = ['Selector','URLTest','Fallback','LoadBalance'];
@@ -6679,7 +6748,7 @@ var I18N = {
     'sidebar.logs':'日志','sidebar.test':'测试','sidebar.settings':'设置','sidebar.panels':'面板',
     'home.subscription':'订阅','home.currentNode':'当前节点','home.proxyMode':'代理模式',
     'home.webTest':'网站测试','home.ipInfo':'IP 信息','home.clashInfo':'Clash 信息',
-    'home.systemInfo':'系统信息','home.trafficStats':'流量统计',
+    'home.systemInfo':'系统信息','home.trafficStats':'流量统计','traffic.trend':'速度趋势','traffic.range1':'1 分钟','traffic.range5':'5 分钟','traffic.range10':'10 分钟',
     'home.from':'来自','home.updated':'更新时间','home.used':'已使用 / 总量','home.expire':'到期时间',
     'home.proxy':'代理','home.refresh':'刷新','home.startTest':'开始测速',
     'home.proxyGroup':'代理组','home.node':'节点',
@@ -6849,7 +6918,7 @@ var I18N = {
     'sidebar.logs':'Logs','sidebar.test':'Test','sidebar.settings':'Settings','sidebar.panels':'Panels',
     'home.subscription':'Subscription','home.currentNode':'Current Node','home.proxyMode':'Proxy Mode',
     'home.webTest':'Site Test','home.ipInfo':'IP Info','home.clashInfo':'Clash Info',
-    'home.systemInfo':'System Info','home.trafficStats':'Traffic',
+    'home.systemInfo':'System Info','home.trafficStats':'Traffic','traffic.trend':'Speed Trend','traffic.range1':'1 min','traffic.range5':'5 min','traffic.range10':'10 min',
     'home.from':'From','home.updated':'Updated','home.used':'Used / Total','home.expire':'Expiry',
     'home.proxy':'Proxy','home.refresh':'Refresh','home.startTest':'Start Test',
     'home.proxyGroup':'Proxy Group','home.node':'Node',
