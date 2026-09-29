@@ -166,6 +166,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .mini-btn-ic{width:32px;height:32px;padding:0;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:none;background:transparent;color:var(--dim);cursor:pointer;transition:all .12s}
 .mini-btn-ic:hover{background:rgba(78,110,242,.09);color:var(--accent)}
 .mini-btn-ic svg{width:16px;height:16px;fill:currentColor}
+/* 软件图标选择（设置页-基础设置） */
+.app-icon-picker{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.app-icon-choice{position:relative;width:38px;height:38px;padding:2px;border-radius:9px;border:1px solid var(--border);background:var(--card2);cursor:pointer;transition:border-color .15s;display:inline-flex;align-items:center;justify-content:center}
+.app-icon-choice img{width:100%;height:100%;object-fit:contain;border-radius:7px}
+.app-icon-choice:hover{border-color:var(--accent);border-style:dashed}
+.app-icon-choice.active{border-color:var(--accent);box-shadow:0 0 0 2px rgba(78,110,242,.18)}
+.app-icon-choice-state{position:absolute;right:-4px;bottom:-4px;display:none;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:var(--accent);color:#fff;font-size:9px;font-weight:700;line-height:1}
+.app-icon-choice.active .app-icon-choice-state{display:inline-flex}
+.app-icon-choice[disabled]{opacity:.5;cursor:not-allowed}
 .hrow{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:13px}
 .hrow-ic{width:20px;text-align:center;font-size:13px;color:var(--dim);flex-shrink:0}
 .hrow-ic svg{width:15px;height:15px;fill:currentColor;stroke:none;display:block;margin:auto}
@@ -1903,95 +1912,6 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
           <a class="con-view-btn" href="https://github.com/Huiikeung/fnsoar" target="_blank" title="GitHub" style="text-decoration:none"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M12 1.27a11 11 0 0 0-3.48 21.46c.55.09.73-.28.73-.55v-1.84c-3.03.66-3.67-1.61-3.67-1.61-.55-1.29-1.28-1.65-1.28-1.65-1.06-.7.09-.66.09-.66 1.06.09 1.63 1.09 1.63 1.09 1.05 1.75 2.6 1.25 3.24.96.09-.75.37-1.25.64-1.55-2.32-.26-4.72-1.16-4.72-5.19 0-1.15.38-2.07 1.08-2.82-.1-.26-.46-1.34.1-2.75 0 0 .87-.28 2.83 1.09a9.8 9.8 0 0 1 2.57-.34c.87 0 1.77.12 2.57.34 1.96-1.37 2.82-1.09 2.82-1.09.56 1.41.2 2.49.1 2.75.7.75 1.08 1.67 1.08 2.82 0 4.03-2.4 4.93-4.72 5.19.38.32.71.96.71 1.93v2.86c0 .27.18.61.73.55A11 11 0 0 0 12 1.27z"/></svg></a>
         </div>
       </div>
-      <div class="set-card core-card" style="margin-top:0;margin-bottom:16px">
-        <div class="set-title" data-i18n="core.title">内核设置</div>
-        <div style="padding:14px 16px">
-          <div class="core-tabs">
-            <button class="core-tab active" id="coreTabManage" onclick="switchCoreTab('manage')">
-              <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-              <span data-i18n="core.tabManage">内核管理</span>
-            </button>
-            <button class="core-tab" id="coreTabConn" onclick="switchCoreTab('conn')">
-              <svg viewBox="0 0 24 24"><path d="M13 2v3.07c3.39.49 6 3.39 6 6.93s-2.61 6.44-6 6.93V22h-2v-3.07c-3.39-.49-6-3.39-6-6.93s2.61-6.44 6-6.93V2h2m-2 5.5c-2.5 0-4.5 2-4.5 4.5s2 4.5 4.5 4.5 4.5-2 4.5-4.5-2-4.5-4.5-4.5z"/></svg>
-              <span data-i18n="core.tabConn">连接管理</span>
-            </button>
-          </div>
-
-          <!-- ═══ 内核管理 ═══ -->
-          <div class="core-panel active" id="corePanelManage">
-            <div class="set-item">
-              <div class="set-item-left">
-                <span class="set-item-label">Mihomo Core</span>
-                <span style="display:block;font-size:11px;color:var(--faint);margin-top:2px" data-i18n="core.subTitle">核心版本与运行方式</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
-                <strong id="coreVersion" style="font-size:13px">-</strong>
-                <span class="geo-status ok" id="coreRunStatus">-</span>
-
-              </div>
-            </div>
-
-
-
-
-
-
-
-
-
-
-            <div class="core-warn" id="corePortWarn" style="display:none">
-              <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
-              <span id="corePortWarnText"></span>
-            </div>
-
-            <div style="border-top:1px solid var(--border-soft);margin-top:14px;padding-top:12px">
-              <div style="font-size:13px;font-weight:600;color:var(--text)" data-i18n="core.portFix">端口占用处理</div>
-              <p style="font-size:11px;color:var(--faint);line-height:1.6;margin:6px 0 8px" data-i18n="core.portFixHint">可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。</p>
-              <div class="core-actions" style="margin:0">
-                <button class="core-btn" onclick="showSection('config')" data-i18n="core.modifyPort">修改端口</button>
-              </div>
-            </div>
-          </div>
-
-          <!-- ═══ 连接管理 ═══ -->
-          <div class="core-panel" id="corePanelConn">
-            <div class="set-item">
-              <div class="set-item-left">
-                <span class="set-item-label" data-i18n="core.connSettings">连接设置</span>
-                <span style="display:block;font-size:11px;color:var(--faint);margin-top:2px" data-i18n="core.connSub">连接当前 Core 的 Controller API</span>
-              </div>
-              <span class="update-meta" id="connAutoBadge" style="font-size:11px;font-weight:600;color:#65de93;background:rgba(67,209,123,.1);border:1px solid rgba(67,209,123,.25);border-radius:20px;padding:2px 9px" data-i18n="core.autoManage">自动管理</span>
-              <button class="core-btn primary" id="connTestBtn" onclick="testConnection()"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg><span data-i18n="core.test">测试连接</span></button>
-            </div>
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:8px;margin-top:4px">
-              <div class="conn-field">
-                <span class="conn-field-label" data-i18n="core.controller">控制器</span>
-                <strong class="mono conn-field-val" id="connController">-</strong>
-                <button class="core-btn" style="padding:4px 10px;font-size:11px;flex:none" onclick="showSection('config')" data-i18n="core.portSettings">端口设置</button>
-              </div>
-              <div class="conn-field">
-                <span class="conn-field-label" data-i18n="core.secret">Secret</span>
-                <strong class="mono conn-field-val" id="connSecret">-</strong>
-                <button class="core-btn" style="padding:4px 8px;font-size:11px;flex:none" id="secretEyeBtn" onclick="toggleSecretEye()" title="显示/隐藏" aria-label="显示/隐藏 Secret"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M2 12s3.5-8 10-8 10 8 10 8-3.5 8-10 8S2 12 2 12zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/></svg></button>
-              </div>
-            </div>
-            <div style="border-top:1px solid var(--border-soft);margin-top:12px;padding-top:12px;display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:10px">
-              <div>
-                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--dim);margin-bottom:5px" data-i18n="core.delayUrl">延迟测试 URL</label>
-                <input class="set-input" style="width:100%;max-width:none;height:38px;text-align:left" id="coreHcUrl" placeholder="https://www.gstatic.com/generate_204" onchange="saveHealthcheck()">
-              </div>
-              <div>
-                <label style="display:block;font-size:11.5px;font-weight:600;color:var(--dim);margin-bottom:5px" data-i18n="core.delayTimeout">超时（毫秒）</label>
-                <input class="set-input no-spin" style="width:100%;max-width:none;height:38px;text-align:left" type="number" id="coreHcTimeout" min="1000" max="30000" placeholder="3000" onchange="saveHealthcheck()">
-              </div>
-            </div>
-            <p style="font-size:11px;color:var(--faint);line-height:1.6;margin:8px 0 0" data-i18n="core.delayHint">用于节点延迟测速的请求地址与超时；修改后自动保存。</p>
-          </div>
-
-          <!-- ═══ GEO 数据 ═══ -->
-        </div>
-      </div>
 
       <div class="set-grid">
         <div class="set-col">
@@ -2119,6 +2039,10 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.showIcons">显示图标</span></div>
               <label class="toggle"><input type="checkbox" id="setShowIcons" checked onchange="saveBasicSetting('show_icons')"><span class="toggle-track"></span></label>
+            </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.appIcon">软件图标</span></div>
+              <div class="app-icon-picker" id="appIconPicker"></div>
             </div>
           </div>
           <div class="set-card">
@@ -2364,7 +2288,6 @@ function showSection(name) {
   autoHideSidebar();
   if (name === 'home') { loadDashboard(); refreshTun(); refreshNetworkCard(); }
   if (name === 'settings') {
-    loadCoreStatus();
   }
   if (name === 'groups') {
     // 秒开：优先恢复上次渲染快照（内存 > localStorage），数据后台刷新后原位重绘
@@ -6156,6 +6079,7 @@ function loadSettings() {
     var ll = cfg.match(/^log-level:\s*(\w+)/m);
     if (ll) document.getElementById('setLogLevel').value = ll[1];
     csSyncAll();  // 同步自定义下拉显示文本（日志等级等）
+    loadAppIcons();  // 软件图标选择器
     // 加载外部控制器
     fetch('api/config').then(r => r.json()).then(function(d) {
       var cfg = d.config || '';
@@ -6386,7 +6310,7 @@ var I18N = {
     'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.dashboard':'面板升级','settings.dashStatus':'状态','settings.dashUpToDate':'已最新','settings.dashUpdateAvail':'有可用更新',
     'settings.service':'系统服务','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'深色','settings.themeLight':'浅色','settings.themeSystem':'系统',
-    'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标',
+    'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示图标','settings.appIcon':'软件图标','settings.appIconHint':'切换 fnOS 桌面与窗口显示的应用图标',
     'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
@@ -6556,7 +6480,7 @@ var I18N = {
     'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status','settings.dashUpToDate':'Up to date','settings.dashUpdateAvail':'Update available',
     'settings.service':'System Service','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'Dark','settings.themeLight':'Light','settings.themeSystem':'System',
-    'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons',
+    'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Icons','settings.appIcon':'App Icon','settings.appIconHint':'Icon shown on the fnOS desktop and window',
     'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
@@ -6798,6 +6722,45 @@ function _verGt(a, b) {  // 版本号 a > b ?
   }
   return false;
 }
+// ── 软件图标（应用图标切换） ──────────────────────────────
+async function loadAppIcons() {
+  const box = document.getElementById('appIconPicker');
+  if (!box) return;
+  let d = null;
+  try { d = await fetchJSON('api/app/icons'); } catch (e) {}
+  if (!d || !d.ok || !d.options) { box.innerHTML = '<span style="font-size:11px;color:var(--faint)">图标读取失败</span>'; return; }
+  const cur = d.selected || 'default';
+  box.innerHTML = d.options.map(function(ic) {
+    return '<button type="button" class="app-icon-choice' + (ic.id === cur ? ' active' : '') + '"'
+      + ' data-icon="' + esc(ic.id) + '" title="' + esc(ic.name || ic.id) + '"'
+      + ' onclick="chooseAppIcon(this.dataset.icon)">'
+      + '<img src="api/app/icons/' + esc(ic.id) + '.png" alt="' + esc(ic.name || ic.id) + '">'
+      + '<span class="app-icon-choice-state">✓</span></button>';
+  }).join('');
+}
+async function chooseAppIcon(iconId) {
+  const box = document.getElementById('appIconPicker');
+  if (!box || !iconId) return;
+  const btns = box.querySelectorAll('.app-icon-choice');
+  btns.forEach(function(b) { b.disabled = true; });
+  try {
+    const r = await fetch('api/app/icon', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ iconId: iconId }) });
+    const d = await r.json();
+    if (d.success === false) throw new Error(d.error || '切换失败');
+    btns.forEach(function(b) { b.classList.toggle('active', b.dataset.icon === iconId); });
+    // 即时刷新面板自身 logo（左侧栏顶部 + 浏览器标签页），带缓存破除
+    var bust = '?t=' + Date.now();
+    var logo = document.querySelector('.sidebar-header img');
+    if (logo) logo.src = './favicon.png' + bust;
+    var link = document.querySelector('link[rel="icon"]');
+    if (link) link.href = './favicon.png' + bust;
+    showToast(d.message || '软件图标已切换；刷新 fnOS 桌面并重新打开窗口后生效', 'success');
+  } catch (e) {
+    showToast('图标切换失败: ' + (e.message || e), 'error');
+  } finally {
+    btns.forEach(function(b) { b.disabled = false; });
+  }
+}
 function renderCoreUpdateBadge() {
   var badge = document.getElementById('coreUpdBadge');
   if (!badge) return;
@@ -6862,14 +6825,6 @@ function checkUpdates() {
 // ── 设置页 - 内核设置 ────────────────────
 let _secretVisible = false;
 let _secretValue = '';
-
-function switchCoreTab(tab) {
-  document.getElementById('coreTabManage').classList.toggle('active', tab === 'manage');
-  document.getElementById('coreTabConn').classList.toggle('active', tab === 'conn');
-  document.getElementById('corePanelManage').classList.toggle('active', tab === 'manage');
-  document.getElementById('corePanelConn').classList.toggle('active', tab === 'conn');
-  if (tab === 'conn') loadConnInfo();
-}
 
 function toggleCoreDetails() {
   const el = document.getElementById('coreDetails');

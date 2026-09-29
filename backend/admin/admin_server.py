@@ -88,6 +88,10 @@ def _resolve_ui_dir():
 
 ADMIN_UI_DIR  = _resolve_ui_dir()
 DASHBOARD_DIR = f"{TRIM_PKGVAR}/dashboard"
+# ── 应用图标切换（软件图标）：图标存数据目录，应用到 fnOS 网关 ui/images ──
+ICON_STORE_DIR = f"{TRIM_PKGVAR}/icons"
+ICON_META_FILE = f"{ICON_STORE_DIR}/current.json"
+APP_ICON_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "ui", "images")
 HOST_TRANSPARENT_SCRIPT = os.path.join(ADMIN_DIR, "host_transparent.sh")
 HOST_TRANSPARENT_PORT = int(os.environ.get("MIHOMO_REDIR_PORT", "7892"))
 _PROVIDER_RESTART_LOCK = threading.Lock()
@@ -598,6 +602,56 @@ PROXY_BACKUP_DIR = f"{TRIM_PKGVAR}/backups/proxy-environment"
 # ── 内核设置（运行方式 / 延迟测试参数） ────────────────────────────────
 CORE_SETTINGS_FILE = f"{TRIM_PKGVAR}/core-settings.json"
 
+
+ICON_OPTIONS = (
+    ("default", "默认（fnSoar）"),
+    ("fnsoar2", "备选一"),
+    ("fnsoar3", "备选二"),
+    ("classic", "经典图标"),
+)
+
+def _app_icon_options():
+    out = []
+    try:
+        for iid, name in ICON_OPTIONS:
+            f = os.path.join(ICON_STORE_DIR, iid + ".png")
+            if os.path.exists(f):
+                out.append({"id": iid, "name": name, "has_icon": True})
+    except Exception:
+        pass
+    return out
+
+def _app_icon_selected():
+    try:
+        with open(ICON_META_FILE, "r", encoding="utf-8") as f:
+            return str((json.load(f) or {}).get("selected") or "default")
+    except Exception:
+        return "default"
+
+def _apply_app_icon(icon_id):
+    """把所选图标应用到 fnOS 网关读取的 ui/images（256/64）。"""
+    src = os.path.join(ICON_STORE_DIR, icon_id + ".png")
+    if not os.path.exists(src):
+        raise RuntimeError("图标文件不存在: " + icon_id)
+    dst256 = os.path.join(APP_ICON_DIR, "icon_256.png")
+    dst64 = os.path.join(APP_ICON_DIR, "icon_64.png")
+    os.makedirs(APP_ICON_DIR, exist_ok=True)
+    shutil.copyfile(src, dst256)
+    # 同步面板自身 logo（favicon.png：左侧栏顶部图标 + 浏览器标签页图标）
+    try:
+        shutil.copyfile(src, os.path.join(os.path.dirname(os.path.abspath(__file__)), "favicon.png"))
+    except Exception:
+        pass
+    try:
+        from PIL import Image
+        with Image.open(src) as im:
+            im = im.convert("RGBA")
+            im.resize((64, 64), Image.LANCZOS).save(dst64)
+    except Exception:
+        shutil.copyfile(src, dst64)
+    with open(ICON_META_FILE, "w", encoding="utf-8") as f:
+        json.dump({"selected": icon_id}, f)
+    return True
 
 def _default_core_settings():
     return {
@@ -3353,6 +3407,26 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self._send_json(get_ip_info())
         if path == "/api/systeminfo":
             return self._send_json(get_system_info())
+        if path == "/api/app/icons":
+            return self._send_json({"ok": True, "options": _app_icon_options(),
+                                    "selected": _app_icon_selected()})
+        if path.startswith("/api/app/icons/"):
+            # 图标预览图（PNG 流）
+            icon_id = path[len("/api/app/icons/"):].split("?")[0]
+            if icon_id.endswith(".png"):
+                icon_id = icon_id[:-4]
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", icon_id or ""):
+                return self._send_json({"success": False, "error": "非法图标 ID"}, 400)
+            f = os.path.join(ICON_STORE_DIR, icon_id + ".png")
+            if not os.path.exists(f):
+                return self._send_json({"success": False, "error": "图标不存在"}, 404)
+            self.send_response(200)
+            self.send_header("Content-Type", "image/png")
+            self.send_header("Cache-Control", "no-cache, no-store")
+            self.end_headers()
+            with open(f, "rb") as fh:
+                shutil.copyfileobj(fh, self.wfile)
+            return
         if path == "/api/unlock/items":
             # 解锁测试：默认测试项列表（Pending）
             from media_unlock import default_unlock_items
@@ -3643,6 +3717,22 @@ class AdminHandler(BaseHTTPRequestHandler):
                     "settings": settings,
                     "restarted": restarted,
                     "message": "TUN 设置已保存" + ("，服务已重启" if restarted else "，开启 TUN 后生效")})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/app/icon":
+            try:
+                data = json.loads(body) if body else {}
+            except Exception:
+                return self._send_json({"success": False, "error": "参数错误"}, 400)
+            icon_id = str(data.get("iconId") or "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9_-]+", icon_id):
+                return self._send_json({"success": False, "error": "非法图标 ID"}, 400)
+            if icon_id != "default" and not os.path.exists(os.path.join(ICON_STORE_DIR, icon_id + ".png")):
+                return self._send_json({"success": False, "error": "图标不存在"}, 400)
+            try:
+                _apply_app_icon(icon_id)
+                return self._send_json({"success": True, "selected": icon_id,
+                                        "message": "软件图标已切换；刷新 fnOS 桌面并重新打开窗口后生效"})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/system-proxy":
