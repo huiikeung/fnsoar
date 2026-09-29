@@ -277,7 +277,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .info-scroll::-webkit-scrollbar{display:none}
 .info-item{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;min-width:0;overflow:hidden}
 .i-label{font-size:11px;color:var(--dim);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.i-val{font-size:13px;font-weight:600;line-height:1.4;overflow:hidden;text-overflow:ellipsis;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.i-val{font-size:13px;font-weight:600;line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .i-val.iv-row{display:flex;align-items:center;justify-content:space-between;gap:8px;-webkit-line-clamp:unset}
 .iv-num{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:12px;font-weight:600}
 .iv-pct{flex:none;font-size:10px;font-weight:600;color:var(--dim);background:var(--card);border:1px solid var(--border);border-radius:6px;padding:1px 6px;white-space:nowrap;line-height:1.5}
@@ -4231,7 +4231,18 @@ async function loadSystemInfo() {
   if (d.uptime) document.getElementById('siUptime').textContent = fmtUptime(Math.floor(d.uptime));
   document.getElementById('siHost').textContent = d.hostname || '-';
   const plat = document.getElementById('siPlatform');
-  if (plat) plat.textContent = d.platform ? d.platform.replace(/with-glibc.*/, '').trim() : '-';
+  if (plat) {
+    if (d.platform) {
+      // 原始形如 Linux-6.18.18.c1126-trim-x86_64-with-glibc2.39，太长会折行，
+      // 精简为「OS 主次版本 · 架构」，完整串挂 title 悬浮查看
+      var parts = String(d.platform).split('-');
+      var osN = parts[0] || '';
+      var verN = (parts[1] || '').split('.').slice(0, 2).join('.');
+      var archN = parts.find(function(x) { return /x86_64|aarch64|armv7l|i686|riscv64|loongarch64/.test(x); }) || '';
+      plat.textContent = [osN, verN].filter(Boolean).join(' ') + (archN ? ' · ' + archN : '');
+      plat.title = d.platform;
+    } else plat.textContent = '-';
+  }
   if (d.app_version) document.getElementById('siVersion').textContent = d.app_version;
 }
 
