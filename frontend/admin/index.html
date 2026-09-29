@@ -676,7 +676,7 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .upd-badge{flex:none;font-size:10px;font-weight:600;color:var(--red);background:rgba(246,78,110,.1);border:1px solid rgba(246,78,110,.32);border-radius:20px;padding:2px 9px;margin-left:2px;white-space:nowrap;cursor:pointer;transition:border-color .15s}
 .upd-badge:hover{border-color:var(--red);border-style:dashed}
 /* 更新内核弹窗：按钮字重与设置页正文一致（400），避免视觉过粗 */
-#coreUpdateOverlay .core-btn,#coreUpdateOverlay .btn{font-weight:400}
+#coreUpdateOverlay .core-btn,#coreUpdateOverlay .btn,#extCtrlOverlay .core-btn,#extCtrlOverlay .btn{font-weight:400}
 /* 更新内核弹窗内的内核管理按钮行 */
 .core-mgr-actions{display:flex;flex-wrap:wrap;gap:8px}
 .core-mgr-actions .core-btn{flex:1;min-width:96px;justify-content:center}
@@ -1918,9 +1918,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <p style="font-size:11px;color:var(--faint);line-height:1.6;margin:6px 0 8px" data-i18n="core.portFixHint">可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。</p>
               <div class="core-actions" style="margin:0">
                 <button class="core-btn" onclick="showSection('config')" data-i18n="core.modifyPort">修改端口</button>
-                <button class="core-btn" onclick="toggleSshHelp()" data-i18n="core.sshHelp">高级排查（SSH 命令）</button>
               </div>
-              <div id="sshHelpBox" style="display:none;margin-top:8px"></div>
             </div>
           </div>
 
@@ -7246,6 +7244,13 @@ function showExtCtrlPopup() {
     + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.host') + '</span></div><input class="set-input ext-input" id="extCtrlHost" placeholder="0.0.0.0"></div>'
     + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.port') + '</span></div><input type="number" class="set-input ext-input" id="extCtrlPort" placeholder="9090"></div>'
     + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('settings.secret') + '</span></div><input class="set-input ext-input" id="extCtrlSecret" placeholder="' + (t('settings.optional') || 'Optional') + '" value=""></div>'
+    + '</div>'
+    // 高级排查（SSH 命令）：自「内核设置-内核管理」迁入——控制器端口占用排查与控制器端口同属一处
+    + '<div style="padding:2px 20px 4px">'
+    + '<button class="btn btn-ghost" onclick="toggleSshHelp()" style="width:100%;justify-content:center;gap:6px">'
+    + '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M20 5H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 12H4V7h16v10zM9.5 9.5c0 .83-.67 1.5-1.5 1.5S6.5 10.33 6.5 9.5 7.17 8 8.5 8s1.5.67 1.5 1.5zM12 11.5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5zm3.5 1.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>'
+    + t('core.sshHelp') + '</button>'
+    + '<div id="sshHelpBox" style="display:none;margin-top:8px"></div>'
     + '</div>'
     + '<div style="padding:12px 20px 16px;display:flex;gap:8px">'
     + '<button class="btn" onclick="document.getElementById(\'extCtrlOverlay\').remove()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px">'
