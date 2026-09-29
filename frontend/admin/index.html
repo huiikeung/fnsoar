@@ -675,6 +675,8 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 /* Clash核心 行「有版本更新」徽章 */
 .upd-badge{flex:none;font-size:10px;font-weight:600;color:var(--red);background:rgba(246,78,110,.1);border:1px solid rgba(246,78,110,.32);border-radius:20px;padding:2px 9px;margin-left:2px;white-space:nowrap;cursor:pointer;transition:border-color .15s}
 .upd-badge:hover{border-color:var(--red);border-style:dashed}
+/* 更新内核弹窗：按钮字重与设置页正文一致（400），避免视觉过粗 */
+#coreUpdateOverlay .core-btn,#coreUpdateOverlay .btn{font-weight:400}
 /* 更新内核弹窗内的内核管理按钮行 */
 .core-mgr-actions{display:flex;flex-wrap:wrap;gap:8px}
 .core-mgr-actions .core-btn{flex:1;min-width:96px;justify-content:center}
