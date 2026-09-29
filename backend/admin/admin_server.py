@@ -39,6 +39,7 @@ SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
 CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
 # ── 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 ──────────────
 _CHANGELOG_CACHE = {"t": 0, "d": None}
+_CORE_LATEST_CACHE = {"t": 0, "d": None}   # 内核最新版长效缓存（6h，扛 GitHub 限流）
 PROFILE_EXT_FILE = f"{TRIM_PKGVAR}/profile-ext.json"
 # 应用设置接管的字段：全局扩展（合并/脚本）改不动这些，最终以应用设置为准
 APP_MANAGED_KEYS = (
@@ -376,20 +377,88 @@ def _read_dashboard_version(name):
             pass
     return None
 
+def _github_fetch_json(url, timeout=15):
+    """GitHub API 拉取：本地 mihomo 代理优先 → 直连兜底，各重试一次。
+
+    GitHub 直连在境内不稳定（实测约半数 TLS EOF），而本机代理端口
+    通常可达；内核/应用版本检测与更新日志都走这里，避免加载时赶上
+    坏窗口就静默失败（徽章不出现）。
+    """
+    import urllib.request as _ureq
+    token = os.environ.get("MIHOMO_GITHUB_TOKEN", "")
+    headers = {"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    def _fetch(use_proxy):
+        req = _ureq.Request(url, headers=headers)
+        if use_proxy:
+            proxy = os.environ.get("MIHOMO_PROXY_ADDR", "http://127.0.0.1:7890")
+            opener = _ureq.build_opener(_ureq.ProxyHandler({"http": proxy, "https": proxy}))
+            with opener.open(req, timeout=timeout) as resp:
+                return json.loads(resp.read())
+        with _ureq.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read())
+
+    last = None
+    for use_proxy in (True, False):
+        for _try in range(2):
+            try:
+                return _fetch(use_proxy)
+            except _ureq.HTTPError:
+                raise        # 服务端已明确响应（403 限流/404 私有等），重试只会加速耗尽配额
+            except Exception as e:
+                last = e     # 仅网络层错误（超时/连接失败）才重试
+    raise last
+
+def _github_fetch_text(url, timeout=15):
+    """GitHub 文本拉取（与 _github_fetch_json 同策略：本地代理优先、直连兜底）。"""
+    import urllib.request as _ureq
+    token = os.environ.get("MIHOMO_GITHUB_TOKEN", "")
+    headers = {"User-Agent": "ClashMini/1.0"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+
+    def _fetch(use_proxy):
+        req = _ureq.Request(url, headers=headers)
+        if use_proxy:
+            proxy = os.environ.get("MIHOMO_PROXY_ADDR", "http://127.0.0.1:7890")
+            opener = _ureq.build_opener(_ureq.ProxyHandler({"http": proxy, "https": proxy}))
+            with opener.open(req, timeout=timeout) as resp:
+                return resp.read().decode("utf-8", "replace")
+        with _ureq.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8", "replace")
+
+    last = None
+    for use_proxy in (True, False):
+        for _try in range(2):
+            try:
+                return _fetch(use_proxy)
+            except _ureq.HTTPError:
+                raise
+            except Exception as e:
+                last = e
+    raise last
+
+
+def _github_latest_via_atom(repo):
+    """经 releases.atom 取最新版本号——该端点不走 REST API 的匿名限流
+    （60 次/小时，代理出口 IP 共享时极易耗尽）。"""
+    xml = _github_fetch_text(f"https://github.com/{repo}/releases.atom")
+    # atom 按时间排序且含预发布（如 mihomo 的 "Prerelease-Alpha" 排在正式版前），
+    # 取第一条符合版本号格式的 entry 标题
+    for m in re.finditer(r"<entry>.*?<title>([^<]+)</title>", xml, re.S):
+        title = m.group(1).strip()
+        if re.match(r"^v?\d+(\.\d+){1,}", title):
+            return title
+    raise RuntimeError("atom 无正式版本 entry")
+
 def _github_latest(repo):
     """Query GitHub release 'latest' using the default GitHub API address
     (https://api.github.com). An optional MIHOMO_GITHUB_TOKEN is attached when
     available (raises the rate limit and enables private-repo access)."""
-    import urllib.request as _ureq
     gh_api = os.environ.get("MIHOMO_GITHUB_API", "https://api.github.com").rstrip("/")
-    token = os.environ.get("MIHOMO_GITHUB_TOKEN", "")
-    url = f"{gh_api}/repos/{repo}/releases/latest"
-    headers = {"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"}
-    if token:
-        headers["Authorization"] = f"Bearer {token}"
-    req = _ureq.Request(url, headers=headers)
-    with _ureq.urlopen(req, timeout=15) as resp:
-        return json.loads(resp.read())
+    return _github_fetch_json(f"{gh_api}/repos/{repo}/releases/latest")
 
 def dashboard_latest_info(name):
     """Return (latest_version, download_url, current_version) for a dashboard.
@@ -3743,26 +3812,12 @@ class AdminHandler(BaseHTTPRequestHandler):
                 headers = {"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"}
                 if token:
                     headers["Authorization"] = f"Bearer {token}"
-                def _gh_fetch(use_proxy):
-                    rq = _cr.Request(url, headers=headers)
-                    if use_proxy:
-                        proxy = os.environ.get("MIHOMO_PROXY_ADDR", "http://127.0.0.1:7890")
-                        opener = _cr.build_opener(_cr.ProxyHandler({"http": proxy, "https": proxy}))
-                        return json.loads(opener.open(rq, timeout=15).read())
-                    return json.loads(_cr.urlopen(rq, timeout=15).read())
-                # GitHub 直连不稳定：优先走本机 mihomo 代理，失败再试直连，各重试一次
-                arr = None
-                for use_proxy in (True, False):
-                    for _try in range(2):
-                        try:
-                            arr = _gh_fetch(use_proxy)
-                            break
-                        except Exception:
-                            arr = None
-                    if arr is not None:
-                        break
+                try:
+                    arr = _github_fetch_json(url)
+                except Exception:
+                    # GitHub 不可达（仓库未公开/限流/网络受限）：回退本地 CHANGELOG.md
+                    arr = None
                 if arr is None:
-                    # GitHub 不可达（仓库未公开/网络受限）：回退本地 CHANGELOG.md
                     md_path = os.path.join(TRIM_APPDEST, "admin", "CHANGELOG.md")
                     if os.path.exists(md_path):
                         try:
@@ -3775,7 +3830,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                                 return self._send_json(out)
                         except Exception:
                             pass
-                    raise RuntimeError("GitHub 连接失败（已尝试本地代理与直连），且未找到本地更新日志")
+                    raise RuntimeError("GitHub 连接失败，且未找到本地更新日志")
                 releases = []
                 for it in (arr if isinstance(arr, list) else []):
                     releases.append({
@@ -3791,11 +3846,24 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json({"ok": False, "error": str(e)}, 500)
         if path == "/api/core-latest":
             try:
-                import urllib.request as _ureq
-                api = "https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
-                req = _ureq.Request(api, headers={"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"})
-                with _ureq.urlopen(req, timeout=15) as resp:
-                    d = json.loads(resp.read())
+                now_ct = time.time()
+                if _CORE_LATEST_CACHE["t"] and now_ct - _CORE_LATEST_CACHE["t"] < 6 * 3600:
+                    return self._send_json(_CORE_LATEST_CACHE["d"])
+                d = None
+                try:
+                    d = _github_fetch_json("https://api.github.com/repos/MetaCubeX/mihomo/releases/latest")
+                except Exception:
+                    # API 限流/不可达：atom 源兜底（不受 REST 匿名限流约束）
+                    try:
+                        ver = _github_latest_via_atom("MetaCubeX/mihomo")   # 形如 v1.19.31
+                        asset = f"mihomo-linux-amd64-compatible-{ver}.gz"
+                        d = {"tag_name": ver, "assets": [
+                            {"name": asset,
+                             "browser_download_url": f"https://github.com/MetaCubeX/mihomo/releases/download/{ver}/{asset}"}]}
+                    except Exception:
+                        if _CORE_LATEST_CACHE["t"]:   # 都失败：返回上次成功的结果（降级）
+                            return self._send_json(dict(_CORE_LATEST_CACHE["d"], stale=True))
+                        raise
                 ver = (d.get("tag_name", "") or "").lstrip("v")
                 dl = ""
                 for a in d.get("assets", []):
@@ -3807,7 +3875,9 @@ class AdminHandler(BaseHTTPRequestHandler):
                         n = a.get("name", "")
                         if n.startswith("mihomo-linux-amd64-") and n.endswith(".gz") and "compatible" not in n:
                             dl = a.get("browser_download_url", ""); break
-                return self._send_json({"success": True, "version": ver, "url": dl})
+                out = {"success": True, "version": ver, "url": dl}
+                _CORE_LATEST_CACHE.update({"t": now_ct, "d": dict(out)})
+                return self._send_json(out)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/dashboards":
