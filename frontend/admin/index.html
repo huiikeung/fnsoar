@@ -807,6 +807,24 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
 .dns-panel.active{display:block}
 .dns-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:8px}
 @media(max-width:1100px){.dns-grid{grid-template-columns:1fr!important}}
+/* 窄屏 dns-field 规则（按控型分治）：
+   - 开关等短控件：不换行，与标签同行
+   - 名称/small 小字：允许换行（small 块级自然换行）
+   - 输入框/选择框/标签编辑区：放不下就整体换到下一行并撑满该行
+   原理：flex-wrap + 各控件 flex-grow/basis 差异，让 flex 自动决定换行时机 */
+@media(max-width:1100px){
+  .dns-field{flex-wrap:wrap;gap:8px}
+  .dns-field .dns-field-label{flex:0 1 auto;min-width:0}
+  .dns-field .dns-field-label small{white-space:normal;word-break:break-word}
+  /* 短控件（开关）固定不换行 */
+  .dns-field > .mx-switch, .dns-field > label{flex:0 0 auto}
+  /* 宽控件：同行放不下则换行，换行后撑满整行 */
+  .dns-field > .dns-input, .dns-field > select, .dns-field > .custom-select,
+  .dns-field > .mx-bypass, .dns-field textarea{flex:1 1 auto;min-width:0;max-width:100%}
+  .dns-field.dns-ta-box{flex-direction:column;align-items:stretch}
+  .dns-field.dns-ta-box textarea{width:100%}
+  .geo-card-head{flex-wrap:wrap;gap:6px}
+}
 .dns-field{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 13px;border:1px solid var(--border);border-radius:10px;background:var(--card2);min-height:52px}
 .dns-field-label{font-size:12px;font-weight:600;color:var(--text);flex-shrink:0}
 .dns-field-label small{display:block;font-size:10px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:2px;line-height:1.4}
@@ -817,6 +835,8 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 /* 自定义下拉（csInitAll 包装 .custom-select）：与输入框同宽 190px 可收缩，保持字段长度一致 */
 .dns-field .custom-select{flex:0 1 auto;width:190px;min-width:0}
 .dns-ta-box{flex-direction:column;align-items:stretch;gap:7px;min-height:0}
+/* 无 class 的 textarea（如 TUN 排除网段）吃 cols 内在宽度，通栏拉伸 */
+.dns-field textarea{width:100%;min-width:0;box-sizing:border-box;flex:0 1 auto}
 .dns-ta-box textarea{width:100%;min-height:88px;max-height:220px;resize:vertical;background:var(--card);border:1px solid var(--border);border-radius:8px;padding:8px 10px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11.5px;line-height:1.55;color:var(--text);outline:none;transition:border-color .15s}
 .dns-field.wide{grid-column:1/-1}
 /* GEO 数据文件卡片（配置页）：第一行 名称+状态+大小/时间，第二行 URL 输入 */
