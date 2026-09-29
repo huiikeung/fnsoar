@@ -744,7 +744,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .geo-cards{display:grid;gap:8px;margin-bottom:8px}
 .geo-card{border:1px solid var(--border);border-radius:10px;background:var(--card2);padding:10px 13px}
 .geo-card-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px}
-.geo-card-info{display:flex;align-items:baseline;gap:10px;min-width:0;flex-wrap:wrap}
+.geo-card-right{display:flex;align-items:center;gap:10px;flex:none}
 .geo-card-name{font-size:12px;font-weight:600;color:var(--text)}
 .geo-card-name small{display:block;font-size:10px;color:var(--faint);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-weight:400;margin-top:2px;line-height:1.4}
 .geo-card-meta{font-size:10.5px;color:var(--faint);line-height:1.4}
@@ -1798,29 +1798,29 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div class="geo-cards">
                 <div class="geo-card">
                   <div class="geo-card-head">
-                    <div class="geo-card-info"><span class="geo-card-name">geoip<small>geox-url.geoip</small></span><span class="geo-card-meta" id="geoMeta_geoip">--</span></div>
-                    <span class="geo-status" id="geoStatus_geoip">-</span>
+                    <span class="geo-card-name">geoip<small>geox-url.geoip</small></span>
+                    <div class="geo-card-right"><span class="geo-card-meta" id="geoMeta_geoip">--</span><span class="geo-status" id="geoStatus_geoip">-</span></div>
                   </div>
                   <input class="dns-input geo-url-input" id="vcfgGeoIp" onchange="saveGeoSection()">
                 </div>
                 <div class="geo-card">
                   <div class="geo-card-head">
-                    <div class="geo-card-info"><span class="geo-card-name">geosite<small>geox-url.geosite</small></span><span class="geo-card-meta" id="geoMeta_geosite">--</span></div>
-                    <span class="geo-status" id="geoStatus_geosite">-</span>
+                    <span class="geo-card-name">geosite<small>geox-url.geosite</small></span>
+                    <div class="geo-card-right"><span class="geo-card-meta" id="geoMeta_geosite">--</span><span class="geo-status" id="geoStatus_geosite">-</span></div>
                   </div>
                   <input class="dns-input geo-url-input" id="vcfgGeoSite" onchange="saveGeoSection()">
                 </div>
                 <div class="geo-card">
                   <div class="geo-card-head">
-                    <div class="geo-card-info"><span class="geo-card-name">mmdb<small>geox-url.mmdb</small></span><span class="geo-card-meta" id="geoMeta_mmdb">--</span></div>
-                    <span class="geo-status" id="geoStatus_mmdb">-</span>
+                    <span class="geo-card-name">mmdb<small>geox-url.mmdb</small></span>
+                    <div class="geo-card-right"><span class="geo-card-meta" id="geoMeta_mmdb">--</span><span class="geo-status" id="geoStatus_mmdb">-</span></div>
                   </div>
                   <input class="dns-input geo-url-input" id="vcfgMmdb" onchange="saveGeoSection()">
                 </div>
                 <div class="geo-card">
                   <div class="geo-card-head">
-                    <div class="geo-card-info"><span class="geo-card-name">asn<small>geox-url.asn</small></span><span class="geo-card-meta" id="geoMeta_asn">--</span></div>
-                    <span class="geo-status" id="geoStatus_asn">-</span>
+                    <span class="geo-card-name">asn<small>geox-url.asn</small></span>
+                    <div class="geo-card-right"><span class="geo-card-meta" id="geoMeta_asn">--</span><span class="geo-status" id="geoStatus_asn">-</span></div>
                   </div>
                   <input class="dns-input geo-url-input" id="vcfgAsn" onchange="saveGeoSection()">
                 </div>
@@ -5428,7 +5428,8 @@ function loadVcfg() {
     var vcp = document.getElementById('vcfgCtrlPort'); if (vcp) { var ec0 = getVal('external-controller', '0.0.0.0:9090'); vcp.value = ec0.indexOf(':') !== -1 ? ec0.split(':').pop() : '9090'; }
     var ves = document.getElementById('vcfgExtSecret'); if (ves) ves.value = getVal('secret', '');
     var veu = document.getElementById('vcfgExtUi'); if (veu) veu.value = getVal('external-ui', '');
-    var vga = document.getElementById('vcfgGeoAuto'); if (vga) vga.checked = getBool('geo-auto-update');
+    var vga = document.getElementById('vcfgGeoAuto');
+    if (vga) vga.checked = /^geo-auto-update:/m.test(cfg) ? getBool('geo-auto-update') : true;  // 缺省打开
     var vgi = document.getElementById('vcfgGeoInterval'); if (vgi) vgi.value = getVal('geo-update-interval', '24');
     loadVcfgSections(cfg);
     renderGeoCards();  // GEO 文件状态/大小/更新时间（自设置页 GEO 标签页迁入）
