@@ -94,6 +94,10 @@ build_variant() {
     cp -a "${FNPACK_DIR}/wizard" "${STAGE}/wizard"
     cp -f "${FNPACK_DIR}/ICON.PNG"     "${STAGE}/ICON.PNG"
     cp -f "${FNPACK_DIR}/ICON_256.PNG" "${STAGE}/ICON_256.PNG"
+    cp -f "${FNPACK_DIR}/favicon.png"  "${STAGE}/favicon.png"
+    # app.json 的 icon 字段引用 favicon.png，需在 app/ 根也放一份
+    mkdir -p "${STAGE}/app"
+    cp -f "${FNPACK_DIR}/favicon.png"  "${STAGE}/app/favicon.png"
     # 写入该包的 platform / version 声明
     sed -i "s/^platform[[:space:]]*=.*/platform              = ${platform}/" "${STAGE}/manifest"
     sed -i "s/^version[[:space:]]*=[[:space:]]*[0-9.]*/version               = ${VERSION}/" "${STAGE}/manifest"
