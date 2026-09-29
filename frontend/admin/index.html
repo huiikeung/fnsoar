@@ -274,6 +274,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .ip-eye svg{width:15px;height:15px;display:block}
 .ip-eye:hover{color:var(--text)}
 .info-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;min-width:0}
+/* 半宽卡片内的滚动信息网格（隐藏滚动条） */
+.info-scroll{max-height:268px;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;-ms-overflow-style:none}
+.info-scroll::-webkit-scrollbar{display:none}
 .info-item{background:var(--card2);border:1px solid var(--border);border-radius:9px;padding:10px 12px;min-width:0;overflow:hidden}
 .i-label{font-size:11px;color:var(--dim);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .i-val{font-size:13px;font-weight:600;line-height:1.4;overflow:hidden;text-overflow:ellipsis;word-break:break-all;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
@@ -1377,15 +1380,15 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
           </div>
         </div>
 
-        <!-- 系统信息（通栏两卡宽度） -->
-        <div class="hcard full" id="home-sys">
+        <!-- 系统信息（半宽卡片，内容超出滚动） -->
+        <div class="hcard" id="home-sys">
           <div class="hcard-title">
             <span class="hcard-ic sys"><svg viewBox="0 0 24 24"><path d="M4,1H20A1,1 0 0,1 21,2V6A1,1 0 0,1 20,7H4A1,1 0 0,1 3,6V2A1,1 0 0,1 4,1M4,9H20A1,1 0 0,1 21,10V14A1,1 0 0,1 20,15H4A1,1 0 0,1 3,14V10A1,1 0 0,1 4,9M4,17H20A1,1 0 0,1 21,18V22A1,1 0 0,1 20,23H4A1,1 0 0,1 3,22V18A1,1 0 0,1 4,17M9,5H10V3H9V5M9,13H10V11H9V13M9,21H10V19H9V21M5,3V5H7V3H5M5,11V13H7V11H5M5,19V21H7V19H5Z"/></svg></span>
             <span class="hcard-name">系统信息</span>
             <span class="flex-sp"></span>
             <button class="mini-btn mini-btn-ic" onclick="showSection('settings')" title="设置" aria-label="设置"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
           </div>
-          <div class="info-grid" id="sysInfo" style="grid-template-columns:repeat(auto-fill,minmax(190px,1fr))">
+          <div class="info-grid info-scroll" id="sysInfo" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr))">
             <div class="info-item"><div class="i-label">CPU 使用率</div><div class="i-val" id="siCpu">-</div></div>
             <div class="info-item"><div class="i-label">内存使用</div><div class="i-val" id="siMem">-</div></div>
             <div class="info-item"><div class="i-label">磁盘使用</div><div class="i-val" id="siDisk">-</div></div>
