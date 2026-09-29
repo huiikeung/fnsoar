@@ -260,7 +260,8 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .test-context-menu .tcm-item.danger{color:var(--red)}
 .test-context-menu .tcm-item.danger:hover{background:rgba(239,68,68,.1)}
 .ip-big{font-size:22px;font-weight:700;color:var(--text);margin-bottom:12px;word-break:break-all;display:flex;align-items:center;gap:10px}
-.ip-flag{font-size:28px;line-height:1;flex-shrink:0;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji','Twemoji Mozilla',sans-serif}
+.ip-flag{font-size:26px;line-height:1;flex-shrink:0;display:inline-flex;align-items:center;font-family:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji','Twemoji Mozilla',sans-serif}
+.ip-flag-img{width:27px;height:20px;border-radius:3px;object-fit:cover;display:block;box-shadow:0 0 0 1px rgba(128,128,128,.25)}
 .ip-field{display:flex;align-items:center;gap:10px;padding:6px 0;border-top:1px solid var(--border-soft);font-size:12.5px}
 .ip-field:first-of-type{border-top:none}
 .ipf-label{color:var(--dim);min-width:52px;flex-shrink:0}
@@ -4130,9 +4131,18 @@ function toggleIpEye(id, eyeId) {
   ipRevealed = !ipRevealed;
   applyIpVisibility(id, eyeId);
 }
-function flagEmoji(code) {
-  if (!code || !/^[A-Za-z]{2}$/.test(code)) return '🌐';
-  return String.fromCodePoint(...code.toUpperCase().split('').map(c => 0x1F1E6 + c.charCodeAt(0) - 65));
+// 国旗用本地 SVG 图片：Windows 的 Segoe UI Emoji 没有区域指示符旗帜字形，
+// emoji 方案在 Win 上必然显示方框（Mac 也随浏览器而异），故改为图片
+function flagUrl(code) {
+  if (!code || !/^[A-Za-z]{2}$/.test(code)) return '';
+  return './flags/' + code.toLowerCase() + '.svg';
+}
+function setFlag(elId, code) {
+  var el = document.getElementById(elId);
+  if (!el) return;
+  var url = flagUrl(code);
+  if (!url) { el.textContent = '🌐'; return; }
+  el.innerHTML = '<img class="ip-flag-img" src="' + url + '" alt="' + code + '" onerror="this.parentNode.textContent=\'🌐\'">';
 }
 function setIpv6Row(ipv6, d) {
   const row = document.getElementById('ipv6Row');
@@ -4140,7 +4150,7 @@ function setIpv6Row(ipv6, d) {
   if (ipv6) {
     row.style.display = '';
     setIpText('ipAddr6', ipv6, 'ipEye6');
-    document.getElementById('ipv6Flag').textContent = flagEmoji((d && d.ipv6_countryCode) || '');
+    setFlag('ipv6Flag', (d && d.ipv6_countryCode) || '');
     document.getElementById('ipv6Loc').textContent = (d && d.ipv6_location) || '';
     document.getElementById('ipv6Loc').title = ipv6;
   } else {
@@ -4163,7 +4173,7 @@ async function loadIpInfo() {
     return;
   }
   setIpText('ipAddr', (d.ipAddr || d.ip || '-'), 'ipEye');
-  document.getElementById('ipFlag').textContent = flagEmoji(d.countryCode || '');
+  setFlag('ipFlag', d.countryCode || '');
   const asn = d.asn_organization ? (d.asn ? 'AS' + d.asn + ' ' : '') + d.asn_organization : (d.asn || '');
   document.getElementById('ipAsn').textContent = asn || 'N/A';
   document.getElementById('ipIsp').textContent = d.isp || 'Unknown';

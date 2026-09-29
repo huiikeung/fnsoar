@@ -3858,6 +3858,8 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self._send_file(f"{ADMIN_UI_DIR}{path}", "application/javascript")
         if path.endswith(".png"):
             return self._send_file(f"{ADMIN_UI_DIR}{path}", "image/png")
+        if path.endswith(".svg"):
+            return self._send_file(f"{ADMIN_UI_DIR}{path}", "image/svg+xml")
         self.send_error(404)
 
     def do_POST(self):

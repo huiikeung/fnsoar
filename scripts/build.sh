@@ -40,6 +40,7 @@ for f in admin_server.py media_unlock.py server.js host_transparent.sh start_adm
 done
 chmod +x "${DEST_DIR}/admin/host_transparent.sh" "${DEST_DIR}/admin/start_admin.sh" 2>/dev/null || true
 if [ -d "${FRONTEND_ADMIN}/icon" ]; then cp -a "${FRONTEND_ADMIN}/icon" "${DEST_DIR}/admin/"; fi
+if [ -d "${FRONTEND_ADMIN}/flags" ]; then cp -a "${FRONTEND_ADMIN}/flags" "${DEST_DIR}/admin/"; fi
 
 # Copy fnOS app manifest
 cp -f "${FNPACK_DIR}/app.json" "${DEST_DIR}/"
