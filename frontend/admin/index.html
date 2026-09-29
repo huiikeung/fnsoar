@@ -605,8 +605,11 @@ tbody tr:hover{background:var(--card2)}
 .net-meta-v{min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;color:var(--dim);background:var(--card2);border:1px solid var(--border);border-radius:7px;padding:2px 9px}
 .net-meta b{color:var(--dim);font-weight:600}
 /* ── 设置弹窗（浅色卡片，参考 Clash-for-fnos 系统代理/TUN 设置弹窗） ── */
-:root{--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;--mx-panel:#ffffff;
+:root{--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;--mx-panel:#ffffff;--mx-tag:#eef2f8;
   --mx-accent:#627fe6;--mx-good:#239a58;--mx-good-strong:#2dbd74;--mx-warn:#b76b10}
+/* 深色模式下的 mx-* 覆盖：此前只有一套浅色值，导致深色下标签编辑器/标签/弹窗全是白底 */
+[data-theme="dark"]{--mx-text:#e8e8ec;--mx-sub:#a8adb8;--mx-muted:#868c96;--mx-line:#2e3038;--mx-inset:#16161a;--mx-ctl:#202024;--mx-panel:#1a1a1e;--mx-tag:#26262c;
+  --mx-accent:#6d8aff;--mx-good:#2e9e4f;--mx-good-strong:#3fb950;--mx-warn:#d29922}
 .modal-card.mx-modal{width:min(640px,100%);max-width:640px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;
   background:var(--mx-panel);border:1px solid var(--mx-line);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.35);color:var(--mx-text)}
 .mx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none;padding:18px 20px 12px}
@@ -674,7 +677,7 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .mx-bypass-editor{min-height:36px;display:flex;align-items:center;flex-wrap:wrap;gap:5px;padding:5px;border:1px solid var(--mx-line);border-radius:8px;background:var(--mx-ctl)}
 .mx-bypass-editor:focus-within{border-color:rgba(98,127,230,.62);box-shadow:0 0 0 3px rgba(98,127,230,.08)}
 .mx-bypass-editor>input{min-width:170px;flex:1;height:25px;padding:0 5px;border:0;background:transparent;box-shadow:none;color:var(--mx-text);font-size:11.5px;outline:none;font-family:inherit}
-.mx-tag{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:#eef2f8;border:1px solid var(--mx-line);border-radius:7px;font-size:11px;color:var(--mx-sub)}
+.mx-tag{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;background:var(--mx-tag);border:1px solid var(--mx-line);border-radius:7px;font-size:11px;color:var(--mx-sub)}
 .mx-tag button{border:none;background:transparent;color:#98a2b3;cursor:pointer;font-size:13px;line-height:1;padding:0}
 .mx-tag button:hover{color:#d64b60}
 .mx-bypass>small{display:block;margin-top:6px;color:var(--mx-muted);font-size:10px;line-height:1.45}
