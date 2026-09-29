@@ -926,7 +926,11 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-card:hover{border-color:var(--faint)}
 .filter-sec{margin-bottom:8px}
 .filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
-.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}
+.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}
+.chev-ic{width:14px;height:14px;fill:currentColor;transition:transform .18s;flex:none}
+#tunnelFormChev{transform:rotate(180deg)}
+.link-btn{border:none;background:transparent;color:var(--accent2);font-size:11.5px;font-weight:500;cursor:pointer;padding:2px 4px;transition:color .12s}
+.link-btn:hover{color:var(--accent);text-decoration:underline}.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}
 /* 流量隧道列表行 */
 .tun-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);margin-bottom:8px}
 .tun-row-main{min-width:0}
@@ -1114,7 +1118,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div>
               <div class="mx-cap" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px" onclick="toggleTunnelForm()">
                 <span data-i18n="tunnel.addNew">添加新隧道</span>
-                <span id="tunnelFormChev" style="font-size:11px;transition:transform .15s">&#9650;</span>
+                <svg class="chev-ic" id="tunnelFormChev" viewBox="0 0 24 24"><path d="M7.41 8.59L12 13.17l4.59-4.58L18 10l-6 6-6-6 1.41-1.41z"/></svg>
               </div>
               <div id="tunnelForm" style="display:block">
                 <div class="mx-grid2">
@@ -1477,7 +1481,6 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <button class="mini-btn mini-btn-ic" onclick="openSysProxyModal()" title="系统代理设置" aria-label="系统代理设置"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
               <label class="toggle"><input type="checkbox" id="netProxyToggle" onchange="toggleSysProxy(this.checked)"><span class="toggle-track"></span></label>
             </div>
-            <div class="net-meta" id="netProxyMeta"></div>
           </div>
           <div id="netPanelTun" style="display:none">
             <div class="net-banner" id="netTunBanner">
@@ -1491,7 +1494,6 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <button class="mini-btn mini-btn-ic" onclick="openTunModal()" title="TUN 设置" aria-label="TUN 设置"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
               <label class="toggle"><input type="checkbox" id="netTunToggle" onchange="toggleTunMode(this.checked)"><span class="toggle-track"></span></label>
             </div>
-            <div class="net-meta" id="netTunMeta"></div>
           </div>
         </div>
 
@@ -2335,7 +2337,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.version">应用版本</span></div>
               <span class="set-val" id="setVersion">-</span>
-              <button class="mini-btn" onclick="openChangelogModal()" data-i18n="settings.changelog">更新日志</button>
+              <button class="link-btn" onclick="openChangelogModal()" data-i18n="settings.changelog">更新日志</button>
             </div>
           </div>
           <div class="set-card">
@@ -3356,9 +3358,7 @@ function renderNetworkProxy() {
   }
   const scopeCount = ['environment', 'profile', 'bashrc'].filter(k => tg[k] !== false).length;
   const addr = _actualProxyAddr(s);
-  const meta = document.getElementById('netProxyMeta');
-  if (meta) meta.innerHTML = _netMetaItem(t('net.serviceAddr'), addr)
-    + _netMetaItem(t('net.scope'), scopeCount + ' ' + t('net.filesUnit'));
+
 }
 
 function renderNetworkTun() {
@@ -3378,9 +3378,7 @@ function renderNetworkTun() {
   } else {
     _netBanner('netTunBanner', 'netTunBannerText', t('net.bannerTunOff'), 'warn');
   }
-  const meta = document.getElementById('netTunMeta');
-  if (meta) meta.innerHTML = _netMetaItem(t('net.stack'), s.stack || 'mixed')
-    + _netMetaItem('MTU', s.mtu || 1500);
+
 }
 
 async function toggleSysProxy(on) {
@@ -6727,7 +6725,7 @@ var I18N = {
     'net.title':'网络设置','net.tabProxy':'系统代理','net.tabTun':'虚拟网卡模式',
     'net.sysProxy':'系统代理','net.tun':'虚拟网卡模式',
     'net.bannerProxyOn':'系统代理已启用，读取代理环境变量的程序将通过 127.0.0.1 端口走代理。',
-    'net.bannerProxyOff':'系统代理已关闭。NAS 流量已由 TUN / nftables 透明接管，此项按需开启（让命令行等程序也走代理）。',
+    'net.bannerProxyOff':'系统代理已关闭，按需开启（命令行等程序走代理）。',
     'net.bannerTunOn':'TUN 模式已启用，应用将通过虚拟网卡访问网络。',
     'net.bannerTunOff':'TUN 模式已关闭，当前仅代理遵循规则的应用流量。',
     'net.metaProxy':'服务地址 {addr} · 应用范围 {scope} 个文件',
@@ -6897,7 +6895,7 @@ var I18N = {
     'net.title':'Network','net.tabProxy':'System Proxy','net.tabTun':'TUN Mode',
     'net.sysProxy':'System Proxy','net.tun':'TUN Mode',
     'net.bannerProxyOn':'System proxy is on. Programs that read proxy env vars will route through 127.0.0.1.',
-    'net.bannerProxyOff':'System proxy disabled. NAS traffic is already proxied transparently via TUN / nftables; enable this only if you want CLI tools proxied too.',
+    'net.bannerProxyOff':'System proxy off. Enable if needed (proxies CLI tools).',
     'net.bannerTunOn':'TUN mode is on. Apps will reach the network through the virtual NIC.',
     'net.bannerTunOff':'TUN mode is off. Only rule-following app traffic is proxied.',
     'net.metaProxy':'Address {addr} · {scope} target file(s)',
@@ -7521,7 +7519,7 @@ function toggleTunnelForm() {
   var c = document.getElementById('tunnelFormChev');
   var show = f.style.display === 'none';
   f.style.display = show ? 'block' : 'none';
-  c.style.transform = show ? '' : 'rotate(180deg)';
+  c.style.transform = show ? 'rotate(180deg)' : '';
 }
 // 从 config.yaml 的 listeners 段解析隧道列表
 async function loadTunnelsFromConfig() {
