@@ -219,14 +219,6 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .custom-select-panel::-webkit-scrollbar{width:6px}
 .custom-select-panel::-webkit-scrollbar-track{background:transparent}
 .custom-select-panel::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
-.mode-big{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
-.mode-big-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px 8px;border-radius:12px;border:1.5px solid var(--border);background:var(--card2);color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;transition:all .12s}
-.mode-big-btn:hover{border-color:var(--accent);border-style:dashed}
-.mode-big-btn.active{border-color:var(--accent);background:var(--accent);color:var(--on-accent)}
-.mbig-ic{font-size:22px}
-.mbig-ic svg{width:24px;height:24px;fill:currentColor;stroke:none;display:block;margin:auto}
-.mode-desc{display:flex;align-items:flex-start;gap:8px;border:1px solid var(--border-soft);background:var(--card2);border-radius:10px;padding:10px 13px;font-size:12px;color:var(--dim);line-height:1.6}
-.mode-desc-ic{width:14px;height:14px;flex-shrink:0;margin-top:2.5px;fill:currentColor;opacity:.65}
 
 /* ── 网站测试风格 ────────────────── */
 .test-scroll{max-height:260px;overflow-y:auto;overflow-x:hidden}
@@ -582,6 +574,9 @@ tbody tr:hover{background:var(--card2)}
 .net-banner{display:flex;align-items:flex-start;gap:8px;padding:9px 12px;border-radius:10px;font-size:12px;line-height:1.5;color:var(--dim);background:var(--card2);border:1px solid var(--border-soft);margin-bottom:12px}
 .net-banner svg{width:14px;height:14px;fill:currentColor;flex-shrink:0;margin-top:2px}
 .net-banner.ok{background:rgba(63,185,80,.1);border-color:rgba(63,185,80,.25);color:var(--green)}
+.mode-tabs{margin-bottom:8px}
+.mode-tabs .net-tab.active{color:var(--accent);border-color:rgba(78,110,242,.45);background:transparent}
+.mode-tabs .net-tab.active::after{background:var(--accent)}
 .net-banner.warn{background:rgba(210,153,34,.1);border-color:rgba(210,153,34,.25);color:var(--yellow)}
 .net-row{display:flex;align-items:center;gap:10px;padding:11px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2)}
 .net-dot{width:9px;height:9px;border-radius:50%;background:var(--faint);flex-shrink:0;transition:background .2s,box-shadow .2s}
@@ -1462,18 +1457,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <span class="hcard-ic mode"><svg viewBox="0 0 24 24"><path d="M20.2 5.9l.8-.8C19.6 3.7 17.8 3 16 3s-3.6.7-5 2.1l.8.8C13 4.8 14.5 4.2 16 4.2s3 .6 4.2 1.7zm-.9.9c-.9-.9-2.1-1.4-3.3-1.4s-2.4.5-3.3 1.4l.8.8c.7-.7 1.6-1 2.5-1s1.8.3 2.5 1l.8-.8zM19 13h-2V9h-2v4H5c-1.1 0-2 .9-2 2v4c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-4c0-1.1-.9-2-2-2zM7 18H5v-2h2v2zm12 0H9v-2h10v2z"/></svg></span>
             <span class="hcard-name">代理模式</span>
           </div>
-          <div class="mode-big">
-            <button class="mode-big-btn active" data-mode="rule" onclick="setMode('rule')">
-              <span class="mbig-ic"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"/></svg></span><span>规则</span>
-            </button>
-            <button class="mode-big-btn" data-mode="global" onclick="setMode('global')">
-              <span class="mbig-ic"><svg viewBox="0 0 24 24"><path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg></span><span>全局</span>
-            </button>
-            <button class="mode-big-btn" data-mode="direct" onclick="setMode('direct')">
-              <span class="mbig-ic"><svg viewBox="0 0 24 24"><path d="M13,2L3,14H12L10,22L21,10H12L13,2Z"/></svg></span><span>直连</span>
-            </button>
+          <div class="net-tabs mode-tabs">
+            <button class="net-tab mode-btn active" data-mode="rule" onclick="setMode('rule')"><svg viewBox="0 0 24 24"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"/></svg><span data-i18n="mode.rule">规则</span></button>
+            <button class="net-tab mode-btn" data-mode="global" onclick="setMode('global')"><svg viewBox="0 0 24 24"><path d="M17.9,17.39C17.64,16.59 16.89,16 16,16H15V13A1,1 0 0,0 14,12H8V10H10A1,1 0 0,0 11,9V7H13A2,2 0 0,0 15,5V4.59C17.93,5.77 20,8.64 20,12C20,14.08 19.2,15.97 17.9,17.39M11,19.93C7.05,19.44 4,16.08 4,12C4,11.38 4.08,10.78 4.21,10.21L9,15V16A2,2 0 0,0 11,18M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/></svg><span data-i18n="mode.global">全局</span></button>
+            <button class="net-tab mode-btn" data-mode="direct" onclick="setMode('direct')"><svg viewBox="0 0 24 24"><path d="M13,2L3,14H12L10,22L21,10H12L13,2Z"/></svg><span data-i18n="mode.direct">直连</span></button>
           </div>
-          <div class="mode-desc"><svg class="mode-desc-ic" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span id="modeDesc">基于预设规则智能判断流量走向，提供灵活的代理策略</span></div>
+          <div class="net-banner"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span id="modeDesc">基于预设规则智能判断流量走向，提供灵活的代理策略</span></div>
         </div>
 
         <!-- 网络设置（系统代理 / 虚拟网卡 TUN） -->
@@ -2817,7 +2806,7 @@ async function renderServiceStatusAsync() {
 async function renderModeCfgAsync() {
   const cfg = await fetchJSON('api/mode');
   if (!cfg || !cfg.mode) return;
-  document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
   document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === cfg.mode));
   updateModeDesc(cfg.mode);
 }
@@ -3189,19 +3178,15 @@ function typeLabel(t) {
 }
 
 function updateModeDesc(mode) {
-  const d = {
-    rule: '基于预设规则智能判断流量走向，提供灵活的代理策略',
-    global: '所有流量都经过代理节点转发',
-    direct: '所有流量都直连，不经过代理'
-  };
-  document.getElementById('modeDesc').textContent = d[mode] || '';
+  const el = document.getElementById('modeDesc');
+  if (el) el.textContent = t('mode.desc.' + mode) || '';
 }
 
 // ── 模式切换 ───────────────────────────────
 function setMode(mode) {
   // 立即反馈（乐观更新），然后请求后端热切换
   const prevMode = currentMode;
-  document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+  document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
   currentMode = mode;
   updateModeDesc(mode);
@@ -3217,7 +3202,7 @@ function setMode(mode) {
         showToast('切换模式失败: ' + (d.error || ''), 'error');
         // 回滚 UI 到真实模式
         currentMode = prevMode;
-        document.querySelectorAll('.mode-big-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
+        document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
         document.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.mode === currentMode));
         updateModeDesc(currentMode);
         loadDashboard();
@@ -6890,7 +6875,7 @@ var I18N = {
     'home.proxyGroup':'代理组','home.node':'节点',
     'home.rule':'规则','home.global':'全局','home.direct':'直连',
     'home.asn':'自治域','home.isp':'服务商','home.org':'组织','home.location':'位置','home.timezone':'时区',
-    'home.version':'版本','home.core':'内核','home.mode':'模式','home.mixedPort':'混合端口',
+    'home.version':'版本','home.core':'内核','home.mode':'模式','mode.rule':'规则','mode.global':'全局','mode.direct':'直连','mode.desc.rule':'基于预设规则智能判断流量走向，提供灵活的代理策略','mode.desc.global':'所有流量都经过代理节点转发','mode.desc.direct':'所有流量都直连，不经过代理','home.mixedPort':'混合端口',
     'home.allowLan':'允许局域网','home.tun':'TUN','home.cpu':'CPU 使用率','home.mem':'内存使用',
     'home.disk':'磁盘使用','home.uptime':'运行时间','home.network':'网络流量',
     'home.ruleDesc':'基于预设规则智能判断流量走向，提供灵活的代理策略',
@@ -7060,7 +7045,7 @@ var I18N = {
     'home.proxyGroup':'Proxy Group','home.node':'Node',
     'home.rule':'Rule','home.global':'Global','home.direct':'Direct',
     'home.asn':'ASN','home.isp':'ISP','home.org':'Org','home.location':'Location','home.timezone':'Timezone',
-    'home.version':'Version','home.core':'Core','home.mode':'Mode','home.mixedPort':'Mixed Port',
+    'home.version':'Version','home.core':'Core','home.mode':'Mode','mode.rule':'Rule','mode.global':'Global','mode.direct':'Direct','mode.desc.rule':'Traffic is matched against preset rules for flexible, intelligent proxying','mode.desc.global':'All traffic is forwarded through the selected proxy node','mode.desc.direct':'All traffic bypasses the proxy and connects directly','home.mixedPort':'Mixed Port',
     'home.allowLan':'Allow LAN','home.tun':'TUN','home.cpu':'CPU Usage','home.mem':'Memory',
     'home.disk':'Disk','home.uptime':'Uptime','home.network':'Network',
     'home.ruleDesc':'Intelligently routes traffic based on preset rules for flexible proxy strategy',
