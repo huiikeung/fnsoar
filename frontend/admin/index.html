@@ -1257,7 +1257,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <div class="mx-cap" style="margin-bottom:6px" data-i18n="net.bypass">代理绕过设置</div>
               <div class="mx-bypass">
                 <div class="mx-bypass-editor" id="spTags">
-                  <input type="text" id="spTagInput" placeholder="输入域名、IP 或 CIDR，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addNoProxyTag()}">
+                  <input type="text" id="spTagInput" data-i18n="ph.bypassAdd" placeholder="输入域名、IP 或 CIDR，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addNoProxyTag()}">
                 </div>
                 <small data-i18n="net.bypassHint">保存为 NO_PROXY；多个条目会以英文逗号分隔。</small>
               </div>
@@ -1300,12 +1300,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             </div>
             <div class="mx-grid2">
               <div class="mx-field">
-                <div class="mx-field-label">TUN Stack <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip"><b>TUN 协议栈</b>mixed：TCP 使用 System、UDP 使用 gVisor，兼顾稳定性与兼容性；system 全走 System；gVisor 全走 gVisor。</span></button></div>
+                <div class="mx-field-label">TUN Stack <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip" data-i18n="net.tipStack" data-i18n-html><b>TUN 协议栈</b>mixed：TCP 使用 System、UDP 使用 gVisor，兼顾稳定性与兼容性；system 全走 System；gVisor 全走 gVisor。</span></button></div>
                 <select class="mx-input" id="tmStack" onchange="saveTunModal()"><option value="mixed" data-i18n="vcfg.stackMixed">mixed（推荐）</option><option value="system" data-i18n="vcfg.stackSystem">system</option><option value="gvisor" data-i18n="vcfg.stackGvisor">gVisor</option></select>
                 <div class="mx-field-note" data-i18n="net.stackHint">mixed：TCP 使用 System，UDP 使用 gVisor，兼顾稳定性与兼容性。</div>
               </div>
               <div class="mx-field">
-                <div class="mx-field-label">MTU <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip"><b>MTU</b>默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。</span></button></div>
+                <div class="mx-field-label">MTU <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip" data-i18n="net.tipMtu" data-i18n-html><b>MTU</b>默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。</span></button></div>
                 <input type="number" class="mx-input num-full" id="tmMtu" min="1280" max="65535" value="1500" onchange="saveTunModal()">
                 <div class="mx-field-note" data-i18n="net.mtuHint">默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。</div>
               </div>
@@ -1337,7 +1337,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               </div>
             </div>
             <div>
-              <div class="mx-cap" style="margin-bottom:6px">排除自定义网段 <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip"><b>让指定目标网段绕过 TUN 自动路由</b>仅在开启“自动路由”时生效。支持 IPv4/IPv6 CIDR，每行填写一个。</span></button></div>
+              <div class="mx-cap" style="margin-bottom:6px">排除自定义网段 <button class="mx-help" type="button"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span class="mx-tip" data-i18n="net.tipExclude" data-i18n-html><b>让指定目标网段绕过 TUN 自动路由</b>仅在开启“自动路由”时生效。支持 IPv4/IPv6 CIDR，每行填写一个。</span></button></div>
               <textarea class="mx-input" id="tmExclude" rows="3" onchange="saveTunModal()" placeholder="192.168.0.0/16&#10;10.0.0.0/8"></textarea>
               <div class="mx-field-note" data-i18n="net.excludeHint">每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。</div>
             </div>
@@ -1360,7 +1360,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       <img src="./favicon.png" alt="fnSoar">
       <div>
         <div class="t1">fnSoar</div>
-        <div class="t2">Mihomo 代理引擎 · fnOS</div>
+        <div class="t2" data-i18n="app.subtitle">Mihomo 代理引擎 · fnOS</div>
       </div>
     </div>
     <nav class="nav">
@@ -1413,7 +1413,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           <span style="position:relative">
             <button class="ghead-tool" onclick="toggleHomeSettings()" title="首页模块设置"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
             <div class="home-settings-popup" id="homeSettingsPopup" style="display:none" onclick="event.stopPropagation()">
-              <div class="home-settings-head">首页模块</div>
+              <div class="home-settings-head" data-i18n="home.modules">首页模块</div>
               <label class="home-settings-item"><span>订阅信息</span><input type="checkbox" checked onchange="toggleHomeModule('sub',this.checked)"></label>
               <label class="home-settings-item"><span>当前节点</span><input type="checkbox" checked onchange="toggleHomeModule('node',this.checked)"></label>
               <label class="home-settings-item"><span>代理模式</span><input type="checkbox" checked onchange="toggleHomeModule('mode',this.checked)"></label>
@@ -1578,7 +1578,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="info-item"><div class="i-label">模式</div><div class="i-val" id="ciMode">-</div></div>
             <div class="info-item"><div class="i-label">代理地址</div><div class="i-val" id="ciProxyAddr">-</div></div>
             <div class="info-item"><div class="i-label">混合端口</div><div class="i-val" id="ciPort">-</div></div>
-            <div class="info-item"><div class="i-label">规则数量</div><div class="i-val" id="ciRuleCount">-</div></div>
+            <div class="info-item"><div class="i-label" data-i18n="core.rulesCount">规则数量</div><div class="i-val" id="ciRuleCount">-</div></div>
             <div class="info-item"><div class="i-label">允许局域网</div><div class="i-val" id="ciAllowLan">-</div></div>
             <div class="info-item"><div class="i-label">TUN</div><div class="i-val" id="ciTun">-</div></div>
           </div>
@@ -1596,11 +1596,11 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="info-item"><div class="i-label">CPU 使用率</div><div class="i-val" id="siCpu">-</div></div>
             <div class="info-item"><div class="i-label">内存使用</div><div class="i-val iv-row" id="siMem">-</div></div>
             <div class="info-item"><div class="i-label">磁盘使用</div><div class="i-val iv-row" id="siDisk">-</div></div>
-            <div class="info-item"><div class="i-label">系统负载</div><div class="i-val" id="siLoad">-</div></div>
+            <div class="info-item"><div class="i-label" data-i18n="sys.load">系统负载</div><div class="i-val" id="siLoad">-</div></div>
             <div class="info-item"><div class="i-label">运行时间</div><div class="i-val" id="siUptime">-</div></div>
-            <div class="info-item"><div class="i-label">主机名</div><div class="i-val" id="siHost">-</div></div>
-            <div class="info-item"><div class="i-label">平台</div><div class="i-val" id="siPlatform">-</div></div>
-            <div class="info-item"><div class="i-label">软件版本</div><div class="i-val" id="siVersion">-</div></div>
+            <div class="info-item"><div class="i-label" data-i18n="sys.hostname">主机名</div><div class="i-val" id="siHost">-</div></div>
+            <div class="info-item"><div class="i-label" data-i18n="sys.platform">平台</div><div class="i-val" id="siPlatform">-</div></div>
+            <div class="info-item"><div class="i-label" data-i18n="sys.appVersion">软件版本</div><div class="i-val" id="siVersion">-</div></div>
           </div>
         </div>
 
@@ -1619,7 +1619,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
                 <span class="traf-label">上传速度</span>
               </div>
               <div class="traf-speed" id="trafficUp">0 B/s</div>
-              <div class="traf-volume">总上传 <span id="trafficUpTotal">0 B</span></div>
+              <div class="traf-volume"><span data-i18n="traffic.totalUp">总上传</span> <span id="trafficUpTotal">0 B</span></div>
             </div>
             <div class="traf-card download">
               <div class="traf-card-header">
@@ -1627,7 +1627,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
                 <span class="traf-label">下载速度</span>
               </div>
               <div class="traf-speed" id="trafficDown">0 B/s</div>
-              <div class="traf-volume">总下载 <span id="trafficDownTotal">0 B</span></div>
+              <div class="traf-volume"><span data-i18n="traffic.totalDown">总下载</span> <span id="trafficDownTotal">0 B</span></div>
             </div>
           </div>
           <div class="traffic-chart-wrap">
@@ -1642,7 +1642,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <canvas id="trafficChart"></canvas>
             <div class="traffic-axis" id="trafficAxis"><span id="tc0"></span><span id="tc1"></span><span id="tc2"></span><span id="tc3"></span><span id="tc4"></span></div>
             <div class="traffic-stats">
-              <span>数据点: <b id="tsPts">0</b> | 压缩后: <b id="tsDrawn">0</b> | 帧率: <b id="tsFps">0</b></span>
+              <span><span data-i18n="traffic.pts">数据点:</span> <b id="tsPts">0</b><span data-i18n="traffic.sampled">| 压缩后:</span> <b id="tsDrawn">0</b><span data-i18n="traffic.fps">| 帧率:</span> <b id="tsFps">0</b></span>
               <button class="traffic-smooth" id="trafficSmoothTag" onclick="toggleTrafficSmooth()" data-i18n="traffic.smooth">平滑</button>
             </div>
           </div>
@@ -1653,7 +1653,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
     <!-- 策略组 -->
     <section id="section-groups" style="display:none">
       <div class="groups-toolbar" style="padding:4px 0 14px 0">
-          <div class="groups-title">策略组</div>
+          <div class="groups-title" data-i18n="groups.title">策略组</div>
           <div class="groups-tools">
             <div class="mode-seg">
               <button class="mode-btn" data-mode="rule" onclick="setMode('rule')"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21,9L17,5V8H10V10H17V13M7,11L3,15L7,19V16H14V14H7V11Z"/></svg>规则</button>
@@ -1684,8 +1684,8 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
         <button class="ghead-tool" onclick="openProvModal()" title="添加订阅"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M11,4H13V11H20V13H13V20H11V13H4V11H11V4Z"/></svg></button>
       </div>
       <div class="prov-import-row">
-        <input type="text" id="provImportUrl" placeholder="输入订阅链接，点击导入…" class="prov-import-input">
-        <button class="btn btn-primary" onclick="importProvider()" style="padding:10px 18px;font-size:13px">导入</button>
+        <input type="text" id="provImportUrl" data-i18n="prov.importPh" placeholder="输入订阅链接，点击导入…" class="prov-import-input">
+        <button class="btn btn-primary" onclick="importProvider()" style="padding:10px 18px;font-size:13px" data-i18n="prov.import">导入</button>
       </div>
       <!-- 订阅卡片列表 -->
       <div class="prov-grid" id="provGrid"></div>
@@ -1694,16 +1694,16 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
         <div class="pe-card">
           <div class="pe-ic">M</div>
           <div class="pe-info">
-            <div class="pe-name">全局扩展覆写配置<span class="pe-tag">Merge</span></div>
-            <div class="pe-desc">应用到所有配置，先递归合并</div>
+            <div class="pe-name" data-i18n="pe.mergeName">全局扩展覆写配置<span class="pe-tag">Merge</span></div>
+            <div class="pe-desc" data-i18n="pe.mergeDesc">应用到所有配置，先递归合并</div>
           </div>
           <button class="pe-btn" onclick="openPeModal('merge')"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>编辑</button>
         </div>
         <div class="pe-card">
           <div class="pe-ic">JS</div>
           <div class="pe-info">
-            <div class="pe-name">全局扩展脚本<span class="pe-tag">Script</span></div>
-            <div class="pe-desc">全局覆写后、单配置增强前执行</div>
+            <div class="pe-name" data-i18n="pe.scriptName">全局扩展脚本<span class="pe-tag">Script</span></div>
+            <div class="pe-desc" data-i18n="pe.scriptDesc">全局覆写后、单配置增强前执行</div>
           </div>
           <button class="pe-btn" onclick="openPeModal('script')"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>编辑</button>
         </div>
@@ -1714,13 +1714,13 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           <div class="modal-title" id="provModalTitle">添加订阅</div>
           <div class="modal-body">
             <label class="flabel">订阅名称</label>
-            <div style="display:flex;gap:8px"><input type="text" id="provName" placeholder="留空则自动识别订阅名称" class="finput" style="flex:1" oninput="provNameManual=true"><button class="btn btn-ghost" onclick="refreshProvName()" style="white-space:nowrap;font-size:12px;padding:0 8px" title="从订阅链接探测真实名称">刷新名称</button></div>
+            <div style="display:flex;gap:8px"><input type="text" id="provName" data-i18n="prov.namePh" placeholder="留空则自动识别订阅名称" class="finput" style="flex:1" oninput="provNameManual=true"><button class="btn btn-ghost" onclick="refreshProvName()" style="white-space:nowrap;font-size:12px;padding:0 8px" title="从订阅链接探测真实名称">刷新名称</button></div>
             <label class="flabel">订阅链接 URL</label>
-            <input type="text" id="provUrl" placeholder="https:// 或 http:// 开头的订阅地址" class="finput">
+            <input type="text" id="provUrl" data-i18n="prov.addPh" placeholder="https:// 或 http:// 开头的订阅地址" class="finput">
             <label class="flabel">更新间隔（秒）</label>
             <input type="number" id="provInterval" value="3600" placeholder="3600" class="finput">
             <label class="flabel">官网地址（选填）</label>
-            <input type="text" id="provHomeInput" placeholder="https:// 官网地址，留空则自动探测" class="finput">
+            <input type="text" id="provHomeInput" data-i18n="prov.homePh" placeholder="https:// 官网地址，留空则自动探测" class="finput">
           </div>
           <div class="modal-foot">
             <button class="btn btn-ghost" onclick="closeProvModal()">取消</button>
@@ -1735,11 +1735,11 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
         <div class="modal-card pe-modal">
           <div class="modal-title">全局扩展覆写配置</div>
           <div class="modal-body">
-            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅的配置写入生效；应用设置已随配置合入，本模板在其之上深合并（字典递归合并、列表整体覆盖）。<br>执行顺序：订阅原文 + 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在此模板中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
-            <div class="ce-wrap"><div class="ce-gutter" id="peMergeGutter"></div><textarea class="ce-area" id="peMergeText" spellcheck="false" wrap="off" placeholder="# 在此编写 YAML 合并模板" oninput="ceSync('peMerge')" onscroll="ceScroll('peMerge')"></textarea></div>
+            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="pe.mergeNoteHtml" data-i18n-html>对所有订阅的配置写入生效；应用设置已随配置合入，本模板在其之上深合并（字典递归合并、列表整体覆盖）。<br><span data-i18n="pe.pipelineHtml" data-i18n-html>执行顺序：订阅原文 + 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 应用设置回写</span><br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在此模板中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="peMergeGutter"></div><textarea class="ce-area" id="peMergeText" spellcheck="false" wrap="off" data-i18n="ph.yamlMerge" placeholder="# 在此编写 YAML 合并模板" oninput="ceSync('peMerge')" onscroll="ceScroll('peMerge')"></textarea></div>
           </div>
           <div class="pe-foot">
-            <button class="pe-foot-link" onclick="resetPe('merge')"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重置为默认值</button>
+            <button class="pe-foot-link" data-i18n="pe.resetDefault" onclick="resetPe('merge')"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重置为默认值</button>
             <div class="pe-foot-right">
               <button class="pe-btn-cancel" onclick="closePeModal('merge')">取消</button>
               <button class="pe-btn-save" onclick="savePe('merge')">保存</button>
@@ -1752,11 +1752,11 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
         <div class="modal-card pe-modal">
           <div class="modal-title">全局扩展脚本</div>
           <div class="modal-body">
-            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>对所有订阅的配置写入生效，在全局扩展配置合并之后由本机 node 执行（超时 10 秒，node 缺失或报错时跳过、不影响保存）。<br>函数签名：<b>function main(config, profileName) { return config; }</b>，返回修改后的配置对象。<br>执行顺序：订阅原文 + 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在脚本中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
+            <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="pe.scriptNoteHtml" data-i18n-html>对所有订阅的配置写入生效，在全局扩展配置合并之后由本机 node 执行（超时 10 秒，node 缺失或报错时跳过、不影响保存）。<br>函数签名：<b>function main(config, profileName) { return config; }</b>，返回修改后的配置对象。<br>执行顺序：订阅原文 + 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在脚本中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
             <div class="ce-wrap"><div class="ce-gutter" id="peScriptGutter"></div><textarea class="ce-area" id="peScriptText" spellcheck="false" wrap="off" placeholder="// function main(config, profileName) { return config; }" oninput="ceSync('peScript')" onscroll="ceScroll('peScript')"></textarea></div>
           </div>
           <div class="pe-foot">
-            <button class="pe-foot-link" onclick="resetPe('script')"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重置为默认值</button>
+            <button class="pe-foot-link" data-i18n="pe.resetDefault" onclick="resetPe('script')"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重置为默认值</button>
             <div class="pe-foot-right">
               <button class="pe-btn-cancel" onclick="closePeModal('script')">取消</button>
               <button class="pe-btn-save" onclick="savePe('script')">保存</button>
@@ -1798,7 +1798,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           </div>
           <div class="col-settings-list" id="colSettingsList"></div>
           <div class="col-settings-foot">
-            <button class="con-close-all" onclick="resetColSettings()" title="恢复默认列设置">恢复默认</button>
+            <button class="con-close-all" onclick="resetColSettings()" data-i18n="conn.resetCols" title="恢复默认列设置">恢复默认</button>
             <button class="btn btn-primary" onclick="hideColSettings()" style="padding:4px 14px;font-size:12px">关闭</button>
           </div>
         </div>
@@ -1857,7 +1857,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               </div>
               <div class="dns-grid">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.ctrlPort">控制器端口</span><small data-i18n="vcfg.ctrlPortHint">external-controller · 管理 API 监听端口</small></span><input class="dns-input" id="vcfgCtrlPort" placeholder="9090" onchange="saveCtrlPort()"></div>
-                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.extSecret">密钥</span><small data-i18n="vcfg.extSecretHint">secret · 访问管理 API 的密码</small></span><input class="dns-input" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.extSecret">密钥</span><small data-i18n="vcfg.extSecretHint">secret · 访问管理 API 的密码</small></span><input class="dns-input" id="vcfgExtSecret" data-i18n-placeholder="vcfg.optional" data-i18n="ph.noSet" placeholder="(留空不设置)" onchange="saveVcfg('ext-secret')"></div>
               </div>
               <div class="dns-grid">
                 <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.extUi">外部 UI</span><small data-i18n="vcfg.extUiHint">external-ui · 面板目录名（如 zashboard）</small></span><input class="dns-input" id="vcfgExtUi" placeholder="zashboard" onchange="saveVcfg('ext-ui')"></div>
@@ -1880,7 +1880,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div style="padding:12px 16px 14px">
               <div class="dns-grid">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.mixedPort">混合端口</span><small data-i18n="vcfg.mixedPortHint">mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）</small></span><input class="dns-input" id="vcfgMixedPort" placeholder="7890" onchange="saveVcfg('mixed-port')"></div>
-                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><small data-i18n="vcfg.httpPortHint">http-port · 留空则不单独监听</small></span><input class="dns-input" id="vcfgHttpPort" placeholder="留空不启用" onchange="saveVcfg('http-port')"></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.httpPort">HTTP 端口</span><small data-i18n="vcfg.httpPortHint">http-port · 留空则不单独监听</small></span><input class="dns-input" id="vcfgHttpPort" data-i18n="ph.emptyNoEnable" placeholder="留空不启用" onchange="saveVcfg('http-port')"></div>
               </div>
               <div class="dns-grid">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.socksPort">Socks 端口</span><small>socks-port</small></span><input class="dns-input" id="vcfgSocksPort" placeholder="7891" onchange="saveVcfg('socks-port')"></div>
@@ -1896,7 +1896,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="settings.unifiedDelay">统一延迟</span><small>unified-delay</small></span><label class="toggle"><input type="checkbox" id="vcfgUnifiedDelay" onchange="saveVcfg('unified-delay')"><span class="toggle-track"></span></label></div>
               </div>
               <div class="dns-grid">
-                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.proxyAuth">代理认证</span><small data-i18n="vcfg.proxyAuthHint">authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔</small></span><input class="dns-input" id="vcfgAuth" placeholder="user:pass，多组用逗号" title="代理入站认证：其他设备经代理端口上网时需输入的用户名:密码，多组用英文逗号分隔" onchange="saveProxyAuth()"></div>
+                <div class="dns-field wide"><span class="dns-field-label"><span data-i18n="vcfg.proxyAuth">代理认证</span><small data-i18n="vcfg.proxyAuthHint">authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔</small></span><input class="dns-input" id="vcfgAuth" data-i18n="ph.auth" placeholder="user:pass，多组用逗号" title="代理入站认证：其他设备经代理端口上网时需输入的用户名:密码，多组用英文逗号分隔" onchange="saveProxyAuth()"></div>
               </div>
               <div class="tun-note">
                 <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
@@ -2060,7 +2060,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <div class="dns-field" style="margin-bottom:8px"><span class="dns-field-label"><span data-i18n="vcfg.snifferEnable">启用嗅探</span><small>sniffer.enable</small></span><label class="toggle"><input type="checkbox" id="vcfgSniffer" onchange="saveVcfg('sniffer-enable');document.getElementById('vcfgSnifferGroup').style.display=this.checked?'flex':'none'"><span class="toggle-track"></span></label></div>
               <div id="vcfgSnifferGroup" style="display:none;flex-direction:column;gap:8px">
                 <div class="dns-field" style="margin-bottom:8px"><span class="dns-field-label"><span data-i18n="vcfg.sniffing">协议</span><small>sniffer sniff</small></span><div style="display:flex;gap:12px"><label class="pg-check" id="vcfgSniffTlsCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">TLS</label><label class="pg-check" id="vcfgSniffHttpCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">HTTP</label></div></div>
-                <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="vcfg.sniffSkip">跳过域名</span><small>sniffer.skip-domain</small></span><textarea id="vcfgSniffSkip" rows="3" placeholder="每行一个域名" onchange="saveSnifferSection()"></textarea><div class="dns-ta-note" data-i18n="vcfg.sniffSkipHint">每行一个域名；命中这些域名的连接不进行协议嗅探。</div></div>
+                <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="vcfg.sniffSkip">跳过域名</span><small>sniffer.skip-domain</small></span><textarea id="vcfgSniffSkip" rows="3" data-i18n="ph.kwPerLine" placeholder="每行一个域名" onchange="saveSnifferSection()"></textarea><div class="dns-ta-note" data-i18n="vcfg.sniffSkipHint">每行一个域名；命中这些域名的连接不进行协议嗅探。</div></div>
               </div>
               <div class="dns-foot">
                 <span data-i18n="vcfg.snifferAutosave">已自动保存 · 参数修改即写入 config.yaml</span>
@@ -2123,24 +2123,24 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div style="padding:12px 16px 14px">
               <div class="dns-grid" style="margin-bottom:10px">
                 <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.filterEnable">启用过滤</span><small>subscription-filter.enabled</small></span><label class="toggle"><input type="checkbox" id="vcfgFilterEnabled" onchange="saveFilter()"><span class="toggle-track"></span></label></div>
-                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.filterHint2">作用范围</span><small>订阅导入/更新时生效</small></span><span style="font-size:11.5px;color:var(--faint);line-height:1.6">导入或更新订阅时，自动剔除名称命中的流量/到期等提示节点</span></div>
+                <div class="dns-field"><span class="dns-field-label"><span data-i18n="vcfg.filterHint2">作用范围</span><small data-i18n="vcfg.filterScopeHint">订阅导入/更新时生效</small></span><span data-i18n="vcfg.filterScopeDesc" style="font-size:11.5px;color:var(--faint);line-height:1.6">导入或更新订阅时，自动剔除名称命中的流量/到期等提示节点</span></div>
               </div>
               <div class="dns-grid">
                 <div class="dns-field wide">
-                  <span class="dns-field-label"><span data-i18n="vcfg.filterKw">名称关键词</span><small>exclude-name-keywords · 命中任一即过滤，不区分大小写</small></span>
+                  <span class="dns-field-label"><span data-i18n="vcfg.filterKw">名称关键词</span><small data-i18n="vcfg.filterKwHint">exclude-name-keywords · 命中任一即过滤，不区分大小写</small></span>
                   <div class="mx-bypass">
                     <div class="mx-bypass-editor" id="sfKwTags">
-                      <input type="text" id="sfKwInput" placeholder="输入关键词，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('kw')}">
+                      <input type="text" id="sfKwInput" data-i18n="ph.kwAdd" placeholder="输入关键词，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('kw')}">
                     </div>
                   </div>
                 </div>
                 <div class="dns-field wide">
-                  <span class="dns-field-label"><span data-i18n="vcfg.filterRe">名称正则</span><small>exclude-name-regex · 命中任一即过滤，PCRE 忽略大小写</small></span>
+                  <span class="dns-field-label"><span data-i18n="vcfg.filterRe">名称正则</span><small data-i18n="vcfg.filterReHint">exclude-name-regex · 命中任一即过滤，PCRE 忽略大小写</small></span>
                   <div class="mx-bypass">
                     <div class="mx-bypass-editor" id="sfReTags">
-                      <input type="text" id="sfReInput" placeholder="输入正则，如 traffic.*expire，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('re')}">
+                      <input type="text" id="sfReInput" data-i18n="ph.reAdd" placeholder="输入正则，如 traffic.*expire，按回车添加" onkeydown="if(event.key==='Enter'){event.preventDefault();addSfTag('re')}">
                     </div>
-                    <small class="filter-ex">示例：<code>traffic.*expire</code> 匹配 “Traffic-Expire-30d”；<code>^(剩余|流量).*GB</code> 匹配以「剩余/流量」开头且含 GB 的节点名</small>
+                    <small class="filter-ex" data-i18n="vcfg.filterExHtml" data-i18n-html>示例：<code>traffic.*expire</code> 匹配 “Traffic-Expire-30d”；<code>^(剩余|流量).*GB</code> 匹配以「剩余/流量」开头且含 GB 的节点名</small>
                   </div>
                 </div>
               </div>
@@ -2349,7 +2349,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.startupScript">启动脚本</span></div>
-              <input class="set-input set-input-fill" data-i18n-placeholder="settings.startupScriptPlaceholder" placeholder="留空则不执行" id="setStartupScript" onchange="saveBasicSetting('startup_script')">
+              <input class="set-input set-input-fill" data-i18n-placeholder="settings.startupScriptPlaceholder" data-i18n="ph.emptyNoExec" placeholder="留空则不执行" id="setStartupScript" onchange="saveBasicSetting('startup_script')">
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.showIcons">显示策略组图标</span></div>
@@ -2799,7 +2799,7 @@ function renderSubInfo(name, info, provApi) {
     } else if (si.Expire === 0) {
       // 明确不限时（Expire=0 且已获取到订阅信息）→ 显示「不限时」
       document.getElementById('subExpireRow').style.display = 'flex';
-      document.getElementById('subExpire').textContent = '不限时';
+      document.getElementById('subExpire').textContent = t('prov.noExpire');
     } else {
       // 拿不到到期信息 → 不显示该行
       document.getElementById('subExpireRow').style.display = 'none';
@@ -4253,15 +4253,15 @@ async function loadClashInfo() {
     var bind = (c['bind-address'] || '').replace(/^\*$/, '0.0.0.0');
     var host = c['allow-lan'] ? (bind || '0.0.0.0') : '127.0.0.1';
     document.getElementById('ciProxyAddr').textContent = mp ? (host + ':' + mp) : '-';
-    document.getElementById('ciAllowLan').textContent = c['allow-lan'] ? '已开启' : '已关闭';
+    document.getElementById('ciAllowLan').textContent = c['allow-lan'] ? t('net.enabledOn') : t('net.enabledOff');
   }
   // 规则数量（引擎 /rules）
   try {
     var r = await fetchJSON('rules');
-    if (r && Array.isArray(r.rules)) document.getElementById('ciRuleCount').textContent = r.rules.length + ' 条';
+    if (r && Array.isArray(r.rules)) document.getElementById('ciRuleCount').textContent = r.rules.length + ' ' + t('core.rulesUnit');
   } catch (e) {}
   if (m) document.getElementById('ciMode').textContent = m.mode || '-';
-  if (t) document.getElementById('ciTun').textContent = t.enable ? '已启用' : '已关闭';
+  if (t) document.getElementById('ciTun').textContent = t.enable ? t('net.tunOn') : t('net.enabledOff');
 }
 
 // ── 系统信息 ───────────────────────────────
@@ -4534,7 +4534,7 @@ async function runWebTest() {
    if (diff < 60) return '刚刚';
    if (diff < 3600) return Math.floor(diff/60) + ' 分钟前';
    if (diff < 86400) return Math.floor(diff/3600) + ' 小时前';
-   return Math.floor(diff/86400) + ' 天前';
+   return Math.floor(diff/86400) + ' ' + t('prov.daysAgo');
  }
  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
@@ -4566,8 +4566,8 @@ async function runWebTest() {
        // 到期展示片段：有期限 → 日期；明确不限时(expire===0) → 「不限时」；拿不到 → 不显示
        const expireHtml = (function(){
          if (!si || si.expire == null) return '';
-         if (si.expire > 0) return '<span title="到期时间">到期 ' + fmtExpire(si.expire) + '</span>';
-         if (si.expire === 0) return '<span title="到期时间">不限时</span>';
+         if (si.expire > 0) return '<span title="' + t('prov.expireTitle') + '">' + t('prov.expireAt') + ' ' + fmtExpire(si.expire) + '</span>';
+         if (si.expire === 0) return '<span title="' + t('prov.expireTitle') + '">' + t('prov.noExpire') + '</span>';
          return '';
        })();
        let trafficHtml = '';
@@ -4577,7 +4577,7 @@ async function runWebTest() {
          const barCls = pct >= 100 ? ' over' : (pct >= 80 ? ' warn' : '');
          trafficHtml = '<div class="prov-traffic"><div class="prov-traffic-line"><span><b class="prov-traffic-val">' + fmtTraffic(used) + '</b> / ' + fmtTraffic(si.total) + '</span>' + expireHtml + '</div><div class="prov-traffic-bar"><i class="' + barCls + '" style="width:' + pct + '%"></i></div></div>';
        } else if (si) {
-         trafficHtml = '<div class="prov-traffic-line"><span>无流量统计</span>' + expireHtml + '</div>';
+         trafficHtml = '<div class="prov-traffic-line"><span>' + t('prov.noTraffic') + '</span>' + expireHtml + '</div>';
        } else {
          // 无 subscriptionInfo（自制订阅）：用量为本机累计 / ∞，到期 ∞
          const lu = localUsage[name];
@@ -4586,7 +4586,7 @@ async function runWebTest() {
        return `<div class="prov-card"${si ? '' : ' data-unlim="1"'} id="provcard-${esc(name)}">
            <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
           <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
-           ${home ? '<a class="prov-home" href="' + esc(home) + '" target="_blank" rel="noopener">' + svgIcon(IC.external) + '官网</a>' : ''}
+           ${home ? '<a class="prov-home" href="' + esc(home) + '" target="_blank" rel="noopener">' + svgIcon(IC.external) + t('prov.officialSite') + '</a>' : ''}
            ${trafficHtml}
           <div class="prov-stats">
             <span class="prov-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b> ${t('home.node')}</span>
@@ -5190,10 +5190,10 @@ function syncGroupView() {
   const nStrat = all.filter(([nm]) => !isRegion(nm)).length;
   const nRegion = all.filter(([nm]) => isRegion(nm)).length;
   // 右侧显示当前选中视图名称 + 计数
-  const names = { all: '全部', strategy: '策略组', region: '节点组' };
+  const names = { all: t('groups.viewAll'), strategy: t('groups.title'), region: t('groups.viewRegion') };
   const counts = { all: nAll, strategy: nStrat, region: nRegion };
   const lbl = document.getElementById('gviewLabel');
-  if (lbl) lbl.textContent = (names[groupView] || '策略组') + ' · ' + (counts[groupView] || 0);
+  if (lbl) lbl.textContent = (names[groupView] || t('groups.title')) + ' · ' + (counts[groupView] || 0);
 }
 let groupView = 'strategy';   // all / strategy / region, 默认显示策略组
 // 图标本地化：http(s) 走 /api/icon 由服务端下载缓存到本机；data:/相对路径 直接使用
@@ -5813,18 +5813,18 @@ let unlockItems = [];
 let unlockLoading = [];     // 正在单独检测的项目名
 let unlockCheckingAll = false;
 
-const UNLOCK_STATUS_LABELS = {
-  'Pending': '待检测',
-  'Yes': '支持',
-  'No': '不支持',
-  'Failed': '测试失败',
-  'Completed': '检测完成',
-  'Disallowed ISP': '不允许的 ISP',
-  'Originals Only': '仅限原创',
-  'No (IP Banned By Disney+)': '不支持（IP 被 Disney+ 禁止）',
-  'Unsupported Country/Region': '不支持的国家/地区',
-  'Failed (Network Connection)': '测试失败（网络连接问题）',
-};
+// 惰性构建：I18N 在本文件后部才定义，加载期调用 t() 会抛错中断整个脚本
+function unlockLabel(status) {
+  var M = {
+    'Pending': t('unlock.pending'), 'Yes': t('unlock.yes'), 'No': t('unlock.no'),
+    'Failed': t('unlock.failed'), 'Completed': t('unlock.completed'),
+    'Disallowed ISP': t('unlock.isp'), 'Originals Only': t('unlock.originals'),
+    'No (IP Banned By Disney+)': t('unlock.disney'),
+    'Unsupported Country/Region': t('unlock.region'),
+    'Failed (Network Connection)': t('unlock.netFail')
+  };
+  return M[status] || status;
+}
 
 function unlockStatusColor(status) {
   if (status === 'Pending') return 'gray';
@@ -5847,7 +5847,7 @@ function unlockStatusIcon(status) {
 }
 
 function unlockStatusLabel(status) {
-  return UNLOCK_STATUS_LABELS[status] || status;
+  return unlockLabel(status) || status;
 }
 
 function unlockNormalize(name) { return String(name || '').trim().toLowerCase(); }
@@ -6835,7 +6835,7 @@ function loadDashboardStatus() {
         badge.style.display = item.has_update ? '' : 'none';
         badge.title = item.has_update && item.latest
           ? (item.current ? ('v' + String(item.current).replace(/^v/i,'') + ' → v' + String(item.latest).replace(/^v/i,'') + '，点击更新')
-                          : ('可更新至 v' + String(item.latest).replace(/^v/i,'') + '，点击更新'))
+                          : (t('dash.updatable') + ' to v' + String(item.latest).replace(/^v/i,'') + ', click to update'))
           : '';
       }
       if (item.has_update) anyUpdate = true;
@@ -6846,7 +6846,7 @@ function loadDashboardStatus() {
         return item.name === 'zashboard' ? 'Zashboard' : 'Metacubexd';
       });
       st.style.color = 'var(--dim)';
-      st.textContent = anyUpdate ? ('可更新：' + updateNames.join('、')) : t('settings.dashUpToDate');
+      st.textContent = anyUpdate ? (t('dash.updatable') + ': ' + updateNames.join(', ')) : t('settings.dashUpToDate');
     }
   }).catch(function() {
     var st = document.getElementById('dashUpdateStatus');
@@ -6963,7 +6963,8 @@ function normalizeThemeSetting() {
 // ── 多语言 ───────────────────────────────────
 var I18N = {
   zh: {
-    'sidebar.general':'常规','sidebar.home':'首页','sidebar.groups':'策略组','sidebar.providers':'订阅',
+    'sidebar.general':'常规','app.subtitle':'Mihomo 代理引擎 · fnOS',
+    'unlock.pending':'待检测','unlock.yes':'支持','unlock.no':'不支持','unlock.failed':'测试失败','unlock.completed':'检测完成','unlock.isp':'不允许的 ISP','unlock.originals':'仅限原创','unlock.disney':'不支持（IP 被 Disney+ 禁止）','unlock.region':'不支持的国家/地区','unlock.netFail':'测试失败（网络连接问题）','sidebar.home':'首页','sidebar.groups':'策略组','sidebar.providers':'订阅',
     'sidebar.connections':'连接','sidebar.rules':'规则','sidebar.config':'配置',
     'sidebar.logs':'日志','sidebar.test':'测试','sidebar.settings':'设置','sidebar.panels':'面板',
     'home.subscription':'订阅','home.currentNode':'当前节点','home.proxyMode':'代理模式',
@@ -7032,7 +7033,29 @@ var I18N = {
     'settings.service':'系统服务','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'深色','settings.themeLight':'浅色','settings.themeSystem':'系统',
     'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示策略组图标','settings.appIcon':'软件图标','settings.appIconHint':'切换 fnOS 桌面与窗口显示的应用图标',
-    'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
+        'sys.load':'系统负载','sys.hostname':'主机名','sys.platform':'平台','sys.appVersion':'软件版本',
+    'traffic.totalUp':'总上传','traffic.totalDown':'总下载','traffic.pts':'数据点:','traffic.sampled':'| 压缩后:','traffic.fps':'| 帧率:',
+    'home.modules':'首页模块','groups.title':'策略组',
+    'prov.import':'导入','prov.importPh':'输入订阅链接，点击导入…','prov.updateAll':'一键更新所有订阅',
+    'prov.officialSite':'官网','prov.expireAt':'到期','prov.noExpire':'不限时','prov.daysAgo':'天前',
+    'prov.noTraffic':'无流量统计','prov.expireTitle':'到期时间',
+    'prov.homeLabel':'官网地址（选填）','prov.homePh':'https:// 官网地址，留空则自动探测',
+    'prov.addPh':'https:// 或 http:// 开头的订阅地址','prov.namePh':'留空则自动识别订阅名称',
+            'vcfg.filterScopeDesc':'导入或更新订阅时，自动剔除名称命中的流量/到期等提示节点',
+        'pe.scriptNoteHtml':'对所有订阅的配置写入生效，在全局扩展配置合并之后由本机 node 执行（超时 10 秒，node 缺失或报错时跳过、不影响保存）。<br>函数签名：<b>function main(config, profileName) { return config; }</b>，返回修改后的配置对象。<br>执行顺序：订阅原文 + 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在脚本中修改不会生效；订阅自带的代理、规则、规则集可自由增改。',
+    'pe.resetDefault':'重置为默认值',
+'pe.mergeNoteHtml':'对所有订阅的配置写入生效；应用设置已随配置合入，本模板在其之上深合并（字典递归合并、列表整体覆盖）。',
+'pe.pipelineHtml':'执行顺序：订阅原文 + 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 应用设置回写',
+    'conn.resetCols':'恢复默认','vcfg.filterScopeHint':'订阅导入/更新时生效','vcfg.filterKwHint':'exclude-name-keywords · 命中任一即过滤，不区分大小写','vcfg.filterReHint':'exclude-name-regex · 命中任一即过滤，PCRE 忽略大小写',
+    'vcfg.filterExHtml':'示例：<code>traffic.*expire</code> 匹配 “Traffic-Expire-30d”；<code>^(剩余|流量).*GB</code> 匹配以「剩余/流量」开头且含 GB 的节点名',
+'pe.mergeName':'全局扩展覆写配置','pe.mergeDesc':'应用到所有配置，先递归合并',
+    'pe.scriptName':'全局扩展脚本','pe.scriptDesc':'全局覆写后、单配置增强前执行',
+    'dash.updatable':'可更新','core.rulesUnit':'条','logs.readFailed':'无法读取日志',
+    'ph.yamlMerge':'# 在此编写 YAML 合并模板','ph.auth':'user:pass，多组用逗号','ph.noSet':'(留空不设置)',
+    'ph.emptyNoEnable':'留空不启用','ph.emptyNoExec':'留空则不执行','ph.kwPerLine':'每行一个域名',
+    'ph.kwAdd':'输入关键词，按回车添加','ph.reAdd':'输入正则，如 traffic.*expire，按回车添加',
+    'ph.bypassAdd':'输入域名、IP 或 CIDR，按回车添加',
+'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
     'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动','core.title':'内核设置','core.tabManage':'内核管理','core.tabConn':'连接管理','core.tabGeo':'GEO 数据','core.subTitle':'核心版本与运行方式','core.viewDetails':'查看详情','core.binary':'二进制','core.configPath':'启动配置','core.redetect':'重新检测','core.stop':'停止内核','core.stopped':'内核已停止','core.stopFail':'停止失败: ','core.portFix':'端口占用处理','core.portFixHint':'可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。','core.modifyPort':'修改端口','core.sshHelp':'高级排查（SSH 命令）','core.copy':'复制','core.copied':'已复制到剪贴板','core.sshStep1T':'查找占用进程','core.sshStep1D':'在 NAS 的 SSH 终端执行，查看输出中的进程名和 pid=数字。','core.sshStep2T':'核对应用用途','core.sshStep2D':'将命令中的 PID 替换为上一步查到的进程号，确认它是可以停止的服务。','core.sshStep3T':'停止已确认的进程','core.sshStep3D':'同样替换 PID。等待几秒，再执行第一条命令，确认端口已释放，然后点击「重新检测」或「启动内核」。','core.sshDockerNote':'如果占用者是 Docker 容器，请在飞牛 Docker 页面停止对应容器或修改端口映射，不要直接结束 docker-proxy。受服务管理器控制的进程可能自动重启，应通过原服务停止。','core.sshSubForceT':'进程仍未退出时','core.sshSubForceD':'先重新查询并核对 PID，确认仍是同一进程后才强制结束；强制结束不会执行正常清理。','core.sshSubNetT':'系统没有 ss 命令时','core.sshSubNetD':'可用 netstat 查看监听列表，找到本地地址末尾为 {port} 的行及其 PID/程序名。','core.controller':'控制器','core.interval12':'12 小时','core.interval24':'24 小时','core.interval72':'3 天','core.interval168':'7 天','core.connSettings':'连接设置','core.connSub':'连接当前 Core 的 Controller API','core.autoManage':'自动管理','core.portSettings':'端口设置','core.delayUrl':'延迟测试 URL','core.delayTimeout':'超时（毫秒）','core.delayHint':'用于节点延迟测速的请求地址与超时；修改后自动保存。','core.hcSaved':'测速参数已保存','core.geoDownload':'下载','core.geoSource':'来源','core.geoNoDownload':'未下载','core.geoNoSource':'未配置下载地址','core.geoDownloadFail':'下载失败: ','core.version':'内核版本','core.start':'启动内核','core.restart':'重启内核','core.checkUpdate':'检查更新','core.updateAvailable':'有版本更新','core.started':'内核已启动','core.restarted':'内核已重启','core.startFail':'启动失败: ','core.restartFail':'重启失败: ','core.portConflict':'控制器端口 {port} 被其他进程占用，内核可能无法启动。可前往「配置 → 外部控制」修改监听端口。','core.secret':'密钥','core.secretSet':'已设置','core.secretUnset':'未设置','core.goConfig':'前往配置','core.test':'测试连接','core.testOk':'连接成功','core.testFail':'连接失败，引擎未响应','core.geoAuto':'自动更新','test.add':'添加','core.geoInterval':'更新周期','core.saveSettings':'保存设置','core.geoSaved':'GEO 设置已保存，服务正在重启...','core.geoOk':'可用','core.geoMissing':'缺失','core.updateNow':'立即更新','core.saveFailed':'保存失败: ','core.geoHint':'GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。','core.connHint':'Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。',
@@ -7076,7 +7099,7 @@ var I18N = {
     'net.dnsHijack':'DNS 劫持','net.dnsHijackHint':'劫持 53 端口到 Mihomo DNS',
     'net.strictRoute':'严格路由','net.strictRouteHint':'减少泄漏；复杂网络可能影响其它虚拟网卡',
     'net.exclude':'排除自定义网段','net.excludeHint':'每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。',
-    'net.tunNote':"TUN 通过创建虚拟网卡并接管系统路由与 DNS 流向实现<b>透明代理</b>：所有从 NAS 发出的流量（命令行、Docker 容器、系统服务）按规则分流，程序无需任何配置。默认关闭；若配置不可用可能影响 NAS 访问互联网。已内置「自动检测出口网卡 + 关闭自动重定向」防自环保护，一般无需改动。",'net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':"两者不必同时开，也不互相依赖：<br>• <b>只开 TUN</b>：全部流量（命令行 / Docker / 系统服务）走代理，最彻底——日常推荐<br>• <b>只开系统代理</b>：仅新终端会话里读环境变量的程序走代理，覆盖最小<br>• <b>关闭 TUN 时</b>引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）<br>需要 UDP/QUIC 或完整 DNS 分流时才开 TUN；系统代理（环境变量）只影响命令行等主动读变量的程序。",
+    'net.tunNote':"TUN 通过创建虚拟网卡并接管系统路由与 DNS 流向实现<b>透明代理</b>：所有从 NAS 发出的流量（命令行、Docker 容器、系统服务）按规则分流，程序无需任何配置。默认关闭；若配置不可用可能影响 NAS 访问互联网。已内置「自动检测出口网卡 + 关闭自动重定向」防自环保护，一般无需改动。",'net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':"两者不必同时开，也不互相依赖：<br>• <b>只开 TUN</b>：全部流量（命令行 / Docker / 系统服务）走代理，最彻底——日常推荐<br>• <b>只开系统代理</b>：仅新终端会话里读环境变量的程序走代理，覆盖最小<br>• <b>关闭 TUN 时</b>引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）<br>需要 UDP/QUIC 或完整 DNS 分流时才开 TUN；系统代理（环境变量）只影响命令行等主动读变量的程序。",'net.tipStack':"<b>TUN 协议栈</b>mixed：TCP 使用 System、UDP 使用 gVisor，兼顾稳定性与兼容性；system 全走 System；gVisor 全走 gVisor。",'net.tipMtu':"<b>MTU</b>默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。",'net.tipExclude':"<b>让指定目标网段绕过 TUN 自动路由</b>仅在开启“自动路由”时生效。支持 IPv4/IPv6 CIDR，每行填写一个。",
     'common.cancel':'取消','common.save':'保存',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
@@ -7133,7 +7156,8 @@ var I18N = {
     '直接编辑':'直接编辑','保存后服务将自动重启':'保存后服务将自动重启'
   },
   en: {
-    'sidebar.general':'General','sidebar.home':'Home','sidebar.groups':'Groups','sidebar.providers':'Subscriptions',
+    'sidebar.general':'General','app.subtitle':'Mihomo Proxy Engine · fnOS',
+    'unlock.pending':'Pending','unlock.yes':'Yes','unlock.no':'No','unlock.failed':'Test failed','unlock.completed':'Completed','unlock.isp':'Disallowed ISP','unlock.originals':'Originals only','unlock.disney':'No (IP banned by Disney+)','unlock.region':'Unsupported country/region','unlock.netFail':'Test failed (network)','sidebar.home':'Home','sidebar.groups':'Groups','sidebar.providers':'Subscriptions',
     'sidebar.connections':'Connections','sidebar.rules':'Rules','sidebar.config':'Config',
     'sidebar.logs':'Logs','sidebar.test':'Test','sidebar.settings':'Settings','sidebar.panels':'Panels',
     'home.subscription':'Subscription','home.currentNode':'Current Node','home.proxyMode':'Proxy Mode',
@@ -7202,7 +7226,29 @@ var I18N = {
     'settings.service':'System Service','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'Dark','settings.themeLight':'Light','settings.themeSystem':'System',
     'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Group Icons','settings.appIcon':'App Icon','settings.appIconHint':'Icon shown on the fnOS desktop and window',
-    'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
+        'sys.load':'System Load','sys.hostname':'Hostname','sys.platform':'Platform','sys.appVersion':'App Version',
+    'traffic.totalUp':'Total Upload','traffic.totalDown':'Total Download','traffic.pts':'Data Points:','traffic.sampled':'| Sampled:','traffic.fps':'| FPS:',
+    'home.modules':'Home Modules','groups.title':'Groups',
+    'prov.import':'Import','prov.importPh':'Paste subscription URL and click Import…','prov.updateAll':'Update All',
+    'prov.officialSite':'Website','prov.expireAt':'Expires','prov.noExpire':'No expiry','prov.daysAgo':'d ago',
+    'prov.noTraffic':'No usage data','prov.expireTitle':'Expiry date',
+    'prov.homeLabel':'Website (optional)','prov.homePh':'https:// website; blank = auto-detect',
+    'prov.addPh':'URL starting with https:// or http://','prov.namePh':'Leave blank to auto-detect name',
+            'vcfg.filterScopeDesc':'Applied on subscription import/update: nodes whose names match the filter (traffic / expiry notices) are removed automatically',
+        'pe.scriptNoteHtml':'Applies to all subscription config writes; runs on the local node after the global merge (10s timeout; skipped if node is missing or errors — saving is unaffected).<br>Signature: <b>function main(config, profileName) { return config; }</b> returns the modified config object.<br>Pipeline: subscription source + app settings → Global Merge → <b>Global Script</b> → app settings write-back<br>Note: app-managed fields (ports / TUN / DNS / Sniffer / GEO sources / GEO update settings) always follow the app settings — changes in the script will not take effect; proxies, rules and rule-sets from the subscription can be freely modified.',
+    'pe.resetDefault':'Reset to default',
+'pe.mergeNoteHtml':'Applies to all subscription config writes; app settings are already merged into the config, and this template deep-merges on top (recursive dict merge, list replace).',
+'pe.pipelineHtml':'Pipeline: subscription source + app settings → <b>Global Merge</b> → <b>Global Script</b> → subscription override → app settings write-back',
+    'conn.resetCols':'Reset','vcfg.filterScopeHint':'Applied when subscriptions are imported/updated','vcfg.filterKwHint':'exclude-name-keywords · filtered if any match, case-insensitive','vcfg.filterReHint':'exclude-name-regex · filtered if any match, PCRE case-insensitive',
+    'vcfg.filterExHtml':'Examples: <code>traffic.*expire</code> matches "Traffic-Expire-30d"; <code>^(剩余|流量).*GB</code> matches node names starting with Chinese remainder/traffic and containing GB',
+'pe.mergeName':'Global Merge Config','pe.mergeDesc':'Applied to all configs, merged recursively first',
+    'pe.scriptName':'Global Script','pe.scriptDesc':'Runs after global merge, before per-config enhancements',
+    'dash.updatable':'Updatable','core.rulesUnit':'rules','logs.readFailed':'Failed to read logs',
+    'ph.yamlMerge':'# Write YAML merge template here','ph.auth':'user:pass, comma-separated','ph.noSet':'(leave blank to skip)',
+    'ph.emptyNoEnable':'Leave blank to disable','ph.emptyNoExec':'Leave blank to skip','ph.kwPerLine':'One domain per line',
+    'ph.kwAdd':'Type a keyword and press Enter','ph.reAdd':'Type a regex, e.g. traffic.*expire, press Enter',
+    'ph.bypassAdd':'Type domain, IP or CIDR and press Enter',
+'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
     'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start','core.title':'Core Settings','core.tabManage':'Core','core.tabConn':'Connection','core.tabGeo':'GEO Data','core.subTitle':'Core version and run mode','core.viewDetails':'Details','core.binary':'Binary','core.configPath':'Startup config','core.redetect':'Re-detect','core.stop':'Stop Core','core.stopped':'Core stopped','core.stopFail':'Stop failed: ','core.portFix':'Port Conflict','core.portFixHint':'Change the managed core startup port directly to keep the existing service. Config is backed up and validated, and the connection is verified after start.','core.modifyPort':'Change Port','core.sshHelp':'Advanced (SSH commands)','core.copy':'Copy','core.copied':'Copied to clipboard','core.sshStep1T':'Find the occupying process','core.sshStep1D':'Run in the NAS SSH terminal and check the process name and pid= in the output.','core.sshStep2T':'Verify the process','core.sshStep2D':'Replace PID with the process number found in the previous step and confirm it is a service that can be stopped.','core.sshStep3T':'Stop the confirmed process','core.sshStep3D':'Replace PID as well. Wait a few seconds, run the first command again to confirm the port is released, then click Re-detect or Start Core.','core.sshDockerNote':'If the occupier is a Docker container, stop the container or change its port mapping in the fnOS Docker page instead of killing docker-proxy directly. Processes controlled by a service manager may auto-restart; stop them via the original service.','core.sshSubForceT':'When the process still does not exit','core.sshSubForceD':'Re-query and verify the PID first; force kill only after confirming it is still the same process. Forced termination skips normal cleanup.','core.sshSubNetT':'When the ss command is unavailable','core.sshSubNetD':'Use netstat to list listeners and find the line whose local address ends with {port}, along with its PID/program name.','core.controller':'Controller','core.interval12':'12 hours','core.interval24':'24 hours','core.interval72':'3 days','core.interval168':'7 days','core.connSettings':'Connection','core.connSub':'Connect to the current core Controller API','core.autoManage':'Auto-managed','core.portSettings':'Port Settings','core.delayUrl':'Healthcheck URL','core.delayTimeout':'Timeout (ms)','core.delayHint':'URL and timeout used for node delay tests; saved automatically.','core.hcSaved':'Healthcheck settings saved','core.geoDownload':'Download','core.geoSource':'Source','core.geoNoDownload':'Not downloaded','core.geoNoSource':'No source configured','core.geoDownloadFail':'Download failed: ','core.version':'Core Version','core.start':'Start Core','core.restart':'Restart Core','core.checkUpdate':'Check Updates','core.updateAvailable':'Update available','core.started':'Core started','core.restarted':'Core restarted','core.startFail':'Start failed: ','core.restartFail':'Restart failed: ','core.portConflict':'Controller port {port} is used by another process; the core may fail to start. Change the listen port in Config → External Controller.','core.secret':'Secret','core.secretSet':'Set','core.secretUnset':'Not set','core.goConfig':'Go to Config','core.test':'Test Connection','core.testOk':'Connected','core.testFail':'Connection failed, engine not responding','core.geoAuto':'Auto Update','test.add':'Add','core.geoInterval':'Interval','core.saveSettings':'Save Settings','core.geoSaved':'GEO settings saved, restarting service...','core.geoOk':'Available','core.geoMissing':'Missing','core.updateNow':'Update Now','core.saveFailed':'Save failed: ','core.geoHint':'GEO files live in /vol1/@appdata/fnnas.fnsoar/; restart the core after updating. Download sources can be edited in Config → Geo Data.','core.connHint':'Controller is the API endpoint the panel uses to talk to the engine. Edit the listen port or Secret in Config → External Controller.',
@@ -7246,7 +7292,7 @@ var I18N = {
     'net.dnsHijack':'DNS hijack','net.dnsHijackHint':'Hijack port 53 to the Mihomo DNS module',
     'net.strictRoute':'Strict route','net.strictRouteHint':'Reduces leaks; may affect other virtual NICs',
     'net.exclude':'Excluded CIDRs','net.excludeHint':'One IPv4/IPv6 CIDR per line; leave empty to exclude nothing.',
-    'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",
+    'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",'net.tipStack':"<b>TUN Stack</b>mixed: TCP via System, UDP via gVisor — balanced stability and compatibility; system = all via System; gVisor = all via gVisor.",'net.tipMtu':"<b>MTU</b>Default 1500; try 1400 for VPN, PPPoE or multi-layer tunnels.",'net.tipExclude':"<b>Exclude target subnets from TUN auto route</b>Only effective when Auto route is on. Supports IPv4/IPv6 CIDR, one per line.",
     'common.cancel':'Cancel','common.save':'Save',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
@@ -8379,7 +8425,7 @@ function loadLogs() {
   fetch('api/logs?t=' + Date.now()).then(r => r.text()).then(text => {
     logRaw = text || '';
     renderLogs();
-  }).catch(() => { logRaw = '无法读取日志'; renderLogs(); });
+  }).catch(() => { logRaw = t('logs.readFailed'); renderLogs(); });
 }
 
 function startLogPolling() { loadLogs(); logTimer = setInterval(loadLogs, 2000); }
@@ -8639,7 +8685,12 @@ function renderConnections() {
 
 function renderTableView(filtered, showClose) {
   var timeLabel = connTab === 'closed' ? t('conn.closedTime') : t('conn.duration');
-  var headerMap = { host: ['主机',''], type: ['类型',''], src: ['源地址',''], dst: ['目标地址',''], chain: ['链路',''], rule: ['规则',''], down: ['下载','text-align:right'], up: ['上传','text-align:right'], downTotal: ['下载量','text-align:right'], upTotal: ['上传量','text-align:right'], dur: [timeLabel,'text-align:right'] };
+  var headerMap = {
+    host: [t('conn.host'),''], type: [t('conn.type'),''], src: [t('conn.source'),''], dst: [t('conn.destination'),''],
+    chain: [t('conn.chain'),''], rule: [t('conn.rule'),''], down: [t('conn.download'),'text-align:right'],
+    up: [t('conn.upload'),'text-align:right'], downTotal: [t('conn.download'),'text-align:right'],
+    upTotal: [t('conn.upload'),'text-align:right'], dur: [timeLabel,'text-align:right']
+  };
   var headerCells = connColOrder.filter(function(id) { return connColVis[id]; }).map(function(id) {
     var h = headerMap[id] || ['',''];
     return '<th' + (h[1] ? ' style="' + h[1] + '"' : '') + '>' + h[0] + '</th>';
