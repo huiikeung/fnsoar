@@ -1138,6 +1138,10 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:#b76b10;flex-shrink:0;margin-top:1px"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
               <span><strong data-i18n="net.attention">注意</strong>　<span data-i18n="net.tunNote">TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。</span></span>
             </div>
+            <div class="mx-note">
+              <svg viewBox="0 0 24 24" style="width:13px;height:13px;fill:#4a7bd6;flex-shrink:0;margin-top:1px"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+              <span><strong data-i18n="net.tunHostRedirTitle">与系统代理的关系</strong>　<span data-i18n="net.tunHostRedirNote">两者不必同时开：关闭 TUN 时引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）；只有需要 UDP/QUIC 或完整 DNS 分流时才开 TUN。系统代理（环境变量）则只影响命令行等主动读变量的程序。</span></span>
+            </div>
           </div>
         </div>
       </div>
@@ -6332,7 +6336,7 @@ var I18N = {
     'net.title':'网络设置','net.tabProxy':'系统代理','net.tabTun':'虚拟网卡模式',
     'net.sysProxy':'系统代理','net.tun':'虚拟网卡模式',
     'net.bannerProxyOn':'系统代理已启用，读取代理环境变量的程序将通过 127.0.0.1 端口走代理。',
-    'net.bannerProxyOff':'系统代理已关闭，建议大多数用户打开此选项。',
+    'net.bannerProxyOff':'系统代理已关闭。NAS 流量已由 TUN / nftables 透明接管，此项按需开启（让命令行等程序也走代理）。',
     'net.bannerTunOn':'TUN 模式已启用，应用将通过虚拟网卡访问网络。',
     'net.bannerTunOff':'TUN 模式已关闭，当前仅代理遵循规则的应用流量。',
     'net.metaProxy':'服务地址 {addr} · 应用范围 {scope} 个文件',
@@ -6358,7 +6362,7 @@ var I18N = {
     'net.dnsHijack':'DNS 劫持','net.dnsHijackHint':'劫持 53 端口到 Mihomo DNS',
     'net.strictRoute':'严格路由','net.strictRouteHint':'减少泄漏；复杂网络可能影响其它虚拟网卡',
     'net.exclude':'排除自定义网段','net.excludeHint':'每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。',
-    'net.tunNote':'TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。',
+    'net.tunNote':'TUN 会修改 fnOS 的系统路由与 DNS 流向。默认关闭；配置不可用时可能影响 NAS 访问互联网。','net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':'两者不必同时开：关闭 TUN 时引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）；只有需要 UDP/QUIC 或完整 DNS 分流时才开 TUN。系统代理（环境变量）则只影响命令行等主动读变量的程序。',
     'common.cancel':'取消','common.save':'保存',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
@@ -6502,7 +6506,7 @@ var I18N = {
     'net.title':'Network','net.tabProxy':'System Proxy','net.tabTun':'TUN Mode',
     'net.sysProxy':'System Proxy','net.tun':'TUN Mode',
     'net.bannerProxyOn':'System proxy is on. Programs that read proxy env vars will route through 127.0.0.1.',
-    'net.bannerProxyOff':'System proxy is off. Enabling it is recommended for most users.',
+    'net.bannerProxyOff':'System proxy disabled. NAS traffic is already proxied transparently via TUN / nftables; enable this only if you want CLI tools proxied too.',
     'net.bannerTunOn':'TUN mode is on. Apps will reach the network through the virtual NIC.',
     'net.bannerTunOff':'TUN mode is off. Only rule-following app traffic is proxied.',
     'net.metaProxy':'Address {addr} · {scope} target file(s)',
@@ -6528,7 +6532,7 @@ var I18N = {
     'net.dnsHijack':'DNS hijack','net.dnsHijackHint':'Hijack port 53 to the Mihomo DNS module',
     'net.strictRoute':'Strict route','net.strictRouteHint':'Reduces leaks; may affect other virtual NICs',
     'net.exclude':'Excluded CIDRs','net.excludeHint':'One IPv4/IPv6 CIDR per line; leave empty to exclude nothing.',
-    'net.tunNote':'TUN modifies fnOS system routes and DNS flow. Off by default; an unusable config may affect the NAS internet access.',
+    'net.tunNote':'TUN modifies fnOS system routes and DNS flow. Off by default; an unusable config may affect the NAS internet access.','net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':'You do not need both: when TUN is off, the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP is not proxied). Enable TUN only when you need UDP/QUIC or full DNS splitting. The system proxy (env vars) only affects programs that read them, such as the CLI.',
     'common.cancel':'Cancel','common.save':'Save',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
