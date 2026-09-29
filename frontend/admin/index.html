@@ -1037,7 +1037,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
                 <label class="mx-switch"><input type="checkbox" id="spEnabled" onchange="saveSysProxyModal()"><span></span></label>
               </div>
               <div class="mx-tgl">
-                <div class="mx-tgl-copy"><strong data-i18n="net.followPort">自动跟随 Mixed Port</strong><span data-i18n="net.followPortHint">端口变化后自动同步系统代理</span></div>
+                <div class="mx-tgl-copy"><strong data-i18n="net.followPort">自动跟随混合端口</strong><span data-i18n="net.followPortHint">端口变化后自动同步系统代理</span></div>
                 <label class="mx-switch"><input type="checkbox" id="spFollow" onchange="document.getElementById('spPort').disabled=this.checked;document.getElementById('spPortRow').style.display=this.checked?'none':'';refreshNumSpinWidths();saveSysProxyModal()"><span></span></label>
               </div>
               <div class="mx-tgl" id="spPortRow" style="display:none">
@@ -3081,7 +3081,7 @@ function renderNetworkProxy() {
     _netBanner('netProxyBanner', 'netProxyBannerText', t('net.bannerProxyOff'), '');
   }
   const scopeCount = ['environment', 'profile', 'bashrc'].filter(k => tg[k] !== false).length;
-  const addr = s.follow_mixed_port ? t('net.followPort') : '127.0.0.1:' + (s.port || 7890);
+  const addr = _actualProxyAddr(s);
   const meta = document.getElementById('netProxyMeta');
   if (meta) meta.innerHTML = t('net.metaProxy')
     .replace('{addr}', '<b>' + addr + '</b>')
@@ -3179,6 +3179,20 @@ async function openSysProxyModal() {
   document.getElementById('spTgtBashrc').checked = tg.bashrc !== false;
   renderSysProxyStatus(d);
 }
+// 从检测结果取「实际写入文件」的代理地址；未开启时回退按设置计算的默认值。
+// 避免设置里的 port 过期（用户在别处改了 mixed-port）导致显示与文件不一致。
+function _actualProxyAddr(s) {
+  var files = (netProxyData || {}).files || [];
+  for (var i = 0; i < files.length; i++) {
+    var vars = files[i].variables || [];
+    for (var j = 0; j < vars.length; j++) {
+      var k = String(vars[j].key || '').toLowerCase();
+      var v = vars[j].value || '';
+      if ((k === 'http_proxy' || k === 'https_proxy') && /^https?:\/\//i.test(v)) return v;
+    }
+  }
+  return 'http://127.0.0.1:' + ((s && s.port) || 7890);
+}
 // 渲染系统代理摘要 + 「当前检测结果」（打开弹窗与自动保存成功后共用）
 function renderSysProxyStatus(d) {
   if (!d) return;
@@ -3186,11 +3200,7 @@ function renderSysProxyStatus(d) {
   var st = document.getElementById('spStatus');
   if (st) { st.textContent = d.enabled ? t('net.enabledOn') : t('net.enabledOff'); st.className = d.enabled ? 'ok' : ''; }
   var ad = document.getElementById('spAddr');
-  if (ad) {
-    ad.textContent = s.follow_mixed_port
-      ? ('http://127.0.0.1:' + (s.port || 7890) + ' · ' + t('net.followPort'))
-      : ('http://127.0.0.1:' + (s.port || 7890));
-  }
+  if (ad) ad.textContent = _actualProxyAddr(s);
   netProxyData = d;
   renderProxyFiles();
 }
@@ -6368,7 +6378,7 @@ var I18N = {
     'net.bannerTunOff':'TUN 模式已关闭，当前仅代理遵循规则的应用流量。',
     'net.metaProxy':'服务地址 {addr} · 应用范围 {scope} 个文件',
     'net.metaTun':'协议栈 {stack} · MTU {mtu}',
-    'net.followPort':'跟随 Mixed Port',
+    'net.followPort':'跟随混合端口',
     'net.sysProxySettings':'系统代理设置','net.tunSettings':'虚拟网卡（TUN）设置',
     'net.currentStatus':'当前状态','net.currentProxy':'当前系统代理','net.attention':'注意','net.options':'选项','net.bypass':'代理绕过设置（NO_PROXY）','net.bypassHint':'保存为 NO_PROXY；多个条目会以英文逗号分隔。','net.scope':'应用范围',
     'net.enabled':'开启状态','net.enabledOn':'已开启','net.enabledOff':'已关闭','net.serviceAddr':'服务地址','net.enabledHint':'当前生效状态','net.envFiles':'托管块状态','net.envActive':'已托管','net.envNone':'未托管','net.envMissing':'文件不存在','net.envNoVars':'未检测到代理变量',
