@@ -570,7 +570,7 @@ tbody tr:hover{background:var(--card2)}
 /* ── 设置弹窗（浅色卡片，参考 Clash-for-fnos 系统代理/TUN 设置弹窗） ── */
 :root{--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;--mx-panel:#ffffff;
   --mx-accent:#627fe6;--mx-good:#239a58;--mx-good-strong:#2dbd74;--mx-warn:#b76b10}
-.modal-card.mx-modal{width:min(540px,100%);max-height:88vh;overflow:hidden;display:flex;flex-direction:column;
+.modal-card.mx-modal{width:min(640px,100%);max-width:640px;max-height:88vh;overflow:hidden;display:flex;flex-direction:column;
   background:var(--mx-panel);border:1px solid var(--mx-line);border-radius:16px;box-shadow:0 18px 50px rgba(0,0,0,.35);color:var(--mx-text)}
 .mx-head{display:flex;align-items:center;justify-content:space-between;gap:16px;flex:none;padding:18px 20px 12px}
 .mx-head h3{min-width:0;margin:0;overflow:hidden;color:var(--mx-text);font-size:15px;font-weight:700;text-overflow:ellipsis;white-space:nowrap}
@@ -6798,9 +6798,9 @@ function checkCoreUpdate() {
   if (lv) lv.textContent = '检查中…';
   fetch('api/core-latest').then(function(r) { return r.json(); }).then(function(d) {
     _latestCoreVersion = d.version || '';
-    if (lv) lv.textContent = d.version ? 'v' + d.version : '-';
+    if (lv) lv.textContent = d.version ? 'v' + String(d.version).replace(/^v/i, '') : '-';
     renderCoreUpdateBadge();
-    showToast(d.version ? ('最新内核版本 v' + d.version) : '检查失败', d.version ? 'success' : 'error');
+    showToast(d.version ? ('最新内核版本 v' + String(d.version).replace(/^v/i, '')) : '检查失败', d.version ? 'success' : 'error');
   }).catch(function() {
     if (lv) lv.textContent = '-';
     showToast('检查更新失败', 'error');
@@ -7173,7 +7173,7 @@ function showCoreUpdatePopup() {
   el.onclick = function(e) { if (e.target === el) el.remove(); };
   var cv = (_versionData && _versionData.core) ? _versionData.core : '-';
   var app = (_versionData && _versionData.app) ? _versionData.app : '-';
-  el.innerHTML = '<div class="set-card" style="width:480px;max-width:95vw;max-height:90vh;overflow:auto;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.3)">'
+  el.innerHTML = '<div class="set-card" style="width:560px;max-width:95vw;max-height:90vh;overflow:auto;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.3)">'
     // 标题栏
     + '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 10px">'
     + '<span style="font-size:16px;font-weight:700">' + t('updateCore') + '</span>'
@@ -7193,7 +7193,9 @@ function showCoreUpdatePopup() {
     + '<button class="core-btn" id="coreRestartBtn" onclick="coreRestart()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span>' + t('core.restart') + '</span></button>'
     + '<button class="core-btn" id="coreRedetectBtn" onclick="loadCoreStatus()"><svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg><span>' + t('core.redetect') + '</span></button>'
     + '<button class="core-btn" onclick="checkCoreUpdate()"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg><span>' + t('core.checkUpdate') + '</span></button>'
-    + '<button class="core-btn" onclick="toggleCoreDetails()"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>' + t('core.viewDetails') + '</span></button>'
+    + '</div>'
+    + '<div style="margin-top:8px">'
+    + '<button class="core-btn" onclick="toggleCoreDetails()" style="width:100%;justify-content:center"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>' + t('core.viewDetails') + '</span></button>'
     + '</div>'
     + '<div id="coreDetails" style="display:none;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card2);margin:8px 0 4px">'
     + '<div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:3px 0"><span style="color:var(--faint)">' + t('core.binary') + '</span><strong class="mono" id="coreBinaryPath" style="color:var(--dim);font-weight:500;word-break:break-all;text-align:right">-</strong></div>'
@@ -7214,7 +7216,7 @@ function showCoreUpdatePopup() {
   renderCoreUpdateBadge();
   fetch('api/core-latest').then(function(r) { return r.json(); }).then(function(d) {
     var lv = document.getElementById('coreUpdLatest');
-    if (lv) lv.textContent = d.version ? 'v' + d.version : '-';
+    if (lv) lv.textContent = d.version ? 'v' + String(d.version).replace(/^v/i, '') : '-';
     _latestCoreVersion = d.version || '';
     renderCoreUpdateBadge();
   }).catch(function() {});
@@ -7233,7 +7235,7 @@ function showExtCtrlPopup() {
   el.id = 'extCtrlOverlay';
   el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:9999';
   el.onclick = function(e) { if (e.target === el) el.remove(); };
-  el.innerHTML = '<div class="set-card" style="width:440px;max-height:90vh;overflow:auto;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.3)">'
+  el.innerHTML = '<div class="set-card" style="width:520px;max-width:95vw;max-height:90vh;overflow:auto;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.3)">'
     + '<div style="display:flex;align-items:center;justify-content:space-between;padding:18px 20px 10px">'
     + '<span style="font-size:16px;font-weight:700">' + t('settings.externalController') + '</span>'
     + '<span onclick="document.getElementById(\'extCtrlOverlay\').remove()" style="cursor:pointer;font-size:18px;color:var(--dim);line-height:1;padding:4px">&times;</span>'
