@@ -38,6 +38,7 @@ SOCKET_PATH   = os.environ.get("MIHOMO_GATEWAY_SOCK",
 
 CONFIG_FILE   = f"{TRIM_PKGVAR}/config.yaml"
 # ── 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 ──────────────
+_CHANGELOG_CACHE = {"t": 0, "d": None}
 PROFILE_EXT_FILE = f"{TRIM_PKGVAR}/profile-ext.json"
 # 应用设置接管的字段：全局扩展（合并/脚本）改不动这些，最终以应用设置为准
 APP_MANAGED_KEYS = (
@@ -49,7 +50,7 @@ APP_MANAGED_KEYS = (
     "profile", "geodata-mode", "geodata-loader", "global-ua",
     "keep-alive-interval", "authentication",
 )
-APP_MANAGED_SECTIONS = ("tun", "dns", "sniffer", "geox-url", "x-fnsoar")
+APP_MANAGED_SECTIONS = ("tun", "dns", "sniffer", "geox-url", "x-fnsoar", "listeners")
 DEFAULT_MERGE_CONFIG = """# 全局扩展覆写模板（对所有订阅生效，深合并进 config.yaml）
 # 语义：字典递归合并；列表整体覆盖。取消注释或自行增删后保存生效。
 
@@ -511,6 +512,23 @@ def install_dashboard(name):
             shutil.rmtree(tmpdir, ignore_errors=True)
         return {"success": False, "error": str(e), "version": latest, "previous": current}
 
+
+def _parse_changelog_md(md_text):
+    """解析本地 CHANGELOG.md → releases 列表（与 GitHub 结构一致：version/date/body）。"""
+    out = []
+    blocks = re.split(r'(?m)^##\s+', md_text)
+    for b in blocks:
+        b = b.strip()
+        if not b:
+            continue
+        first_nl = b.find('\n')
+        head_txt = b if first_nl < 0 else b[:first_nl]
+        body = '' if first_nl < 0 else b[first_nl + 1:].strip()
+        m = re.match(r'v?([0-9][0-9.]*)\s*[·\-\s]*(\d{4}-\d{2}-\d{2})?', head_txt)
+        if not m:
+            continue
+        out.append({"version": m.group(1), "date": m.group(2) or "", "body": body, "url": ""})
+    return out[:12]
 
 def _read_profile_ext():
     """读取全局扩展配置（合并模板 + 脚本）。文件缺失时返回默认模板。"""
@@ -3713,6 +3731,64 @@ class AdminHandler(BaseHTTPRequestHandler):
                 if "404" in msg:
                     msg = "GitHub 仓库 huiikeung/fnsoar 不存在或为私有仓库，无法公开检测更新。请将仓库设为公开，或配置 MIHOMO_GITHUB_TOKEN 后重试。"
                 return self._send_json({"success": False, "error": msg}, 500)
+        if path == "/api/changelog":
+            try:
+                now = time.time()
+                if _CHANGELOG_CACHE["t"] and now - _CHANGELOG_CACHE["t"] < 600:
+                    return self._send_json(_CHANGELOG_CACHE["d"])
+                import urllib.request as _cr
+                gh_api = os.environ.get("MIHOMO_GITHUB_API", "https://api.github.com").rstrip("/")
+                token = os.environ.get("MIHOMO_GITHUB_TOKEN", "")
+                url = f"{gh_api}/repos/huiikeung/fnsoar/releases?per_page=8"
+                headers = {"User-Agent": "ClashMini/1.0", "Accept": "application/vnd.github+json"}
+                if token:
+                    headers["Authorization"] = f"Bearer {token}"
+                def _gh_fetch(use_proxy):
+                    rq = _cr.Request(url, headers=headers)
+                    if use_proxy:
+                        proxy = os.environ.get("MIHOMO_PROXY_ADDR", "http://127.0.0.1:7890")
+                        opener = _cr.build_opener(_cr.ProxyHandler({"http": proxy, "https": proxy}))
+                        return json.loads(opener.open(rq, timeout=15).read())
+                    return json.loads(_cr.urlopen(rq, timeout=15).read())
+                # GitHub 直连不稳定：优先走本机 mihomo 代理，失败再试直连，各重试一次
+                arr = None
+                for use_proxy in (True, False):
+                    for _try in range(2):
+                        try:
+                            arr = _gh_fetch(use_proxy)
+                            break
+                        except Exception:
+                            arr = None
+                    if arr is not None:
+                        break
+                if arr is None:
+                    # GitHub 不可达（仓库未公开/网络受限）：回退本地 CHANGELOG.md
+                    md_path = os.path.join(TRIM_APPDEST, "admin", "CHANGELOG.md")
+                    if os.path.exists(md_path):
+                        try:
+                            with open(md_path, "r", encoding="utf-8") as f:
+                                md_text = f.read()
+                            local = _parse_changelog_md(md_text)
+                            if local:
+                                out = {"ok": True, "releases": local, "local": True}
+                                _CHANGELOG_CACHE.update({"t": now, "d": out})
+                                return self._send_json(out)
+                        except Exception:
+                            pass
+                    raise RuntimeError("GitHub 连接失败（已尝试本地代理与直连），且未找到本地更新日志")
+                releases = []
+                for it in (arr if isinstance(arr, list) else []):
+                    releases.append({
+                        "version": (it.get("tag_name") or "").lstrip("v"),
+                        "date": (it.get("published_at") or "")[:10],
+                        "body": it.get("body") or "",
+                        "url": it.get("html_url") or "",
+                    })
+                out = {"ok": True, "releases": releases}
+                _CHANGELOG_CACHE.update({"t": now, "d": out})
+                return self._send_json(out)
+            except Exception as e:
+                return self._send_json({"ok": False, "error": str(e)}, 500)
         if path == "/api/core-latest":
             try:
                 import urllib.request as _ureq
@@ -4051,7 +4127,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             try:
                 import subprocess
                 cli = "/usr/local/bin/appcenter-cli"
-                cmd = f"cd /vol1/@appcenter/fnnas.fnsoar && {cli} restart fnnas.fnsoar"
+                cmd = f"cd /vol1/@appcenter/fnnas.fnsoar && {cli} stop fnnas.fnsoar && sleep 2 && {cli} start fnnas.fnsoar"
                 subprocess.Popen(["sh", "-c", "sleep 1 && " + cmd + " >/dev/null 2>&1 &"], start_new_session=True)
                 return self._send_json({"success": True, "message": "正在重启内核…"})
             except Exception as e:
@@ -4294,8 +4370,10 @@ class AdminHandler(BaseHTTPRequestHandler):
                 if new_text == text:
                     # 区分「段落不存在」与「内容无变化」：后者是合法 no-op，不应报错
                     if not _re.search(pattern, text, _re.MULTILINE | _re.DOTALL):
-                        return self._send_json({"success": False, "error": f"未找到 section: {section}"}, 400)
-                    return self._send_json({"success": True, "message": f"{section} 无变化"})
+                        # 段落不存在：追加到文件末尾（如首次创建 listeners/隧道配置）
+                        new_text = text.rstrip("\n") + "\n\n" + replacement
+                    else:
+                        return self._send_json({"success": True, "message": f"{section} 无变化"})
                 if write_config(new_text):
                     return self._send_json({"success": True, "message": f"{section} 已保存"})
                 return self._send_json({"success": False, "error": "保存失败"}, 500)

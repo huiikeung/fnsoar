@@ -926,7 +926,27 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-card:hover{border-color:var(--faint)}
 .filter-sec{margin-bottom:8px}
 .filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
-.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}
+.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}.filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}
+/* 流量隧道列表行 */
+.tun-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--card2);margin-bottom:8px}
+.tun-row-main{min-width:0}
+.tun-row-name{font-size:12.5px;font-weight:600;color:var(--text)}
+.tun-row-meta{font-size:11px;color:var(--faint);margin-top:3px;line-height:1.5;word-break:break-all}
+.tun-row-ops{flex:none;display:flex;gap:6px}
+/* 更新日志 */
+.cl-rel{border:1px solid var(--border);border-radius:10px;background:var(--card2);padding:12px 14px}
+.cl-head{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:8px}
+.cl-ver{font-size:13px;font-weight:700;color:var(--accent2)}
+.cl-date{font-size:11px;color:var(--faint)}
+.cl-body{font-size:12px;color:var(--dim);line-height:1.7}
+.cl-body .cl-h{font-size:12px;font-weight:700;color:var(--text);margin:10px 0 5px}
+.cl-body .cl-h:first-child{margin-top:0}
+.cl-body ul{margin:4px 0;padding-left:18px}
+.cl-body li{margin:3px 0}
+.cl-body code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:11px;color:var(--text)}
+.cl-body hr{border:0;border-top:1px solid var(--border);margin:10px 0}
+.cl-body p{margin:4px 0}
+.cl-body a{color:var(--accent2)}
 .filter-empty{font-size:11px;color:var(--faint);padding:2px 0}
 .pe-ic{flex:none;width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-weight:700;font-size:13px;background:rgba(78,110,242,.12);color:var(--accent2);border:1px solid rgba(78,110,242,.25)}
 .pe-info{flex:1;min-width:0}
@@ -1082,6 +1102,82 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 <body>
 <div class="toast-container" id="toastContainer"></div>
       <!-- 系统代理设置弹窗（浅色，参考 Clash-for-fnos） -->
+      <!-- 流量隧道管理弹窗 -->
+      <div class="modal-backdrop" id="tunnelModal" style="display:none" onclick="if(event.target===this)closeTunnelModal()">
+        <div class="modal-card mx-modal">
+          <div class="mx-head">
+            <h3 data-i18n="tunnel.title">流量隧道管理</h3>
+            <span class="mx-close" onclick="closeTunnelModal()" title="关闭">&times;</span>
+          </div>
+          <div class="mx-body">
+            <!-- 添加新隧道（可折叠） -->
+            <div>
+              <div class="mx-cap" style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;margin-bottom:10px" onclick="toggleTunnelForm()">
+                <span data-i18n="tunnel.addNew">添加新隧道</span>
+                <span id="tunnelFormChev" style="font-size:11px;transition:transform .15s">&#9650;</span>
+              </div>
+              <div id="tunnelForm" style="display:block">
+                <div class="mx-grid2">
+                  <div class="mx-field">
+                    <div class="mx-field-label" data-i18n="tunnel.protocol">协议</div>
+                    <select class="mx-input" id="tnProtocol">
+                      <option value="tcp,udp" data-i18n="tunnel.protoBoth">TCP + UDP</option>
+                      <option value="tcp" data-i18n="tunnel.protoTcp">TCP</option>
+                      <option value="udp" data-i18n="tunnel.protoUdp">UDP</option>
+                    </select>
+                  </div>
+                  <div class="mx-field">
+                    <div class="mx-field-label" data-i18n="tunnel.listenAddr">本地监听地址</div>
+                    <input class="mx-input" id="tnListen" value="127.0.0.1" placeholder="127.0.0.1">
+                  </div>
+                  <div class="mx-field">
+                    <div class="mx-field-label" data-i18n="tunnel.listenPort">本地监听端口</div>
+                    <input type="number" class="mx-input" id="tnPort" min="1" max="65535" placeholder="6553">
+                  </div>
+                  <div class="mx-field">
+                    <div class="mx-field-label" data-i18n="tunnel.targetAddr">目标地址</div>
+                    <input class="mx-input" id="tnTarget" placeholder="8.8.8.8">
+                  </div>
+                  <div class="mx-field">
+                    <div class="mx-field-label" data-i18n="tunnel.targetPort">目标端口</div>
+                    <input type="number" class="mx-input" id="tnTargetPort" min="1" max="65535" placeholder="53">
+                  </div>
+                  <div class="mx-field">
+                    <div class="mx-field-label" data-i18n="tunnel.group">代理组（可选）</div>
+                    <select class="mx-input" id="tnGroup"><option value="" data-i18n="tunnel.follow">跟随当前配置</option></select>
+                  </div>
+                  <div class="mx-field">
+                    <div class="mx-field-label" data-i18n="tunnel.node">代理节点（可选）</div>
+                    <select class="mx-input" id="tnNode"><option value="" data-i18n="tunnel.follow">跟随当前配置</option></select>
+                  </div>
+                </div>
+                <div style="display:flex;justify-content:flex-end;margin-top:4px">
+                  <button class="btn btn-primary" style="background:#2dbd74;border:none" onclick="addTunnel()" data-i18n="tunnel.add">添加</button>
+                </div>
+              </div>
+            </div>
+            <!-- 隧道列表 -->
+            <div>
+              <div class="mx-cap" style="margin-bottom:6px" data-i18n="tunnel.list">隧道列表</div>
+              <div id="tunnelList"></div>
+            </div>
+          </div>
+          <div class="pe-foot" style="padding:14px 20px 18px;border-top:1px solid var(--border-soft);display:flex;justify-content:flex-end;gap:8px">
+            <button class="pe-btn-cancel" onclick="closeTunnelModal()" data-i18n="common.cancel">取消</button>
+            <button class="pe-btn-save" onclick="saveTunnels()" data-i18n="common.save">保存</button>
+          </div>
+        </div>
+      </div>
+      <!-- 更新日志弹窗 -->
+      <div class="modal-backdrop" id="changelogModal" style="display:none" onclick="if(event.target===this)closeChangelogModal()">
+        <div class="modal-card mx-modal" style="width:min(640px,96vw);max-width:min(640px,96vw)">
+          <div class="mx-head">
+            <h3 data-i18n="changelog.title">更新日志</h3>
+            <span class="mx-close" onclick="closeChangelogModal()" title="关闭">&times;</span>
+          </div>
+          <div class="mx-body" id="changelogBody" style="gap:10px"></div>
+        </div>
+      </div>
       <div class="modal-backdrop" id="sysProxyModal" style="display:none" onclick="if(event.target===this)closeSysProxyModal()">
         <div class="modal-card mx-modal">
           <div class="mx-head">
@@ -2156,6 +2252,10 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.geo">更新 GEO 数据</span></div>
               <span class="set-chev">›</span>
             </div>
+            <div class="set-item set-item-chev" onclick="openTunnelModal()">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.tunnel">流量隧道管理</span></div>
+              <span class="set-chev">›</span>
+            </div>
           </div>
         </div>
         <div class="set-col">
@@ -2235,6 +2335,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.version">应用版本</span></div>
               <span class="set-val" id="setVersion">-</span>
+              <button class="mini-btn" onclick="openChangelogModal()" data-i18n="settings.changelog">更新日志</button>
             </div>
           </div>
           <div class="set-card">
@@ -6579,7 +6680,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS 启用','vcfg.dnsEnhanced':'增强模式',
     'vcfg.fakeIpRange':'Fake-IP 范围','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'使用 hosts','vcfg.dnsUseSysHosts':'系统 hosts',
-    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。','vcfg.mixedPortHint':'mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）','vcfg.httpPortHint':'http-port · 留空则不单独监听','vcfg.redirPortHint':'redir-port · 网关 / 透明代理场景','vcfg.tproxyPortHint':'tproxy-port · 网关 / 透明代理场景','vcfg.bindAddrHint':'bind-address · * 表示监听所有网卡','vcfg.proxyAuthHint':'authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔','vcfg.portsNoteTitle':'端口用途说明','vcfg.portsNote':'混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。','vcfg.basicAutosave':'已自动保存 · 参数修改即写入 config.yaml；外部控制（控制器端口 / 密钥 / 外部 UI）同此','vcfg.portsAutosave':'已自动保存 · 端口修改即写入 config.yaml；保存后网络异常可在原始配置中回滚','vcfg.advancedAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.snifferAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.sniffSkipHint':'每行一个域名；命中这些域名的连接不进行协议嗅探。','vcfg.geoAutosave':'已自动保存 · GEO 数据源地址修改即写入 config.yaml','vcfg.filter':'订阅节点过滤','vcfg.filterEnable':'启用过滤','vcfg.filterHint2':'作用范围','vcfg.filterKw':'名称关键词','vcfg.filterRe':'名称正则','vcfg.filterAutosave':'已自动保存 · 修改后下次导入/更新订阅时生效','vcfg.filterSaved':'过滤规则已保存，导入/更新订阅时生效',
+    'vcfg.extAddr':'监听地址','vcfg.extSecret':'密钥','vcfg.extUi':'外部 UI','vcfg.ctrlPortHint':'external-controller · 管理 API 监听端口','vcfg.extSecretHint':'secret · 访问管理 API 的密码','vcfg.extUiHint':'external-ui · 面板目录名（如 zashboard）','vcfg.externalNoteTitle':'密钥 与 代理认证 的区别','vcfg.externalNote':'控制器端口 + 密钥 管理「控制入口」：fnSoar 面板、Zashboard、Metacubexd 等通过控制器端口调用内核管理 API，密钥是调用密码，防止他人远程切换节点 / 查看连接 / 改配置。「代理认证」在「网络端口」模块单独设置，管设备经 7890 / 7891 上网时的用户名密码——密钥管「谁能控制代理」，代理认证管「谁能使用代理」，两者互不影响。','vcfg.mixedPortHint':'mixed-port · 客户端主入口（HTTP + SOCKS5 二合一）','vcfg.httpPortHint':'http-port · 留空则不单独监听','vcfg.redirPortHint':'redir-port · 网关 / 透明代理场景','vcfg.tproxyPortHint':'tproxy-port · 网关 / 透明代理场景','vcfg.bindAddrHint':'bind-address · * 表示监听所有网卡','vcfg.proxyAuthHint':'authentication · 设备经代理端口上网的用户名:密码，多组用逗号分隔','vcfg.portsNoteTitle':'端口用途说明','vcfg.portsNote':'混合端口是 HTTP + SOCKS5 二合一入口，手机 / 电脑代理填它即可；HTTP / Socks 端口留空则不单独监听；Redir / TProxy 供路由器等透明代理场景使用；监听地址 * 表示允许局域网设备连接；「代理认证」即其他设备经这些端口上网时要填的用户名密码。控制器端口（管理 API）在「基础设置」模块设置。','vcfg.basicAutosave':'已自动保存 · 参数修改即写入 config.yaml；外部控制（控制器端口 / 密钥 / 外部 UI）同此','vcfg.portsAutosave':'已自动保存 · 端口修改即写入 config.yaml；保存后网络异常可在原始配置中回滚','vcfg.advancedAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.snifferAutosave':'已自动保存 · 参数修改即写入 config.yaml','vcfg.sniffSkipHint':'每行一个域名；命中这些域名的连接不进行协议嗅探。','vcfg.geoAutosave':'已自动保存 · GEO 数据源地址修改即写入 config.yaml','vcfg.filter':'订阅节点过滤','vcfg.filterEnable':'启用过滤','vcfg.filterHint2':'作用范围','vcfg.filterKw':'名称关键词','vcfg.filterRe':'名称正则','vcfg.filterAutosave':'已自动保存 · 修改后下次导入/更新订阅时生效','vcfg.filterSaved':'过滤规则已保存，导入/更新订阅时生效','settings.tunnel':'流量隧道管理','settings.changelog':'更新日志','tunnel.title':'流量隧道管理','tunnel.addNew':'添加新隧道','tunnel.protocol':'协议','tunnel.listenAddr':'本地监听地址','tunnel.listenPort':'本地监听端口','tunnel.targetAddr':'目标地址','tunnel.targetPort':'目标端口','tunnel.group':'代理组（可选）','tunnel.node':'代理节点（可选）','tunnel.follow':'跟随当前配置','tunnel.add':'添加','tunnel.list':'隧道列表','tunnel.empty':'暂无隧道，使用上方「添加新隧道」创建','tunnel.badPort':'监听端口无效（1-65535）','tunnel.badTarget':'目标地址不能为空','tunnel.badTargetPort':'目标端口无效','tunnel.dupPort':'监听端口 {p} 已被占用','tunnel.saved':'隧道配置已保存，引擎已重启','tunnel.protoBoth':'TCP + UDP','tunnel.protoTcp':'TCP','tunnel.protoUdp':'UDP','changelog.title':'更新日志','changelog.loading':'正在获取 GitHub 更新日志…','changelog.empty':'暂无发布记录','common.edit':'编辑','common.delete':'删除',
     'vcfg.optional':'(留空不设置)','vcfg.default':'(默认)',
     'vcfg.profile':'性能模式','vcfg.geoMode':'GEO 加载','vcfg.geoLoader':'GEO 更新间隔',
     'vcfg.globalUa':'全局 UA','vcfg.keepAlive':'保活间隔',
@@ -6749,7 +6850,7 @@ var I18N = {
     'vcfg.dnsEnable':'DNS Enable','vcfg.dnsEnhanced':'Enhanced Mode',
     'vcfg.fakeIpRange':'Fake-IP Range','vcfg.dnsIpv6':'IPv6 DNS',
     'vcfg.dnsUseHosts':'Use Hosts','vcfg.dnsUseSysHosts':'System Hosts',
-    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.','vcfg.mixedPortHint':'mixed-port · main client entry (HTTP + SOCKS5)','vcfg.httpPortHint':'http-port · leave empty to disable','vcfg.redirPortHint':'redir-port · gateway / transparent proxy','vcfg.tproxyPortHint':'tproxy-port · gateway / transparent proxy','vcfg.bindAddrHint':'bind-address · * listens on all interfaces','vcfg.proxyAuthHint':'authentication · user:pass for devices browsing via these ports, comma-separated','vcfg.portsNoteTitle':'About these ports','vcfg.portsNote':'The mixed port is the combined HTTP + SOCKS5 entry point — set it as the proxy on phones/PCs. HTTP/Socks ports stay unlistened when empty. Redir/TProxy serve transparent-proxy scenarios such as routers. Bind address * allows LAN devices to connect. Proxy Authentication is the username:password other devices provide when browsing via these ports. The controller port (management API) is configured in Basic Settings.','vcfg.basicAutosave':'Auto-saved · changes are written to config.yaml; same for external control (controller port / secret / external UI)','vcfg.portsAutosave':'Auto-saved · port changes are written to config.yaml; roll back in raw config if networking breaks','vcfg.advancedAutosave':'Auto-saved · changes are written to config.yaml','vcfg.snifferAutosave':'Auto-saved · changes are written to config.yaml','vcfg.sniffSkipHint':'One domain per line; connections to these domains skip protocol sniffing.','vcfg.geoAutosave':'Auto-saved · GEO data source URLs are written to config.yaml','vcfg.filter':'Subscription Filter','vcfg.filterEnable':'Enable filter','vcfg.filterHint2':'Scope','vcfg.filterKw':'Name keywords','vcfg.filterRe':'Name regex','vcfg.filterAutosave':'Autosaved · applies on next import/update','vcfg.filterSaved':'Filter rules saved', 
+    'vcfg.extAddr':'Listen Address','vcfg.extSecret':'Secret','vcfg.extUi':'External UI','vcfg.ctrlPortHint':'external-controller · management API port','vcfg.extSecretHint':'secret · password for the management API','vcfg.extUiHint':'external-ui · panel directory (e.g. zashboard)','vcfg.externalNoteTitle':'Secret vs. Proxy Authentication','vcfg.externalNote':'Controller port + secret protect the control entry: the fnSoar panel, Zashboard, Metacubexd, etc. call the core management API through the controller port, and the secret is the call password, preventing others from remotely switching nodes / viewing connections / changing config. Proxy Authentication is set separately in the Network Ports module and governs the username/password for devices browsing via ports 7890/7891 — the secret controls who can control the proxy, proxy authentication controls who can use it; the two are independent.','vcfg.mixedPortHint':'mixed-port · main client entry (HTTP + SOCKS5)','vcfg.httpPortHint':'http-port · leave empty to disable','vcfg.redirPortHint':'redir-port · gateway / transparent proxy','vcfg.tproxyPortHint':'tproxy-port · gateway / transparent proxy','vcfg.bindAddrHint':'bind-address · * listens on all interfaces','vcfg.proxyAuthHint':'authentication · user:pass for devices browsing via these ports, comma-separated','vcfg.portsNoteTitle':'About these ports','vcfg.portsNote':'The mixed port is the combined HTTP + SOCKS5 entry point — set it as the proxy on phones/PCs. HTTP/Socks ports stay unlistened when empty. Redir/TProxy serve transparent-proxy scenarios such as routers. Bind address * allows LAN devices to connect. Proxy Authentication is the username:password other devices provide when browsing via these ports. The controller port (management API) is configured in Basic Settings.','vcfg.basicAutosave':'Auto-saved · changes are written to config.yaml; same for external control (controller port / secret / external UI)','vcfg.portsAutosave':'Auto-saved · port changes are written to config.yaml; roll back in raw config if networking breaks','vcfg.advancedAutosave':'Auto-saved · changes are written to config.yaml','vcfg.snifferAutosave':'Auto-saved · changes are written to config.yaml','vcfg.sniffSkipHint':'One domain per line; connections to these domains skip protocol sniffing.','vcfg.geoAutosave':'Auto-saved · GEO data source URLs are written to config.yaml','vcfg.filter':'Subscription Filter','vcfg.filterEnable':'Enable filter','vcfg.filterHint2':'Scope','vcfg.filterKw':'Name keywords','vcfg.filterRe':'Name regex','vcfg.filterAutosave':'Autosaved · applies on next import/update','vcfg.filterSaved':'Filter rules saved','settings.tunnel':'Traffic Tunnels','settings.changelog':'Changelog','tunnel.title':'Traffic Tunnels','tunnel.addNew':'Add New Tunnel','tunnel.protocol':'Protocol','tunnel.listenAddr':'Local Listen Address','tunnel.listenPort':'Local Port','tunnel.targetAddr':'Target Address','tunnel.targetPort':'Target Port','tunnel.group':'Proxy Group (optional)','tunnel.node':'Proxy Node (optional)','tunnel.follow':'Follow current config','tunnel.add':'Add','tunnel.list':'Tunnels','tunnel.empty':'No tunnels yet','tunnel.badPort':'Invalid listen port (1-65535)','tunnel.badTarget':'Target address required','tunnel.badTargetPort':'Invalid target port','tunnel.dupPort':'Listen port {p} already in use','tunnel.saved':'Tunnels saved; engine restarted','tunnel.protoBoth':'TCP + UDP','tunnel.protoTcp':'TCP','tunnel.protoUdp':'UDP','changelog.title':'Changelog','changelog.loading':'Fetching GitHub changelog…','changelog.empty':'No releases yet','common.edit':'Edit','common.delete':'Delete', 
     'vcfg.optional':'(Optional)','vcfg.default':'(Default)',
     'vcfg.profile':'Profile','vcfg.geoMode':'GEO Mode','vcfg.geoLoader':'GEO Loader',
     'vcfg.globalUa':'Global UA','vcfg.keepAlive':'Keep Alive Interval',
@@ -7405,6 +7506,238 @@ async function geoUpdateAll() {
   if (btn) btn.disabled = false;
 }
 
+// ── 流量隧道管理（mihomo listeners: type=tunnel） ──────────────────
+var _tunnels = [];       // [{name,proto,listen,port,target,targetPort,proxy}]
+var _tnSeq = 1;
+var _tnProxies = null;   // {groups:[], nodes:[]}
+function openTunnelModal() {
+  document.getElementById('tunnelModal').style.display = 'flex';
+  loadTunnelsFromConfig();
+  refreshNumSpinWidths();
+}
+function closeTunnelModal() { document.getElementById('tunnelModal').style.display = 'none'; }
+function toggleTunnelForm() {
+  var f = document.getElementById('tunnelForm');
+  var c = document.getElementById('tunnelFormChev');
+  var show = f.style.display === 'none';
+  f.style.display = show ? 'block' : 'none';
+  c.style.transform = show ? '' : 'rotate(180deg)';
+}
+// 从 config.yaml 的 listeners 段解析隧道列表
+async function loadTunnelsFromConfig() {
+  try {
+    var d = await fetchJSON('api/config');
+    var m = (d && d.config || '').match(/^listeners:[ \t]*\r?\n((?:[ \t]+[^\r\n]*\r?\n|[ \t]*\r?\n)*)/m);
+    var seg = m ? m[1] : '';
+    _tunnels = [];
+    // 按 "- name:" 切分每个监听条目
+    var blocks = seg.split(/\n(?= {2}- )/).filter(function(b) { return /-\s/.test(b); });
+    blocks.forEach(function(b) {
+      function pick(re) { var mm = b.match(re); return mm ? mm[1].trim().replace(/^["']|["']$/g, '') : ''; }
+      var type = pick(/type:[ \t]*(\S+)/);
+      if (type && type !== 'tunnel') return;  // 只管隧道类型
+      var net = (b.match(/network:[ \t]*\r?\n((?:[ \t]+-[^\r\n]*\r?\n?)*)/) || [null, ''])[1];
+      var nets = (net.match(/-[ \t]*([^\r\n]+)/g) || []).map(function(s) { return s.replace(/^-[ \t]*/, '').trim(); });
+      var proto = nets.indexOf('tcp') !== -1 && nets.indexOf('udp') !== -1 ? 'tcp,udp' : (nets[0] || 'tcp');
+      var target = pick(/target:[ \t]*["']?([^"'\r\n]+)/);
+      var tp = target.split(':');
+      _tunnels.push({
+        name: pick(/name:[ \t]*["']?([^"'\r\n]+)/) || ('tunnel-' + (_tnSeq++)),
+        proto: proto,
+        listen: pick(/listen:[ \t]*["']?([^"'\r\n]+)/) || '127.0.0.1',
+        port: pick(/port:[ \t]*(\d+)/) || '',
+        target: tp.length > 1 ? tp.slice(0, -1).join(':') : target,
+        targetPort: tp.length > 1 ? tp[tp.length - 1] : '',
+        proxy: pick(/proxy:[ \t]*["']?([^"'\r\n]+)/)
+      });
+    });
+    renderTunnels();
+    loadTunnelProxyOptions();
+  } catch (e) {}
+}
+// 代理组/节点下拉（可选）
+async function loadTunnelProxyOptions() {
+  if (_tnProxies) { return; }
+  try {
+    var p = await fetchJSON('proxies', 5000);
+    var ps = (p && p.proxies) || {};
+    var groups = [], nodes = [];
+    var GROUP_TYPES = { Selector: 1, URLTest: 1, Fallback: 1, LoadBalance: 1 };
+    Object.keys(ps).forEach(function(name) {
+      var it = ps[name] || {};
+      if (GROUP_TYPES[it.type]) groups.push(name);
+      else if (it.type) nodes.push(name);
+    });
+    _tnProxies = { groups: groups, nodes: nodes };
+    [['tnGroup', groups], ['tnNode', nodes]].forEach(function(pair) {
+      var sel = document.getElementById(pair[0]);
+      if (!sel) return;
+      sel.querySelectorAll('option:not([value=""])').forEach(function(o) { o.remove(); });
+      pair[1].forEach(function(gname) {
+        var o = document.createElement('option');
+        o.value = gname; o.textContent = gname;
+        sel.appendChild(o);
+      });
+    });
+  } catch (e) {}
+}
+function _tnYamlStr(s) { return '"' + String(s).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"'; }
+function renderTunnels() {
+  var box = document.getElementById('tunnelList');
+  if (!box) return;
+  if (!_tunnels.length) {
+    box.innerHTML = '<div class="mx-file-empty" style="font-size:11.5px;color:var(--faint);padding:10px 12px;border:1px dashed var(--border);border-radius:10px">' + (t('tunnel.empty') || '暂无隧道，使用上方「添加新隧道」创建') + '</div>';
+    return;
+  }
+  box.innerHTML = _tunnels.map(function(tn, i) {
+    var net = tn.proto === 'tcp,udp' ? 'TCP+UDP' : tn.proto.toUpperCase();
+    var via = tn.proxy ? esc(tn.proxy) : (t('tunnel.follow') || '跟随当前配置');
+    return '<div class="tun-row">'
+      + '<div class="tun-row-main"><div class="tun-row-name">' + esc(tn.name) + '</div>'
+      + '<div class="tun-row-meta">' + esc(tn.listen) + ':' + esc(tn.port) + ' &rarr; ' + esc(tn.target) + ':' + esc(tn.targetPort) + ' · ' + net + ' · ' + via + '</div></div>'
+      + '<div class="tun-row-ops"><button class="core-btn" onclick="editTunnel(' + i + ')">' + (t('common.edit') || '编辑') + '</button>'
+      + '<button class="core-btn" onclick="delTunnel(' + i + ')" style="color:var(--red)">' + (t('common.delete') || '删除') + '</button></div>'
+      + '</div>';
+  }).join('');
+}
+function addTunnel() {
+  var listen = (document.getElementById('tnListen').value || '').trim() || '127.0.0.1';
+  var port = (document.getElementById('tnPort').value || '').trim();
+  var target = (document.getElementById('tnTarget').value || '').trim();
+  var tp = (document.getElementById('tnTargetPort').value || '').trim();
+  if (!/^\d+$/.test(port) || +port < 1 || +port > 65535) { showToast(t('tunnel.badPort') || '监听端口无效', 'error'); return; }
+  if (!target) { showToast(t('tunnel.badTarget') || '目标地址不能为空', 'error'); return; }
+  if (tp && !/^\d+$/.test(tp)) { showToast(t('tunnel.badTargetPort') || '目标端口无效', 'error'); return; }
+  var dup = _tunnels.some(function(x) { return +x.port === +port; });
+  if (dup) { showToast((t('tunnel.dupPort') || '监听端口 {p} 已被占用').replace('{p}', port), 'error'); return; }
+  var editing = document.getElementById('tunnelForm').dataset.editing;
+  var item = {
+    name: 'tunnel-' + port,
+    proto: document.getElementById('tnProtocol').value,
+    listen: listen, port: port, target: target, targetPort: tp || '53',
+    proxy: document.getElementById('tnGroup').value || document.getElementById('tnNode').value || ''
+  };
+  if (editing !== undefined && editing !== '') {
+    _tunnels[+editing] = item;
+    delete document.getElementById('tunnelForm').dataset.editing;
+    document.querySelector('[onclick="addTunnel()"]').textContent = t('tunnel.add') || '添加';
+  } else {
+    _tunnels.push(item);
+  }
+  // 清空表单关键项
+  document.getElementById('tnPort').value = '';
+  document.getElementById('tnTarget').value = '';
+  document.getElementById('tnTargetPort').value = '';
+  renderTunnels();
+}
+function editTunnel(i) {
+  var tn = _tunnels[i];
+  if (!tn) return;
+  document.getElementById('tunnelForm').style.display = 'block';
+  document.getElementById('tnProtocol').value = tn.proto;
+  document.getElementById('tnListen').value = tn.listen;
+  document.getElementById('tnPort').value = tn.port;
+  document.getElementById('tnTarget').value = tn.target;
+  document.getElementById('tnTargetPort').value = tn.targetPort;
+  document.getElementById('tnGroup').value = tn.proxy && _tnProxies && _tnProxies.groups.indexOf(tn.proxy) !== -1 ? tn.proxy : '';
+  document.getElementById('tnNode').value = tn.proxy && _tnProxies && _tnProxies.nodes.indexOf(tn.proxy) !== -1 ? tn.proxy : '';
+  document.getElementById('tunnelForm').dataset.editing = i;
+  document.querySelector('[onclick="addTunnel()"]').textContent = t('common.save') || '保存';
+}
+function delTunnel(i) {
+  _tunnels.splice(i, 1);
+  delete document.getElementById('tunnelForm').dataset.editing;
+  document.querySelector('[onclick="addTunnel()"]').textContent = t('tunnel.add') || '添加';
+  renderTunnels();
+}
+function saveTunnels() {
+  if (!_tunnels.length) {
+    // 清空：写空 listeners 段（直接移除）
+    fetch('api/config').then(r => r.json()).then(function(d) {
+      var text = (d && d.config) || '';
+      var nt = text.replace(/^listeners:[ \t]*\r?\n(?:[ \t]+[^\r\n]*\r?\n|[ \t]*\r?\n)*/m, '');
+      return fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ config: nt }) });
+    }).then(function(r) { return r.json(); }).then(function(d2) {
+      if (!d2.success) throw new Error(d2.error || '保存失败');
+      showToast(t('tunnel.saved') || '隧道配置已保存，引擎已重启', 'success');
+      closeTunnelModal();
+    }).catch(function(e) { showToast(String(e.message || e), 'error'); });
+    return;
+  }
+  var yaml = 'listeners:\n' + _tunnels.map(function(tn) {
+    var nets = tn.proto === 'tcp,udp' ? ['tcp', 'udp'] : [tn.proto];
+    var lines = ['  - name: ' + tn.name, '    type: tunnel', '    port: ' + tn.port,
+      '    listen: ' + tn.listen,
+      '    network:\n' + nets.map(function(x) { return '      - ' + x; }).join('\n'),
+      '    target: ' + tn.target + ':' + tn.targetPort];
+    if (tn.proxy) lines.push('    proxy: ' + _tnYamlStr(tn.proxy));
+    return lines.join('\n');
+  }).join('\n') + '\n';
+  fetch('api/config-section', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ section: 'listeners', yaml: yaml }) })
+    .then(r => r.json())
+    .then(function(d) {
+      if (d.success === false) throw new Error(d.error || '保存失败');
+      // 隧道写的是 mihomo listeners，需重启引擎才生效
+      return fetch('api/restart-core', { method: 'POST' }).then(function() {
+        showToast(t('tunnel.saved') || '隧道配置已保存，引擎已重启', 'success');
+        closeTunnelModal();
+      });
+    })
+    .catch(e => showToast(e.message || '保存失败', 'error'));
+}
+// ── 更新日志 ──────────────────────────────────
+function openChangelogModal() {
+  document.getElementById('changelogModal').style.display = 'flex';
+  var body = document.getElementById('changelogBody');
+  body.innerHTML = '<div style="font-size:12px;color:var(--faint);padding:20px;text-align:center">' + (t('changelog.loading') || '正在获取 GitHub 更新日志…') + '</div>';
+  fetch('api/changelog').then(r => r.json()).then(function(d) {
+    if (!d || !d.ok) throw new Error((d && d.error) || '获取失败');
+    if (!d.releases.length) {
+      body.innerHTML = '<div style="font-size:12px;color:var(--faint);padding:20px;text-align:center">' + (t('changelog.empty') || '暂无发布记录') + '</div>';
+      return;
+    }
+    body.innerHTML = d.releases.map(function(rel) {
+      var html = _mdLite(rel.body || '');
+      return '<div class="cl-rel">'
+        + '<div class="cl-head"><span class="cl-ver">v' + esc(rel.version) + '</span><span class="cl-date">' + esc(rel.date) + '</span></div>'
+        + '<div class="cl-body">' + html + '</div></div>';
+    }).join('');
+  }).catch(function(e) {
+    body.innerHTML = '<div style="font-size:12px;color:var(--red);padding:20px;text-align:center">' + esc(e.message || '获取失败') + '</div>';
+  });
+}
+function closeChangelogModal() { document.getElementById('changelogModal').style.display = 'none'; }
+// 极简 Markdown 渲染：标题/列表/粗体/行内代码/链接/分割线
+function _mdLite(md) {
+  var lines = String(md).split('\n');
+  var out = [], inList = false, inSec = null;
+  function inline(s) {
+    return esc(s)
+      .replace(/`([^`]+)`/g, '<code>$1</code>')
+      .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+      .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+  }
+  lines.forEach(function(l) {
+    var t = l.trim();
+    if (/^#{2,4}\s/.test(t)) {
+      if (inList) { out.push('</ul>'); inList = false; }
+      out.push('<div class="cl-h">' + inline(t.replace(/^#{2,4}\s/, '')) + '</div>');
+    } else if (/^[-*]\s/.test(t)) {
+      if (!inList) { out.push('<ul>'); inList = true; }
+      out.push('<li>' + inline(t.replace(/^[-*]\s/, '')) + '</li>');
+    } else if (/^---+$/.test(t)) {
+      if (inList) { out.push('</ul>'); inList = false; }
+      out.push('<hr>');
+    } else if (!t) {
+      if (inList) { out.push('</ul>'); inList = false; }
+    } else {
+      if (inList) { out.push('</ul>'); inList = false; }
+      out.push('<p>' + inline(t) + '</p>');
+    }
+  });
+  if (inList) out.push('</ul>');
+  return out.join('');
+}
 // ── 订阅节点过滤（x-fnsoar.subscription-filter） ──────────────────
 var _sfData = { kw: [], re: [] };
 function loadFilter() {

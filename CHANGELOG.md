@@ -1,0 +1,201 @@
+# fnSoar 更新日志
+
+## v1.0.81 · 2026-09-29（开发中）
+
+- 源文件编辑页加「打开配置文件」按钮（宿主桥定位 config.yaml）
+- 过滤模块移出 GEO 卡片 + 置顶钮改用 globalBackTop + 滚动条限定配置页
+- 配置页编辑源文件加自定义滚动条 + 新增「订阅节点过滤」模块
+- 扩展模块编辑按钮灰底显形 + 取消按钮 hover 红字
+- 全局扩展「编辑」按钮 hover 对齐订阅卡片编辑按钮（蓝底非边框)
+- 全局扩展补齐「应用设置回写」步骤，弹窗声明与实现严格一致
+- 全局扩展模块细节优化——编辑按钮/弹窗宽度/底部按钮/模板适配
+- 订阅页新增全局扩展（覆写配置 + 脚本），对齐 Clash Verge Rev
+- Clash设置 端口输入框与日志等级等宽（256px），修复箭头被挤出输入框
+- TUN 帮助提示靠近弹窗顶部时自动向下翻转（修复被 mx-body 裁掉）
+- TUN 弹窗帮助按钮——问号改信息图标、修复换行、加真实悬浮提示
+- 首页网络设置卡片去掉刷新按钮与开关前的垃圾桶按钮
+- 首页代理模式/网络设置 hover 统一蓝色虚线 + 提示框重构 + 内存磁盘一行显示
+- 虚拟网卡图标左右箭头完全对称（以左箭头为基准镜像）
+- 虚拟网卡模式标签图标改为盾牌 VPN（原网卡图标小尺寸下发虚像缺块）
+- 首页网络设置——TUN 标签换网卡图标 + 底部信息行改 chips 排版
+- 系统代理弹窗——「跟随 Mixed Port」中文化 + 服务地址只显示实际地址
+- 系统代理「当前检测结果」自动保存后即时刷新（之前一直空/不更新）
+- 设置弹窗改自动保存——去掉保存/取消按钮，变更即生效 + 右上角通知
+- TUN 弹窗 MTU 输入框拉宽至与 TUN Stack 下拉框一致
+- 系统代理弹窗应用范围开关与文字同行对齐
+- 更新内核弹窗「查看详情」移至第二行通栏 + 版本号防双 v
+- TUN 弹窗补充 host-redirect 关系说明 + 修正系统代理首页误导文案 + 验证嵌套标记拒绝
+- 首页系统信息卡片改半宽（不再通栏），内容超出滚动且隐藏滚动条
+- 「显示图标」更名「显示策略组图标」（明确开关用途）
+- fpk 打包补 favicon.png（app.json icon 引用）+ 部署根目录补 favicon
+- 设置页新增软件图标切换 + 移除内核设置模块 + favicon 同步
+- GEO 自动更新缺省打开 + 卡片右侧同行显示大小/时间与状态徽章
+- GEO 数据合并进配置页——更新设置 + 文件卡片（状态/大小/时间）+ URL 第二行
+- 高级排查（SSH命令）从内核管理迁至外部控制器弹窗
+- 红色「有版本更新」徽章即点即更新，移除面板升级蓝色按钮
+- 更新内核弹窗按钮字重降至 400，与设置页正文一致
+- 面板升级改用「有版本更新」徽章 + 升级按钮优化为迷你按钮
+- 内核管理操作迁入 Clash核心 弹窗 + 版本更新徽章
+- 数字输入框统一自定义上下箭头 + 全站 hover 统一蓝色虚线
+- 外部控制器/Clash核心 行的设置图标与系统代理行统一
+- Clash设置-外部控制器显示/弹窗三项问题
+- TUN 设置两界面与源文件不对齐——配置页漏加载 auto-route/auto-detect-interface
+- 系统代理弹窗补「当前检测结果」区（参考 Clash-for-fnos 环境变量模块）
+- 输入框/下拉框点击后蓝色边框不消失
+- Sniffer 开关写入废键 + section no-op 误报 400——可视化修改不同步配置文件
+- 外部 UI 默认值 dashboard -> zashboard
+- 下拉框与输入框宽度统一 190px + Sniffer/Geo 恢复通栏、Geo 输入框默认宽度
+- 窄视口输入框溢出 + socks/redir/tproxy/external-ui 未从配置加载
+- 配置页 7 模块统一 TUN 样式——底部操作行 + 移除标题重置按钮
+- 网络端口按 TUN 模块样式重构，基础设置同步通栏统一
+- 外部控制字段适配半宽卡片——去掉子标题，改为纵向堆叠全宽输入
+- 外部控制并入基础设置卡片，TUN 样式重新设计
+- configVisual 多余 </div> 导致 main 容器被提前关闭——日志/测试/设置/原始配置页全部白屏
+- 日志/测试/设置/原始配置页面空白问题
+- revert: DNS 恢复为原始 DoH 配置（doh.pub/dns.alidns.com/cloudflare/google）
+- TUN 自环导致 DSH/系统网络瘫痪 + 外来内核误判 + 排版修正
+- 优化 DNS/TUN 模块卡片排版，消除一行只有一项的半行布局
+- TUN 设置模块通栏显示（与 DNS 设置一致，占满配置页宽度）
+- 配置页 TUN 设置按 DNS 模块样式重构，补强参考项目 TUN 详细设置
+- DNS 设置模块标题图标改为地球(globe)；DNS 覆写开关移入内容卡片
+- DNS 字段保存改为保持原配置格式，并修复保存写坏配置的 bug
+- Hosts 映射标签页字段标签与参考项目对齐（Hosts 映射 → Hosts）
+- 清理 DNS 高级卡片移除后遗留的 vcfg.dnsAdv 未用 i18n 键
+- 配置页 DNS 设置重构为五标签模块（移植参考项目 DNS 与解析）
+- 配置页网络端口卡片图标改为 share-nodes（三点连线）样式
+- 网络端口「认证」改为代理认证（修正歧义标签与数组格式）
+- IPv6 开关同样迁入配置页网络端口模块
+- 配置页网络端口模块增加控制器端口与统一延迟（对齐参考项目分组）
+- 内核设置模块 Controller/Secret 中文化并补全英文适配
+- 内核设置行文字缩进 4px 调为 8px
+- 虚线 hover 覆盖内核设置全部交互控件；行内缩保留 4px
+- 内核设置卡片内文字左对齐（消除双重内缩）
+- 延迟输入框高度统一；按钮 hover 改虚线边框（对齐基础设置）
+- 设置行 hover 背景恢复全宽，统一垂直节奏
+- 延迟测试 URL/超时输入框解除 140px 宽度上限
+- 设置行悬停背景内缩 8px 并加 9px 圆角
+- GEO 行 URL 默认隐藏，最右新增「来源」按钮点击展开
+- GEO 数据行改两行布局，URL 独占整行完整显示
+- GEO 数据行展示来源链接；修复 GEO 更新失效（面板直下载）；ASN 显示可用
+- 内核设置 UI 修正（去托管徽章/停止图标/连接字段框/输入框宽度）
+- revert+feat: 移除外部 Mihomo 模式；GEO 来源改为读配置；修复设置页底部遮挡
+- 内核设置移至设置页顶部并按参考项目补全（运行方式切换/端口处理/测速参数）
+- 设置页新增「内核设置」（内核管理/连接管理/GEO 数据三标签）
+- TUN 协议栈选项与设置弹窗统一，修正配置页默认值
+- 修复系统代理/TUN 弹窗透明背景（--mx-panel 变量未定义）
+- revert+style: 首页网络卡片恢复原样式，设置弹窗按参考图重做为浅色设计
+- 网络设置 UI 按 Clash-for-fnos 设计语言重做（绿开关/分层表面/分段tab）
+- 系统代理/TUN 设置弹窗改用配置页 vcfg 分组卡片样式
+- 配置页补齐网络模块（TUN/环境变量/网络端口/DNS），修复设置弹窗不弹出
+- 新增系统代理与 TUN 快捷控制（对齐 Clash-for-fnos 运行控制）
+- 按 Clash-for-fnos 风格重组仓库结构（backend/frontend/fnpack/resources/scripts/dist）
+- hide group count pill until text is populated (no empty pill flash)
+- subtle pill background for group count label
+
+## v1.0.81 · 2026-09-03
+
+- release: 1.0.81 — zashboard 升级 v3.25.0
+
+## v1.0.80 · 2026-09-03
+
+- release: 1.0.80 — 策略组页一键测速 + 展开/折叠全部卡片
+- no auto-expand on one-click test; add expand/collapse-all button
+- one-click speed test button for all groups (策略组页一键测速)
+- breathing pulse animation for home node speed test
+
+## v1.0.79 · 2026-09-01
+
+- release: 1.0.79 — 首页当前节点测速显示延迟
+- show current-node latency on home card; home speed test targets current node
+
+## v1.0.78 · 2026-08-28
+
+- release: 1.0.78 — zashboard 升级 v3.24.0; 订阅获取通道记忆与错误分类; 直连测速修复
+- show DIRECT latency on group sub-cards
+- use CN-reachable default latency test url like verge
+- distinguish server rejection from network failure in sub errors
+- remember subscription fetch channel like verge self_proxy
+- use real Mihomo version for subscription UA
+- fetch complete subscriptions with Clash Meta UA
+- filter subscription client notice nodes
+- reuse subscription download for probe and save
+- reject invalid subscription tokens during name probe
+- preserve detected subscription names on create
+- make subscription node filters configurable
+- align subscription UA and filter info-only nodes
+- align subscription naming with clash-verge-rev
+- 订阅获取改直连优先—先直连(保留profile-title等响应头以正确解析订阅名), 直连超时/失败再走本机mihomo代理兜底(解决被墙timed out), 修复部分订阅取不到订阅名
+- validate_subscription 解析 headers 时 hd 未定义——统一代理/直连两路都捕获响应头, 修复name 'hd' is not defined报错
+- 订阅访问超时——面板拉订阅优先走本机mihomo代理(127.0.0.1:7890 mixed-port, 与clash-verge同源), 直连失败时经代理获取; validate_subscription与下载器统一走_open_sub_with_proxy, 代理失败回退直连
+- _migrate_to_file_providers 落盘也走保留样式的 _yaml_doc_save——启动时转file型订阅不再用safe_dump全量重写config, 注释/分段原样保留
+- 添加/编辑订阅不再用safe_dump冲掉config注释样式——_yaml_doc_save改为文本级patch, 仅替换proxy-providers段, 其余注释/分段/区块原样保留
+- config: 恢复 default-config 为带中文分段注释的可读模板(用户手动保留版)——39组/无均衡/无订阅/rule-providers56/rules59, 撤销之前safe_dump无注释覆盖
+
+## v1.0.77 · 2026-08-28
+
+- add v1.0.77 release notes and release script
+- bump version to 1.0.77 for repackage
+- config: 以default-config为基准覆盖运行时配置——保留7订阅, 移除8个均衡组及其引用(default锚点/业务组proxy列表一并去均衡), 42组→39组, 引用完整性校验通过
+- 视图图标按钮选中改为图标变蓝(accent)不带蓝色背景——覆盖默认.active蓝底白字, 透明背景+accent色图标
+- 视图切换改为三个纯图标按钮(全部=宫格/策略组=分层/节点组=节点树), 右侧label显示所选视图名+计数
+- 视图切换按钮改为纯名称三键, 选中视图名称+计数显示在最右侧label——去掉按钮内计数span, 右侧gviewLabel靠右显示「当前视图名 · N」
+- 视图切换(全部/策略组/节点组)移出到模式切换下方独立一行并仅规则模式显示——去掉与规则/全局/直连并排, gviewRow按当前模式控制显隐
+- 策略组页新增 全部/策略组/节点组 视图切换——替换原「显示地域组」开关为三按钮(策略组=业务分流组, 节点组=含自动/手动/故转/均衡地域组, 全部=二者之和), 默认显示策略组, 计数动态统计
+- 按参考格式将UA header并入 class 锚点 flow(而非游离坏块), 使25个 <<: *class 的rule-provider正确继承 User-Agent header
+- 移除 default-config 末尾孤立坏格式header(未挂载于任何rule-provider, 导致YAML整体无法解析), 恢复为标准flow结尾
+- 按bak恢复均衡组在proxy-groups中的原始排列位置(自动/手动/故转/均衡连续区块), 修复safe_dump重排导致的组顺序错乱
+- restore: 恢复均衡组——用户反馈内容异常, revert前端删除(revert 0131bc3)并在运行时config移植回8个均衡组+hidden+成员引用(排除词/图标修复保留), default-config模板同步为恢复后状态
+- Revert "refactor: 删除均衡组配套——config移除8个xx-均衡组及104处成员引用并去除24个地域组hidden:true; 前端移除隐藏组过滤的正则兜底与「显示地域组」开关按钮(hidden以config为唯一权威, 地域组直接显示)"
+- 开发侧承载运行时config修改——default-config模板同步为修好的配置(删8个均衡组/去24组hidden/全部组filter含占位垃圾排除词/其他组图标Others→Others_SVG), 重装后自动恢复即为此版
+- 删除均衡组配套——config移除8个xx-均衡组及104处成员引用并去除24个地域组hidden:true; 前端移除隐藏组过滤的正则兜底与「显示地域组」开关按钮(hidden以config为唯一权威, 地域组直接显示)
+- 均衡组头部now显示「负载均衡 · N 节点」状态代替无意义的'-
+- 地域组开关按钮窄屏不可见——工具条880px以下允许换行, 按钮内联样式改类并去窄屏左边距; 地域组改为每次打开默认隐藏, 开关仅当前会话有效(去掉localStorage持久化)
+- 组测速呼吸态跨重渲染保持——renderGroups感知groupTestingSet, 测试中的按钮自动带testing动画+「测速中x/y」进度(此前缓存秒显路径重建DOM冲掉测试态); 组卡头部显示生效延迟——常规组=当前节点延迟, 均衡组=成员最快延迟「最快Xms」
+- 地域组按钮独立化——移出模式切换段单独放置, 文案随状态切换(显示地域组/隐藏地域组); 换用新localStorage键默认隐藏地域组; 子卡片第二行去徽章统一「订阅名称 ｜ 节点名称」格式
+- 测速体验三项强化——①内核已知节点(含已测失败delay=0)全量立即上屏,子卡片不再空横杠,截断只作用于补测队列不再限制显示;②URLTest/Fallback组测完触发内核组测速自动重选(自动选最低延迟/故转选首个可用);③补测队列只收内核从未测过的节点
+- 子卡片统一「订阅名称 ｜ 节点名称」格式 + 占位垃圾词库与引擎排除对齐(请尽快/请到/网站/客户端太旧/只显示此节点/免费/重置等)
+- 策略组测速按钮无反应修复——groupTestingSet守卫异常中断后永久卡死(点击被静默吞掉), 改用try/finally保证任何路径都释放守卫; 测速期间按钮显示「测速中 x/y」进度文本, 完成后恢复图标; 重复点击给出toast提示不再静默
+- 策略组页新增「显示隐藏组」开关——自动/手动/故转/均衡组默认隐藏(引擎运行时showHidden曾强制为false导致永久看不到),现改为用户可开关+localStorage持久化,故转组显示当前故障转移选中的节点名,均衡组显示引擎单点状态
+- 测速从36秒降到2.5秒——复用内核health-check缓存(顶层/proxies的builtin history + /providers/proxies的provider节点延迟史),有缓存的节点秒显,只对无缓存节点16并发补测;超大组截断时优先保留能测通的节点;占位垃圾节点名过滤;进度条正确计满
+- 测速满屏超时——引擎/group批量接口在节点多时不完整返回(505只回344),此前把未覆盖节点直接判死标'超时';改为凡未覆盖一律16并发逐节点补测(3s超时),仅真正连不通的节点才显示超时
+- file架构下编辑订阅丢失原始URL——静态列表从sub-meta回填url/interval,编辑按file型走重命名/换链/改间隔链路,新增订阅统一落盘file载荷;删除订阅同步清理payload文件与meta(避免残留死链);修复删除注入截断
+- 组测速改走内核/group批量接口(单通道零风暴,505节点分钟级→5秒);订阅更新重试阶梯瘦身(TLS类网络错立即止损不再双UA空等45s)
+- 订阅架构对齐clash-verge——面板统一下发下载器(IPv4-only防v6直连泄露,UA阶梯重试,含节点校验),内核订阅改type:file读本地载荷;拆除/subfetch中转与header注入迁移;更新入口收敛为_api_update_provider共用方法;启动后台错峰自刷新
+- 引擎下载订阅钉死白名单UA(header.User-Agent,启动幂等迁移补齐存量块); 验证解析并持久化subscription-userinfo兜底引擎缺信息场景; 换clash-verge UA重试增强兼容
+- 订阅请求UA改为clash.meta/{内核版本}(fnSoar/{应用})——机场按客户端白名单前缀识别, 仅对已知Clash客户端下发名称/官网/流量/更新间隔头; 对齐clash-verge-rev默认UA策略
+- 保存订阅前先验证——单次请求同时完成可达性+格式校验+元数据提取(发现 N 个节点); 失败弹确认框可『仍要保存』(机场需经代理场景); 探测/验证共享解析逻辑, 移除重复探测
+- 无subscriptionInfo的自制订阅补用量展示——本机按连接链路增量累计(持久化), 显示『已用/∞』+进度条, 到期写 ∞; 首页/订阅卡同步
+- 到期时间展示——不限时(Expire=0)显示『不限时』; 获取不到不显示; 首页 subscriptionInfo 粘性缓存防刷新闪断; 订阅卡片同步该规则
+- release: 1.0.76 — 测速重构(成员组递归实测+自动选最快); 策略组/订阅页秒开快照; 日志页回顶; 订阅归属徽标; 首页订阅图标修正
+- 主卡测速重构——成员组(如 xx-手动)递归展开其全部真实叶子并发测速, 测完 Selector 成员自动切换到延迟最低叶子(URLTest/Fallback 引擎自管不强切); 移除上一版每组⚡按钮
+- fix+feat: 策略组测速——成员组解析到叶子节点经 provider healthcheck(xx-手动不再卡'无延迟'); 每组新增⚡一键切到延迟最低成员(显式触发不自动换)
+- 策略组/订阅页秒开——上次渲染快照(内存+localStorage)先铺底,数据后台刷新原位重绘;引擎重启等待窗口不再闪'加载中
+- 首页订阅卡『已使用/总量』图标换为完整数据库字形(原缺口弧形观感不完整)
+- 日志页也支持右下角一键回顶(列表内滚容器,与策略组全局模式共用按钮)
+- 订阅归属徽标改为与节点标签同款低调灰色样式(去掉蓝色高亮)
+- 策略组增强——全局模式右下角一键回顶按钮(滚动后浮现); 规则模式子卡片第二行显示当前节点归属订阅徽标(成员组解析到真实节点后映射)
+- 首页截图订阅域名改用 example.com（去掉『已脱敏』字样）
+- 截图修正——首页订阅源域名改为『已脱敏』; 订阅页仅保留首张卡片
+- README 新增应用截图（首页/策略组/订阅/Zashboard 面板/设置，敏感信息已脱敏）
+- 1.0.75 — 打包迁移官方 fnpack 规范(platform=all/x86/arm)+图标入库; service-setup 向导值仅首次初始化生效(升级不再覆盖用户配置); 窄屏侧栏右推模式与汉堡交互修正; 新增原生应用迁移计划文档
+- 面板 iframe 紧贴侧栏零间隙; 设置页目录按钮经宿主桥打开文件管理器; build.sh engine-start 同步路径修正
+- 1.0.73 — TUN/主机透明双模式与 IPv6 防泄露/订阅保留; 设置页按钮与数字输入步进器美化; 移除打开文件管理器 SDK 功能(恢复纯复制路径), 同步服务端改动
+- TUN/主机透明双模式 + IPv6 防泄露与订阅保留
+- config: Discord/Notion/Reddit 三条社交规则从 国外 改到 其他 组
+- 首页/订阅页改为'谁先就绪谁先渲染'的独立异步加载
+- 首页/策略组数据加载改为并发请求, 慢接口不再串行阻塞渲染
+- 首页/订阅页加载提速
+- fpk 产物命名改为 fnSoar<版本>[-架构].fpk
+- 移除侧栏重复的窗口最小化按钮(格式错误导致的重复块)
+- 移除源码注释中对 Clash Verge Rev 的参考字样
+- README/第三方声明补充 Clash Verge Rev(GPL-3.0) 样式与功能实现参考致谢
+- v1.0.55: 代码移至仓库根目录 + 开源合规(LICENSE/README/第三方声明) + 三架构 fpk 构建
+- v1.0.54: narrow desktop sidebar and sync theme selection
+- v1.0.53: dashboard 一键升级 + 图标网关路径修复
+- v1.0.52: responsive mobile sidebar and strategy groups
+- v1.0.48: DNS 全面升级, 模板去个人化, 规则修复
+- v1.0.46: update wizard welcome text and fpk checksum
+- v1.0.46: rebuild fpk package, update checksum
+- v1.0.46: rebuild app — admin UI overhaul, build script, manifest updates
+- v1.0.45: 侧边栏折叠/窄屏自适应、服务TUN按钮重构、汉堡按钮拖拽
+- glass UI, core update popup, i18n fixes, backend overhaul

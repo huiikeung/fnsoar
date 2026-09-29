@@ -33,7 +33,7 @@ mkdir -p "${DEST_DIR}/admin" "${DEST_DIR}/bin" "${DATA_DIR}"
 # Copy admin server (backend) + admin UI (frontend) — both live under admin/ at runtime
 echo "Copying admin files..."
 for f in admin_server.py media_unlock.py server.js host_transparent.sh start_admin.sh \
-         index.html ui.html favicon.png; do
+         index.html ui.html favicon.png CHANGELOG.md; do
     src="${BACKEND_ADMIN}/${f}"
     [ -f "${src}" ] || src="${FRONTEND_ADMIN}/${f}"
     [ -f "${src}" ] && cp -f "${src}" "${DEST_DIR}/admin/" || true
