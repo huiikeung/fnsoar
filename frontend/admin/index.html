@@ -8119,6 +8119,32 @@ function _fnSdkCall(promise, ms) {
     })
   ]);
 }
+// 打开文件管理器定位到指定路径（宿主桥 + 超时 + 复制回退）。
+// 注意：fnOS 宿主桥的 openFileManager 只接受目录，传文件路径无响应
+// （实测：传目录可跳转、传文件无任何反应），因此定位到所在目录。
+async function _openPathInFileManager(path) {
+  if (window.parent !== window && window.__fnSdk) {
+    try {
+      var sdk = new window.__fnSdk.TrimApp({ debug: true });
+      await _fnSdkCall(sdk.ready());
+      if (sdk.isWeb && !sdk.isStandaloneWeb) {
+        await _fnSdkCall(sdk.openFileManager(path));
+        showToast('已打开文件管理器: ' + path, 'success');
+        return;
+      }
+    } catch (e) { /* 宿主桥不可用/超时 → 回退为复制 */ }
+  }
+  try {
+    await navigator.clipboard.writeText(path);
+    showToast('已复制路径: ' + path, 'success');
+  } catch (e) {
+    var ta = document.createElement('textarea');
+    ta.value = path; document.body.appendChild(ta); ta.select();
+    try { document.execCommand('copy'); showToast('已复制路径: ' + path, 'success'); }
+    catch (e2) { showToast('路径: ' + path, 'info'); }
+    ta.remove();
+  }
+}
 async function openConfigFile() {
   var dir = (_versionData && _versionData.config_dir) || '';
   if (!dir) {
@@ -8129,56 +8155,14 @@ async function openConfigFile() {
     } catch (e) {}
   }
   if (!dir) { showToast('未获取到配置目录', 'error'); return; }
-  var file = dir.replace(/\/+$/, '') + '/config.yaml';
-  if (window.parent !== window && window.__fnSdk) {
-    try {
-      var sdk = new window.__fnSdk.TrimApp({ debug: true });
-      await _fnSdkCall(sdk.ready());
-      if (sdk.isWeb && !sdk.isStandaloneWeb) {
-        await _fnSdkCall(sdk.openFileManager(file));
-        showToast('已打开文件管理器: ' + file, 'success');
-        return;
-      }
-    } catch (e) { /* 宿主桥不可用/超时 → 回退为复制 */ }
-  }
-  try {
-    await navigator.clipboard.writeText(file);
-    showToast('已复制配置文件路径: ' + file, 'success');
-  } catch (e) {
-    var ta = document.createElement('textarea');
-    ta.value = file; document.body.appendChild(ta); ta.select();
-    try { document.execCommand('copy'); showToast('已复制配置文件路径: ' + file, 'success'); }
-    catch (e2) { showToast('配置文件路径: ' + file, 'info'); }
-    ta.remove();
-  }
+  // 定位到配置文件所在目录（宿主桥不支持文件级定位），目录内即为 config.yaml
+  await _openPathInFileManager(dir.replace(/\/+$/, ''));
 }
 async function copyPath(type) {
   if (!_versionData) return;
   var path = type === 'config' ? _versionData.config_dir : _versionData.core_dir;
   if (!path) return;
-  // 在 fnOS 微应用 iframe 内：用宿主桥(new TrimApp + ready)打开文件管理器并定位到该目录。
-  // SDK 自身依据 window.parent===window 判断是否是独立页面(isStandaloneWeb)，
-  // 宿主桥通过 postMessage(Penpal) 连接，无需 __POWERED_BY_FNAPP__。
-  if (window.parent !== window && window.__fnSdk) {
-    try {
-      var sdk = new window.__fnSdk.TrimApp({ debug: true });
-      await _fnSdkCall(sdk.ready());
-      if (sdk.isWeb && !sdk.isStandaloneWeb) {
-        await _fnSdkCall(sdk.openFileManager(path));
-        showToast('已打开文件管理器: ' + path, 'success');
-        return;
-      }
-    } catch (e) {
-      // 宿主桥不可用/超时 → 回退为复制（不报错）
-    }
-  }
-  // 回退：复制路径到剪贴板
-  try {
-    await navigator.clipboard.writeText(path);
-    showToast('已复制: ' + path, 'success');
-  } catch (e) {
-    showToast(path, 'success');
-  }
+  await _openPathInFileManager(String(path).replace(/\/+$/, ''));
 }
 
 function showCoreUpdatePopup() {
