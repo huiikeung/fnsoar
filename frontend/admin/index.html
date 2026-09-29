@@ -305,6 +305,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .traffic-axis{display:flex;justify-content:space-between;margin:2px 2px 0;font-size:10px;color:var(--faint);font-variant-numeric:tabular-nums}
 .traffic-stats{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:4px 2px 0;font-size:10.5px;color:var(--faint)}
 .traffic-stats b{font-weight:600;color:var(--dim);font-variant-numeric:tabular-nums}
+/* 隧道弹窗表单：所有输入框拉伸填满各自字段——数字输入被 num-spin 冻结在
+   内在宽度（比文本输入窄 5~26px），这里统一改为 flex 拉伸 */
+#tunnelModal .mx-grid2 input.mx-input{width:100%}
+#tunnelModal .mx-grid2 .num-spin{display:flex;width:100%}
+#tunnelModal .mx-grid2 .num-spin input[type=number]{flex:1;min-width:0;width:auto;max-width:none}
 .traffic-smooth{padding:2px 8px;border:1px solid var(--border);border-radius:20px;font-size:10px;background:var(--card);color:var(--dim);cursor:pointer;transition:all .13s;font-family:inherit}
 .traffic-smooth:hover{border-color:var(--faint);color:var(--text)}
 .traffic-legend{display:flex;gap:14px;justify-content:flex-end;margin:6px 4px 2px;font-size:11px;color:var(--faint)}
@@ -551,6 +556,7 @@ tbody tr:hover{background:var(--card2)}
 .set-input.ext-input{width:140px;max-width:140px}
 .set-input:hover{border-color:var(--accent);border-style:dashed}
 .set-input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(59,130,246,.12)}
+.set-input-fill{flex:1;min-width:0;max-width:none;text-align:left}
 .set-select{padding:9px 34px 9px 14px;border:1.5px solid var(--border);border-radius:10px;background:var(--card);color:var(--text);font-size:13.5px;outline:none;appearance:none;-webkit-appearance:none;cursor:pointer;transition:border-color .15s,box-shadow .15s;max-width:150px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
 .set-select:hover{border-color:var(--accent);border-style:dashed}
 .set-select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(59,130,246,.1)}
@@ -2343,7 +2349,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.startupScript">启动脚本</span></div>
-              <input class="set-input" style="width:180px;text-align:left" data-i18n-placeholder="settings.startupScriptPlaceholder" placeholder="留空则不执行" id="setStartupScript" onchange="saveBasicSetting('startup_script')">
+              <input class="set-input set-input-fill" data-i18n-placeholder="settings.startupScriptPlaceholder" placeholder="留空则不执行" id="setStartupScript" onchange="saveBasicSetting('startup_script')">
             </div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.showIcons">显示策略组图标</span></div>
@@ -3088,6 +3094,20 @@ function stepNum(inp, dir) {
 }
 
 // Auto-init custom selects on all .sel-row select and .set-select
+// 启动脚本输入框与上方自定义下拉等宽：
+// 两者都是 flex:1，但输入框的内在尺寸会让 flex 分配偏移约 26px，
+// 这里直接以 trigger 实测宽度对齐，窗口变化时重新对齐。
+function alignStartupInputWidth() {
+  var inp = document.getElementById('setStartupScript');
+  if (!inp) return;
+  var trig = document.querySelector('#section-settings .set-item .custom-select-trigger');
+  if (!trig) return;
+  var w = Math.round(trig.getBoundingClientRect().width);
+  if (w <= 0) return;
+  inp.style.flex = '0 0 auto';
+  inp.style.width = w + 'px';
+  inp.style.maxWidth = 'none';
+}
 function csInitAll() {
   document.querySelectorAll('select:not([data-cs-skip])').forEach(function(sel) {
     if (!sel._csInited && sel.id !== 'curGroupSel' && sel.id !== 'curNodeSel') { sel._csInited = true; csBuild(sel); }
@@ -3100,6 +3120,7 @@ function csInitAll() {
     if (stored.theme_mode) themeSelect.value = stored.theme_mode;
     themeSelect._csRefresh();
   }
+  alignStartupInputWidth();
   // Always init the two dynamic selects
   ['curGroupSel','curNodeSel'].forEach(function(id) {
     var s = document.getElementById(id);
@@ -4011,6 +4032,10 @@ function _drawTrafficMorph(fromWin, toWin, fromMax, toMax, e) {
   _trafficDrawCount++;
 }
 window.addEventListener('resize', function() { if (trafficHistory.length) drawTrafficChart(); });
+window.addEventListener('resize', function() {
+  clearTimeout(window.__alignStartupT);
+  window.__alignStartupT = setTimeout(alignStartupInputWidth, 150);
+});
 
 function startTraffic() {
   const proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
