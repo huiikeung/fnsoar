@@ -2043,9 +2043,9 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             </div>
           </div>
           <div class="vcfg-card" style="grid-column:1/-1">
-            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span><span data-i18n="vcfg.sniffer">Sniffer</span></div>
+            <div class="vcfg-card-title"><span class="vcfg-ic cfg-dns"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span><span data-i18n="vcfg.sniffer">协议嗅探</span></div>
             <div style="padding:12px 16px 14px">
-              <div class="dns-field" style="margin-bottom:8px"><span class="dns-field-label"><span data-i18n="vcfg.snifferEnable">Sniffer 启用</span><small>sniffer.enable</small></span><label class="toggle"><input type="checkbox" id="vcfgSniffer" onchange="saveVcfg('sniffer-enable');document.getElementById('vcfgSnifferGroup').style.display=this.checked?'flex':'none'"><span class="toggle-track"></span></label></div>
+              <div class="dns-field" style="margin-bottom:8px"><span class="dns-field-label"><span data-i18n="vcfg.snifferEnable">启用嗅探</span><small>sniffer.enable</small></span><label class="toggle"><input type="checkbox" id="vcfgSniffer" onchange="saveVcfg('sniffer-enable');document.getElementById('vcfgSnifferGroup').style.display=this.checked?'flex':'none'"><span class="toggle-track"></span></label></div>
               <div id="vcfgSnifferGroup" style="display:none;flex-direction:column;gap:8px">
                 <div class="dns-field" style="margin-bottom:8px"><span class="dns-field-label"><span data-i18n="vcfg.sniffing">协议</span><small>sniffer sniff</small></span><div style="display:flex;gap:12px"><label class="pg-check" id="vcfgSniffTlsCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">TLS</label><label class="pg-check" id="vcfgSniffHttpCk"><input type="checkbox" onchange="this.parentElement.classList.toggle('on',this.checked)">HTTP</label></div></div>
                 <div class="dns-field dns-ta-box"><span class="dns-field-label"><span data-i18n="vcfg.sniffSkip">跳过域名</span><small>sniffer.skip-domain</small></span><textarea id="vcfgSniffSkip" rows="3" placeholder="每行一个域名" onchange="saveSnifferSection()"></textarea><div class="dns-ta-note" data-i18n="vcfg.sniffSkipHint">每行一个域名；命中这些域名的连接不进行协议嗅探。</div></div>
@@ -6959,7 +6959,7 @@ var I18N = {
     'vcfg.optional':'(留空不设置)','vcfg.default':'(默认)',
     'vcfg.profile':'性能模式','vcfg.geoMode':'GEO 加载','vcfg.geoLoader':'GEO 更新间隔',
     'vcfg.globalUa':'全局 UA','vcfg.keepAlive':'保活间隔',
-    'vcfg.sniffer':'Sniffer','vcfg.snifferEnable':'Sniffer 启用','vcfg.sniffing':'协议',
+    'vcfg.sniffer':'协议嗅探','vcfg.snifferEnable':'启用嗅探','vcfg.sniffing':'协议',
     'vcfg.sniffSkip':'跳过域名',
     'vcfg.dnsNameserver':'nameserver','vcfg.dnsFallback':'fallback',
     'vcfg.fbGeoip':'fallback-filter geoip','vcfg.fbDomain':'fallback-filter domain',
@@ -7129,7 +7129,7 @@ var I18N = {
     'vcfg.optional':'(Optional)','vcfg.default':'(Default)',
     'vcfg.profile':'Profile','vcfg.geoMode':'GEO Mode','vcfg.geoLoader':'GEO Loader',
     'vcfg.globalUa':'Global UA','vcfg.keepAlive':'Keep Alive Interval',
-    'vcfg.sniffer':'Sniffer','vcfg.snifferEnable':'Sniffer Enable','vcfg.sniffing':'Protocols',
+    'vcfg.sniffer':'Protocol Sniffer','vcfg.snifferEnable':'Enable Sniffer','vcfg.sniffing':'Protocols',
     'vcfg.sniffSkip':'Skip Domain',
     'vcfg.dnsNameserver':'nameserver','vcfg.dnsFallback':'fallback',
     'vcfg.fbGeoip':'fallback-filter geoip','vcfg.fbDomain':'fallback-filter domain',
@@ -8106,6 +8106,16 @@ function saveGeoSettings() {
 }
 
 // 打开配置文件（源文件页）：fnOS 宿主桥打开文件管理器并定位到 config.yaml 文件
+// fnOS 宿主桥调用加超时：宿主未接入/桥挂着不返回时不能卡死按钮，
+// 超时即回退到复制路径（copyPath / openConfigFile 共用）
+function _fnSdkCall(promise, ms) {
+  return Promise.race([
+    promise,
+    new Promise(function(_, reject) {
+      setTimeout(function() { reject(new Error('fnOS bridge timeout')); }, ms || 2500);
+    })
+  ]);
+}
 async function openConfigFile() {
   var dir = (_versionData && _versionData.config_dir) || '';
   if (!dir) {
@@ -8120,13 +8130,13 @@ async function openConfigFile() {
   if (window.parent !== window && window.__fnSdk) {
     try {
       var sdk = new window.__fnSdk.TrimApp({ debug: true });
-      await sdk.ready();
+      await _fnSdkCall(sdk.ready());
       if (sdk.isWeb && !sdk.isStandaloneWeb) {
-        await sdk.openFileManager(file);
+        await _fnSdkCall(sdk.openFileManager(file));
         showToast('已打开文件管理器: ' + file, 'success');
         return;
       }
-    } catch (e) { /* 宿主桥不可用时回退为复制 */ }
+    } catch (e) { /* 宿主桥不可用/超时 → 回退为复制 */ }
   }
   try {
     await navigator.clipboard.writeText(file);
@@ -8149,14 +8159,14 @@ async function copyPath(type) {
   if (window.parent !== window && window.__fnSdk) {
     try {
       var sdk = new window.__fnSdk.TrimApp({ debug: true });
-      await sdk.ready();
+      await _fnSdkCall(sdk.ready());
       if (sdk.isWeb && !sdk.isStandaloneWeb) {
-        await sdk.openFileManager(path);
+        await _fnSdkCall(sdk.openFileManager(path));
         showToast('已打开文件管理器: ' + path, 'success');
         return;
       }
     } catch (e) {
-      // 宿主桥不可用时回退为复制（不报错）
+      // 宿主桥不可用/超时 → 回退为复制（不报错）
     }
   }
   // 回退：复制路径到剪贴板
@@ -8471,7 +8481,7 @@ window.fnSoarInspectHost = function() {
     try {
       var vs = JSON.parse(ls);
       if (vs.theme_mode) applyTheme(vs.theme_mode);
-      if (vs.language) applyLanguage(vs.language);
+      applyLanguage(vs.language || 'zh');   // 必须执行：否则 data-i18n 只显示 HTML 行内兜底文案
     } catch(e) {}
   }
 })();
