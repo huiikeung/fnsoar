@@ -672,6 +672,12 @@ textarea.mx-input{resize:vertical;min-height:84px;font-family:ui-monospace,SFMon
 .geo-file-meta{margin-left:auto;font-size:11px;color:var(--dim);text-align:right}
 .geo-file-meta span{display:block}
 .geo-status{font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;flex-shrink:0}
+/* Clash核心 行「有版本更新」徽章 */
+.core-upd-badge{flex:none;font-size:10px;font-weight:600;color:var(--red);background:rgba(246,78,110,.1);border:1px solid rgba(246,78,110,.32);border-radius:20px;padding:2px 9px;margin-left:2px;white-space:nowrap;cursor:pointer;transition:border-color .15s}
+.core-upd-badge:hover{border-color:var(--red);border-style:dashed}
+/* 更新内核弹窗内的内核管理按钮行 */
+.core-mgr-actions{display:flex;flex-wrap:wrap;gap:8px}
+.core-mgr-actions .core-btn{flex:1;min-width:96px;justify-content:center}
 .geo-status.ok{color:var(--green);background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3)}
 .geo-status.missing{color:var(--red);background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3)}
 .core-panel{display:none}
@@ -1887,19 +1893,19 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
               <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end">
                 <strong id="coreVersion" style="font-size:13px">-</strong>
                 <span class="geo-status ok" id="coreRunStatus">-</span>
-                <button class="core-btn" style="padding:4px 10px;font-size:11px" onclick="toggleCoreDetails()" data-i18n="core.viewDetails">查看详情</button>
+
               </div>
             </div>
-            <div id="coreDetails" style="display:none;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card2);margin:6px 0">
-              <div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:3px 0"><span style="color:var(--faint)" data-i18n="core.binary">二进制</span><strong class="mono" id="coreBinaryPath" style="color:var(--dim);font-weight:500;word-break:break-all;text-align:right">-</strong></div>
-              <div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:3px 0"><span style="color:var(--faint)" data-i18n="core.configPath">启动配置</span><strong class="mono" id="coreConfigPath" style="color:var(--dim);font-weight:500;word-break:break-all;text-align:right">-</strong></div>
-            </div>
-            <div class="core-actions">
-              <button class="core-btn primary" id="coreToggleBtn" onclick="coreToggleRunning()"><svg viewBox="0 0 24 24" id="coreToggleIcon"><path d="M8 5v14l11-7z"/></svg><span id="coreToggleLabel">启动内核</span></button>
-              <button class="core-btn" id="coreRestartBtn" onclick="coreRestart()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span data-i18n="core.restart">重启内核</span></button>
-              <button class="core-btn" id="coreRedetectBtn" onclick="loadCoreStatus()"><svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg><span data-i18n="core.redetect">重新检测</span></button>
-              <button class="core-btn" onclick="checkUpdates()"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg><span data-i18n="core.checkUpdate">检查更新</span></button>
-            </div>
+
+
+
+
+
+
+
+
+
+
             <div class="core-warn" id="corePortWarn" style="display:none">
               <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22L12 2zm1 15h-2v-2h2v2zm0-4h-2V9h2v4z"/></svg>
               <span id="corePortWarnText"></span>
@@ -2049,6 +2055,7 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.core">Clash核心</span></div>
               <span class="set-val" id="setCoreVersion">-</span>
+              <span class="core-upd-badge" id="coreUpdBadge" style="display:none" onclick="showCoreUpdatePopup()" data-i18n="core.updateAvailable">有版本更新</span>
               <button class="mini-btn mini-btn-ic" onclick="showCoreUpdatePopup()" title="更新内核" aria-label="更新内核"><svg viewBox="0 0 24 24" fill="currentColor" style="width:15px;height:15px"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
             </div>
             <div class="set-item set-item-chev" onclick="updateGeoData()">
@@ -6360,7 +6367,7 @@ var I18N = {
     'startPage.home':'首页','startPage.groups':'策略组','startPage.connections':'连接',
     'startPage.rules':'规则','startPage.providers':'订阅','startPage.config':'配置',
     'startPage.logs':'日志','startPage.test':'测试','startPage.settings':'设置',
-    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动','core.title':'内核设置','core.tabManage':'内核管理','core.tabConn':'连接管理','core.tabGeo':'GEO 数据','core.subTitle':'核心版本与运行方式','core.viewDetails':'查看详情','core.binary':'二进制','core.configPath':'启动配置','core.redetect':'重新检测','core.stop':'停止内核','core.stopped':'内核已停止','core.stopFail':'停止失败: ','core.portFix':'端口占用处理','core.portFixHint':'可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。','core.modifyPort':'修改端口','core.sshHelp':'高级排查（SSH 命令）','core.copy':'复制','core.copied':'已复制到剪贴板','core.sshStep1T':'查找占用进程','core.sshStep1D':'在 NAS 的 SSH 终端执行，查看输出中的进程名和 pid=数字。','core.sshStep2T':'核对应用用途','core.sshStep2D':'将命令中的 PID 替换为上一步查到的进程号，确认它是可以停止的服务。','core.sshStep3T':'停止已确认的进程','core.sshStep3D':'同样替换 PID。等待几秒，再执行第一条命令，确认端口已释放，然后点击「重新检测」或「启动内核」。','core.sshDockerNote':'如果占用者是 Docker 容器，请在飞牛 Docker 页面停止对应容器或修改端口映射，不要直接结束 docker-proxy。受服务管理器控制的进程可能自动重启，应通过原服务停止。','core.sshSubForceT':'进程仍未退出时','core.sshSubForceD':'先重新查询并核对 PID，确认仍是同一进程后才强制结束；强制结束不会执行正常清理。','core.sshSubNetT':'系统没有 ss 命令时','core.sshSubNetD':'可用 netstat 查看监听列表，找到本地地址末尾为 {port} 的行及其 PID/程序名。','core.controller':'控制器','core.interval12':'12 小时','core.interval24':'24 小时','core.interval72':'3 天','core.interval168':'7 天','core.connSettings':'连接设置','core.connSub':'连接当前 Core 的 Controller API','core.autoManage':'自动管理','core.portSettings':'端口设置','core.delayUrl':'延迟测试 URL','core.delayTimeout':'超时（毫秒）','core.delayHint':'用于节点延迟测速的请求地址与超时；修改后自动保存。','core.hcSaved':'测速参数已保存','core.geoDownload':'下载','core.geoSource':'来源','core.geoNoDownload':'未下载','core.geoNoSource':'未配置下载地址','core.geoDownloadFail':'下载失败: ','core.version':'内核版本','core.start':'启动内核','core.restart':'重启内核','core.checkUpdate':'检查更新','core.started':'内核已启动','core.restarted':'内核已重启','core.startFail':'启动失败: ','core.restartFail':'重启失败: ','core.portConflict':'控制器端口 {port} 被其他进程占用，内核可能无法启动。可前往「配置 → 外部控制」修改监听端口。','core.secret':'密钥','core.secretSet':'已设置','core.secretUnset':'未设置','core.goConfig':'前往配置','core.test':'测试连接','core.testOk':'连接成功','core.testFail':'连接失败，引擎未响应','core.geoAuto':'自动更新','core.geoInterval':'更新周期','core.saveSettings':'保存设置','core.geoSaved':'GEO 设置已保存，服务正在重启...','core.geoOk':'可用','core.geoMissing':'缺失','core.updateNow':'立即更新','core.saveFailed':'保存失败: ','core.geoHint':'GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。','core.connHint':'Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。',
+    'tun.on':'开','tun.off':'关','svc.on':'运行中','svc.off':'服务关','svc.start':'启动','core.title':'内核设置','core.tabManage':'内核管理','core.tabConn':'连接管理','core.tabGeo':'GEO 数据','core.subTitle':'核心版本与运行方式','core.viewDetails':'查看详情','core.binary':'二进制','core.configPath':'启动配置','core.redetect':'重新检测','core.stop':'停止内核','core.stopped':'内核已停止','core.stopFail':'停止失败: ','core.portFix':'端口占用处理','core.portFixHint':'可直接修改托管 Core 的启动端口，保留原有服务。保存时备份并校验配置，启动后自动验证连接。','core.modifyPort':'修改端口','core.sshHelp':'高级排查（SSH 命令）','core.copy':'复制','core.copied':'已复制到剪贴板','core.sshStep1T':'查找占用进程','core.sshStep1D':'在 NAS 的 SSH 终端执行，查看输出中的进程名和 pid=数字。','core.sshStep2T':'核对应用用途','core.sshStep2D':'将命令中的 PID 替换为上一步查到的进程号，确认它是可以停止的服务。','core.sshStep3T':'停止已确认的进程','core.sshStep3D':'同样替换 PID。等待几秒，再执行第一条命令，确认端口已释放，然后点击「重新检测」或「启动内核」。','core.sshDockerNote':'如果占用者是 Docker 容器，请在飞牛 Docker 页面停止对应容器或修改端口映射，不要直接结束 docker-proxy。受服务管理器控制的进程可能自动重启，应通过原服务停止。','core.sshSubForceT':'进程仍未退出时','core.sshSubForceD':'先重新查询并核对 PID，确认仍是同一进程后才强制结束；强制结束不会执行正常清理。','core.sshSubNetT':'系统没有 ss 命令时','core.sshSubNetD':'可用 netstat 查看监听列表，找到本地地址末尾为 {port} 的行及其 PID/程序名。','core.controller':'控制器','core.interval12':'12 小时','core.interval24':'24 小时','core.interval72':'3 天','core.interval168':'7 天','core.connSettings':'连接设置','core.connSub':'连接当前 Core 的 Controller API','core.autoManage':'自动管理','core.portSettings':'端口设置','core.delayUrl':'延迟测试 URL','core.delayTimeout':'超时（毫秒）','core.delayHint':'用于节点延迟测速的请求地址与超时；修改后自动保存。','core.hcSaved':'测速参数已保存','core.geoDownload':'下载','core.geoSource':'来源','core.geoNoDownload':'未下载','core.geoNoSource':'未配置下载地址','core.geoDownloadFail':'下载失败: ','core.version':'内核版本','core.start':'启动内核','core.restart':'重启内核','core.checkUpdate':'检查更新','core.updateAvailable':'有版本更新','core.started':'内核已启动','core.restarted':'内核已重启','core.startFail':'启动失败: ','core.restartFail':'重启失败: ','core.portConflict':'控制器端口 {port} 被其他进程占用，内核可能无法启动。可前往「配置 → 外部控制」修改监听端口。','core.secret':'密钥','core.secretSet':'已设置','core.secretUnset':'未设置','core.goConfig':'前往配置','core.test':'测试连接','core.testOk':'连接成功','core.testFail':'连接失败，引擎未响应','core.geoAuto':'自动更新','core.geoInterval':'更新周期','core.saveSettings':'保存设置','core.geoSaved':'GEO 设置已保存，服务正在重启...','core.geoOk':'可用','core.geoMissing':'缺失','core.updateNow':'立即更新','core.saveFailed':'保存失败: ','core.geoHint':'GEO 数据保存在 /vol1/@appdata/fnnas.fnsoar/，更新后重启引擎生效；下载源可在「配置 → Geo 数据」修改。','core.connHint':'Controller 是面板与引擎交互的 API 地址，修改监听端口或 Secret 请前往「配置 → 外部控制」。',
     'dns.master':'DNS 覆写','dns.masterHint':'默认关闭；关闭时只保存 DNS 模板，不写入当前启动配置',
 'dns.tabBasic':'基础设置','dns.tabNs':'解析服务器','dns.tabFake':'Fake IP 与域名策略','dns.tabFb':'回退过滤','dns.tabHosts':'Hosts 映射',
 'dns.listen':'DNS 监听地址','dns.enhanced':'增强模式','dns.fakeIpRange':'Fake IP IPv4 范围','dns.fakeIpRange6':'Fake IP IPv6 范围',
@@ -6530,7 +6537,7 @@ var I18N = {
     'startPage.home':'Home','startPage.groups':'Groups','startPage.connections':'Connections',
     'startPage.rules':'Rules','startPage.providers':'Subscriptions','startPage.config':'Config',
     'startPage.logs':'Logs','startPage.test':'Test','startPage.settings':'Settings',
-    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start','core.title':'Core Settings','core.tabManage':'Core','core.tabConn':'Connection','core.tabGeo':'GEO Data','core.subTitle':'Core version and run mode','core.viewDetails':'Details','core.binary':'Binary','core.configPath':'Startup config','core.redetect':'Re-detect','core.stop':'Stop Core','core.stopped':'Core stopped','core.stopFail':'Stop failed: ','core.portFix':'Port Conflict','core.portFixHint':'Change the managed core startup port directly to keep the existing service. Config is backed up and validated, and the connection is verified after start.','core.modifyPort':'Change Port','core.sshHelp':'Advanced (SSH commands)','core.copy':'Copy','core.copied':'Copied to clipboard','core.sshStep1T':'Find the occupying process','core.sshStep1D':'Run in the NAS SSH terminal and check the process name and pid= in the output.','core.sshStep2T':'Verify the process','core.sshStep2D':'Replace PID with the process number found in the previous step and confirm it is a service that can be stopped.','core.sshStep3T':'Stop the confirmed process','core.sshStep3D':'Replace PID as well. Wait a few seconds, run the first command again to confirm the port is released, then click Re-detect or Start Core.','core.sshDockerNote':'If the occupier is a Docker container, stop the container or change its port mapping in the fnOS Docker page instead of killing docker-proxy directly. Processes controlled by a service manager may auto-restart; stop them via the original service.','core.sshSubForceT':'When the process still does not exit','core.sshSubForceD':'Re-query and verify the PID first; force kill only after confirming it is still the same process. Forced termination skips normal cleanup.','core.sshSubNetT':'When the ss command is unavailable','core.sshSubNetD':'Use netstat to list listeners and find the line whose local address ends with {port}, along with its PID/program name.','core.controller':'Controller','core.interval12':'12 hours','core.interval24':'24 hours','core.interval72':'3 days','core.interval168':'7 days','core.connSettings':'Connection','core.connSub':'Connect to the current core Controller API','core.autoManage':'Auto-managed','core.portSettings':'Port Settings','core.delayUrl':'Healthcheck URL','core.delayTimeout':'Timeout (ms)','core.delayHint':'URL and timeout used for node delay tests; saved automatically.','core.hcSaved':'Healthcheck settings saved','core.geoDownload':'Download','core.geoSource':'Source','core.geoNoDownload':'Not downloaded','core.geoNoSource':'No source configured','core.geoDownloadFail':'Download failed: ','core.version':'Core Version','core.start':'Start Core','core.restart':'Restart Core','core.checkUpdate':'Check Updates','core.started':'Core started','core.restarted':'Core restarted','core.startFail':'Start failed: ','core.restartFail':'Restart failed: ','core.portConflict':'Controller port {port} is used by another process; the core may fail to start. Change the listen port in Config → External Controller.','core.secret':'Secret','core.secretSet':'Set','core.secretUnset':'Not set','core.goConfig':'Go to Config','core.test':'Test Connection','core.testOk':'Connected','core.testFail':'Connection failed, engine not responding','core.geoAuto':'Auto Update','core.geoInterval':'Interval','core.saveSettings':'Save Settings','core.geoSaved':'GEO settings saved, restarting service...','core.geoOk':'Available','core.geoMissing':'Missing','core.updateNow':'Update Now','core.saveFailed':'Save failed: ','core.geoHint':'GEO files live in /vol1/@appdata/fnnas.fnsoar/; restart the core after updating. Download sources can be edited in Config → Geo Data.','core.connHint':'Controller is the API endpoint the panel uses to talk to the engine. Edit the listen port or Secret in Config → External Controller.',
+    'tun.on':'On','tun.off':'Off','svc.on':'Running','svc.off':'Service Off','svc.start':'Start','core.title':'Core Settings','core.tabManage':'Core','core.tabConn':'Connection','core.tabGeo':'GEO Data','core.subTitle':'Core version and run mode','core.viewDetails':'Details','core.binary':'Binary','core.configPath':'Startup config','core.redetect':'Re-detect','core.stop':'Stop Core','core.stopped':'Core stopped','core.stopFail':'Stop failed: ','core.portFix':'Port Conflict','core.portFixHint':'Change the managed core startup port directly to keep the existing service. Config is backed up and validated, and the connection is verified after start.','core.modifyPort':'Change Port','core.sshHelp':'Advanced (SSH commands)','core.copy':'Copy','core.copied':'Copied to clipboard','core.sshStep1T':'Find the occupying process','core.sshStep1D':'Run in the NAS SSH terminal and check the process name and pid= in the output.','core.sshStep2T':'Verify the process','core.sshStep2D':'Replace PID with the process number found in the previous step and confirm it is a service that can be stopped.','core.sshStep3T':'Stop the confirmed process','core.sshStep3D':'Replace PID as well. Wait a few seconds, run the first command again to confirm the port is released, then click Re-detect or Start Core.','core.sshDockerNote':'If the occupier is a Docker container, stop the container or change its port mapping in the fnOS Docker page instead of killing docker-proxy directly. Processes controlled by a service manager may auto-restart; stop them via the original service.','core.sshSubForceT':'When the process still does not exit','core.sshSubForceD':'Re-query and verify the PID first; force kill only after confirming it is still the same process. Forced termination skips normal cleanup.','core.sshSubNetT':'When the ss command is unavailable','core.sshSubNetD':'Use netstat to list listeners and find the line whose local address ends with {port}, along with its PID/program name.','core.controller':'Controller','core.interval12':'12 hours','core.interval24':'24 hours','core.interval72':'3 days','core.interval168':'7 days','core.connSettings':'Connection','core.connSub':'Connect to the current core Controller API','core.autoManage':'Auto-managed','core.portSettings':'Port Settings','core.delayUrl':'Healthcheck URL','core.delayTimeout':'Timeout (ms)','core.delayHint':'URL and timeout used for node delay tests; saved automatically.','core.hcSaved':'Healthcheck settings saved','core.geoDownload':'Download','core.geoSource':'Source','core.geoNoDownload':'Not downloaded','core.geoNoSource':'No source configured','core.geoDownloadFail':'Download failed: ','core.version':'Core Version','core.start':'Start Core','core.restart':'Restart Core','core.checkUpdate':'Check Updates','core.updateAvailable':'Update available','core.started':'Core started','core.restarted':'Core restarted','core.startFail':'Start failed: ','core.restartFail':'Restart failed: ','core.portConflict':'Controller port {port} is used by another process; the core may fail to start. Change the listen port in Config → External Controller.','core.secret':'Secret','core.secretSet':'Set','core.secretUnset':'Not set','core.goConfig':'Go to Config','core.test':'Test Connection','core.testOk':'Connected','core.testFail':'Connection failed, engine not responding','core.geoAuto':'Auto Update','core.geoInterval':'Interval','core.saveSettings':'Save Settings','core.geoSaved':'GEO settings saved, restarting service...','core.geoOk':'Available','core.geoMissing':'Missing','core.updateNow':'Update Now','core.saveFailed':'Save failed: ','core.geoHint':'GEO files live in /vol1/@appdata/fnnas.fnsoar/; restart the core after updating. Download sources can be edited in Config → Geo Data.','core.connHint':'Controller is the API endpoint the panel uses to talk to the engine. Edit the listen port or Secret in Config → External Controller.',
     'dns.master':'DNS Override','dns.masterHint':'Off by default; when off, only the DNS template is saved and not written to the running config',
 'dns.tabBasic':'Basic','dns.tabNs':'Nameservers','dns.tabFake':'Fake IP & Policy','dns.tabFb':'Fallback Filter','dns.tabHosts':'Hosts',
 'dns.listen':'DNS Listen','dns.enhanced':'Enhanced Mode','dns.fakeIpRange':'Fake IP IPv4 Range','dns.fakeIpRange6':'Fake IP IPv6 Range',
@@ -6749,6 +6756,45 @@ function fetchVersionInfo() {
     if (cd) cd.textContent = v.config_dir || '-';
     var kd = document.getElementById('setCoreDir');
     if (kd) kd.textContent = v.core_dir || '-';
+    renderCoreUpdateBadge();
+    // 拉取最新内核版本，驱动 Clash核心 行「有版本更新」徽章
+    fetch('api/core-latest').then(function(r) { return r.json(); }).then(function(d) {
+      _latestCoreVersion = d.version || '';
+      renderCoreUpdateBadge();
+    }).catch(function() {});
+  });
+}
+
+// ── 内核版本更新提示（Clash核心 行「有版本更新」徽章） ──────────────────
+function _verGt(a, b) {  // 版本号 a > b ?
+  var pa = String(a || '').replace(/^v/i, '').split(/[.\-+]/).map(function(x) { return parseInt(x, 10) || 0; });
+  var pb = String(b || '').replace(/^v/i, '').split(/[.\-+]/).map(function(x) { return parseInt(x, 10) || 0; });
+  for (var i = 0; i < Math.max(pa.length, pb.length); i++) {
+    var x = pa[i] || 0, y = pb[i] || 0;
+    if (x !== y) return x > y;
+  }
+  return false;
+}
+function renderCoreUpdateBadge() {
+  var badge = document.getElementById('coreUpdBadge');
+  if (!badge) return;
+  var cur = (_versionData && _versionData.core) ? _versionData.core : '';
+  var latest = _latestCoreVersion || '';
+  var show = !!(cur && latest && _verGt(latest, cur));
+  badge.style.display = show ? '' : 'none';
+  badge.title = show ? ('内核有新版本 v' + latest + '，点击更新') : '';
+}
+function checkCoreUpdate() {
+  var lv = document.getElementById('coreUpdLatest');
+  if (lv) lv.textContent = '检查中…';
+  fetch('api/core-latest').then(function(r) { return r.json(); }).then(function(d) {
+    _latestCoreVersion = d.version || '';
+    if (lv) lv.textContent = d.version ? 'v' + d.version : '-';
+    renderCoreUpdateBadge();
+    showToast(d.version ? ('最新内核版本 v' + d.version) : '检查失败', d.version ? 'success' : 'error');
+  }).catch(function() {
+    if (lv) lv.textContent = '-';
+    showToast('检查更新失败', 'error');
   });
 }
 
@@ -7141,6 +7187,21 @@ function showCoreUpdatePopup() {
     + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('home.core') + '</span></div><span class="set-val" id="coreUpdVer">' + cv + '</span></div>'
     + '<div class="set-item"><div class="set-item-left"><span class="set-item-label">' + t('latestCore') + '</span></div><span class="set-val" id="coreUpdLatest" style="color:var(--accent2);font-weight:600">-</span></div>'
     + '</div>'
+    // 内核管理（自「设置-内核设置-内核管理」迁入：启停/重启/重新检测/检查更新/查看详情）
+    + '<div style="padding:6px 20px 4px">'
+    + '<div class="mx-divider"><span>' + t('core.tabManage') + '</span></div>'
+    + '<div class="core-mgr-actions">'
+    + '<button class="core-btn primary" id="coreToggleBtn" onclick="coreToggleRunning()"><svg viewBox="0 0 24 24" id="coreToggleIcon"><path d="M8 5v14l11-7z"/></svg><span id="coreToggleLabel">' + t('core.start') + '</span></button>'
+    + '<button class="core-btn" id="coreRestartBtn" onclick="coreRestart()"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span>' + t('core.restart') + '</span></button>'
+    + '<button class="core-btn" id="coreRedetectBtn" onclick="loadCoreStatus()"><svg viewBox="0 0 24 24"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z"/></svg><span>' + t('core.redetect') + '</span></button>'
+    + '<button class="core-btn" onclick="checkCoreUpdate()"><svg viewBox="0 0 24 24"><path d="M17 10.5V7c0-.55-.45-1-1-1H4c-.55 0-1 .45-1 1v10c0 .55.45 1 1 1h12c.55 0 1-.45 1-1v-3.5l4 4v-11l-4 4z"/></svg><span>' + t('core.checkUpdate') + '</span></button>'
+    + '<button class="core-btn" onclick="toggleCoreDetails()"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>' + t('core.viewDetails') + '</span></button>'
+    + '</div>'
+    + '<div id="coreDetails" style="display:none;padding:8px 10px;border:1px solid var(--border);border-radius:9px;background:var(--card2);margin:8px 0 4px">'
+    + '<div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:3px 0"><span style="color:var(--faint)">' + t('core.binary') + '</span><strong class="mono" id="coreBinaryPath" style="color:var(--dim);font-weight:500;word-break:break-all;text-align:right">-</strong></div>'
+    + '<div style="display:flex;justify-content:space-between;gap:12px;font-size:11px;padding:3px 0"><span style="color:var(--faint)">' + t('core.configPath') + '</span><strong class="mono" id="coreConfigPath" style="color:var(--dim);font-weight:500;word-break:break-all;text-align:right">-</strong></div>'
+    + '</div>'
+    + '</div>'
     // 操作按钮
     + '<div style="padding:12px 20px 16px;display:flex;gap:8px;flex-wrap:wrap">'
     + '<button class="btn" onclick="document.getElementById(\'coreUpdateOverlay\').remove()" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px">'
@@ -7149,15 +7210,15 @@ function showCoreUpdatePopup() {
     + '<button class="btn btn-primary" onclick="updateCore(true)" style="flex:1;display:flex;align-items:center;justify-content:center;gap:4px">'
     + '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>'
     + t('updateCoreBtn') + '</button>'
-    + '<button class="btn" onclick="restartCore()" style="flex:1;color:var(--accent);border-color:var(--accent);display:flex;align-items:center;justify-content:center;gap:4px">'
-    + '<svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>'
-    + t('restartCore') + '</button>'
     + '</div></div>';
   document.body.appendChild(el);
+  loadCoreStatus();  // 同步启停按钮状态/详情路径（迁入的控件）
+  renderCoreUpdateBadge();
   fetch('api/core-latest').then(function(r) { return r.json(); }).then(function(d) {
     var lv = document.getElementById('coreUpdLatest');
     if (lv) lv.textContent = d.version ? 'v' + d.version : '-';
     _latestCoreVersion = d.version || '';
+    renderCoreUpdateBadge();
   }).catch(function() {});
 }
 
