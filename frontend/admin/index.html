@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930215204';
+  var B='unknown-20260930215639';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1154,6 +1154,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pma-btn:hover{filter:brightness(.94)}
 .pma-btn.del{background:rgba(248,81,73,.1);color:var(--red)}
 @media(max-width:760px){.prov-mini.swiped .prov-mini-main{transform:translateX(-258px)}.pma-btn{min-width:84px}}
+@media(max-width:760px){
 /* 手机端紧凒行简化：一行显示必要信息（序号/协议徽章/名称/节点数/流量），
    隐去更新时间；名称与流量超长时省略号截断（悬停看全文） */
 .prov-mini{padding:12px 10px 12px 34px}
@@ -1174,6 +1175,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-mini.swiped .prov-mini-name{max-width:100%}
 /* 展开时最不必要的协议徽章先隐藏，把空间留给名称+节点数 */
 .prov-mini.swiped .prov-mini-badge{display:none}
+}
 .pe-sec-state.on{color:#3fb950}
 /* chains 添加按钮（加高 + Verge 同款箭头图标） */
 .chain-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 16px;min-height:46px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:filter .12s, transform .08s}
