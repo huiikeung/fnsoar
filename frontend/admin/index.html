@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930174625';
+  var B='unknown-20260930175037';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1143,7 +1143,8 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 
 /* 聚合紧凒行：左滑露出 更新/编辑/删除 */
 .prov-mini{position:relative;overflow:hidden;touch-action:pan-y}
-.prov-mini-main{display:flex;align-items:center;gap:12px;width:100%;transition:transform .18s ease;will-change:transform}
+.prov-mini-main{display:flex;align-items:center;gap:12px;width:100%;will-change:transform}
+.prov-mini-acts{transition:opacity .16s}
 /* 悬停提示：告诉用户可以左滑露出操作按钮 */
 .prov-mini-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);color:var(--faint);font-size:10.5px;white-space:nowrap;opacity:0;pointer-events:none;z-index:2;transition:opacity .16s}
 .prov-mini-hint svg{width:12px;height:12px;fill:currentColor;flex:none}
@@ -5429,8 +5430,18 @@ window.toggleCardActs = function(arrowBtn) {
   var row = arrowBtn.closest('.prov-mini');
   if (!row) return;
   var willOpen = !row.classList.contains('swiped');
-  document.querySelectorAll('.prov-mini.swiped').forEach(function(r) { r.classList.remove('swiped'); });
-  if (willOpen) row.classList.add('swiped');
+  document.querySelectorAll('.prov-mini.swiped').forEach(function(r) {
+    r.classList.remove('swiped');
+    var m = r.querySelector('.prov-mini-main');
+    if (m) m.style.transform = '';
+  });
+  if (willOpen) {
+    row.classList.add('swiped');
+    var main = row.querySelector('.prov-mini-main');
+    // 内联设置（不依赖 CSS 类的 transform＋适配屏幕宽度）
+    var w = window.innerWidth <= 760 ? 258 : 272;
+    if (main) main.style.transform = 'translateX(-' + w + 'px)';
+  }
 };
 document.addEventListener('click', function(e) {
   if (!e.target.closest || !e.target.closest('.prov-mini')) {
