@@ -3951,6 +3951,28 @@ class AdminHandler(BaseHTTPRequestHandler):
                         pv["interval"] = int(iv) if iv else 3600
                     except Exception:
                         pv["interval"] = 3600
+            # 兜底：使用订阅独立配置时，运行中的 config.yaml 本身就是该订阅的
+            # 配置（没有 proxy-providers 段），此时用 sub-meta 补齐全部订阅，
+            # 保证订阅卡片不消失、仍可点回其它订阅。
+            import os as _ospp
+            for mname, m in (meta or {}).items():
+                if not isinstance(mname, str) or mname.startswith("__") or mname in providers:
+                    continue
+                if not isinstance(m, dict):
+                    continue
+                try:
+                    iv2 = int(m.get("interval") or 0)
+                except Exception:
+                    iv2 = 0
+                providers[mname] = {
+                    "type": m.get("type") or "http",
+                    "url": m.get("url") or "",
+                    "interval": iv2 or 3600,
+                    "path": _sub_file_path(mname),
+                    "external": bool(_ospp.path.exists(_sub_file_path(mname))),
+                }
+                if m.get("home"):
+                    providers[mname]["home"] = m["home"]
             return self._send_json({"providers": providers})
         if path == "/api/providers-live":
             # 订阅页只需要节点数/更新时间/类型，不要把完整 8MB 节点列表发给浏览器。
