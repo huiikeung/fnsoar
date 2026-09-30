@@ -157,6 +157,34 @@ def _save_aggregate_state(state):
     save_sub_meta(meta)
 
 
+def _carry_app_settings(new_text, old_text):
+    """把「应用设置接管」字段从旧配置搬到新配置（聚合切换/换订阅时用）。
+
+    订阅自带的 tun/dns/ports 等往往是关闭或默认值，直接提升为运行
+    配置会把用户在面板上调好的 TUN、DNS、端口、嗅探等设置冲掉。
+    """
+    import yaml as _yc
+    try:
+        old = _yc.safe_load(old_text) or {}
+        new = _yc.safe_load(new_text) or {}
+        if not isinstance(old, dict) or not isinstance(new, dict):
+            return new_text
+        changed = False
+        for k in APP_MANAGED_KEYS:
+            if k in old and new.get(k) != old[k]:
+                new[k] = old[k]
+                changed = True
+        for s in APP_MANAGED_SECTIONS:
+            if s in old and new.get(s) != old[s]:
+                new[s] = old[s]
+                changed = True
+        if changed:
+            return _yc.safe_dump(new, allow_unicode=True, sort_keys=False)
+    except Exception as e:
+        print("[aggregate] 应用设置搬运失败: " + str(e)[:200], file=sys.stderr)
+    return new_text
+
+
 def _repair_proxy_refs(doc):
     """剔除/替换对不存在代理的引用。
 
@@ -247,6 +275,29 @@ def _restart_engine_only_async():
             _restart_engine_async()
     import threading as _th
     _th.Thread(target=_bg, daemon=True).start()
+
+
+def _engine_config_text():
+    """当前引擎运行配置文本（即 CONFIG_FILE）。"""
+    return read_config()
+
+
+def _reload_engine_config():
+    """热重载引擎配置：向控制器 PUT /configs?force=true 重读配置文件。
+    比整条服务链重启快得多，且不会中断 TUN/系统服务等运行态。"""
+    import urllib.request as _urq
+    url = f"http://{MIHOMO_CTRL_HOST}:{MIHOMO_CTRL_PORT}/configs?force=true"
+    secret = ""
+    try:
+        secret = (read_config() and __import__("yaml").safe_load(read_config()) or {}).get("secret", "")
+    except Exception:
+        secret = ""
+    headers = {"Content-Type": "application/json"}
+    if secret:
+        headers["Authorization"] = f"Bearer {secret}"
+    req = _urq.Request(url, data=b"{}", headers=headers, method="PUT")
+    with _urq.urlopen(req, timeout=20) as resp:
+        return resp.status in (200, 204)
 
 
 def _restart_engine_async():
@@ -4007,6 +4058,38 @@ class AdminHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
             return self._send_json({"stamp": stamp, "server_time": int(time.time())})
+        if path == "/api/all-nodes":
+            # 聚合模式下节点散在各订阅 provider 里；此处汇总给可视化编辑器。
+            try:
+                import urllib.request as _uan
+                req = _uan.Request(
+                    f"http://{_ctrl_endpoint()[0]}:{_ctrl_endpoint()[1]}/providers/proxies",
+                    headers={"Accept": "application/json"})
+                with _uan.urlopen(req, timeout=12) as resp:
+                    raw = json.loads(resp.read())
+                # 只保留真实订阅 provider（mihomo 会把策略组也作为 Compatible provider 返回）
+                meta_names = {k for k in (load_sub_meta() or {})
+                              if isinstance(k, str) and not k.startswith("__")}
+                try:
+                    import yaml as _yn
+                    cfg = _yn.safe_load(read_config()) or {}
+                    meta_names |= set((cfg.get("proxy-providers") or {}).keys())
+                except Exception:
+                    pass
+                out = []
+                for pname, item in (raw.get("providers") or {}).items():
+                    if meta_names and pname not in meta_names:
+                        continue
+                    for px in (item.get("proxies") or []):
+                        if not isinstance(px, dict):
+                            continue
+                        out.append({"name": str(px.get("name") or ""),
+                                    "type": str(px.get("type") or ""),
+                                    "provider": str(pname)})
+                return self._send_json({"success": True, "total": len(out), "nodes": out})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 502)
+
         if path == "/api/providers/layout":
             return self._api_providers_layout()
         if path == "/api/config-section":
@@ -5140,10 +5223,19 @@ class AdminHandler(BaseHTTPRequestHandler):
                         _doc["external-controller"] = f"127.0.0.1:{MIHOMO_CTRL_PORT}"
                         _repair_proxy_refs(_doc)
                         sub_text = _yv2.safe_dump(_doc, allow_unicode=True, sort_keys=False)
+                    # 搬运应用设置（TUN/DNS/端口/嗅探/GEO/过滤/隧道），
+                    # 避免订阅自带的默认值把面板上调好的设置冲掉
+                    sub_text = _carry_app_settings(sub_text, _engine_config_text())
                     write_config(sub_text)
                     _save_aggregate_state({"aggregate": False, "active_sub": sub_name})
-                    _restart_engine_async()
-                    return self._send_json({"success": True, "message": f"已切换到订阅「{sub_name}」的独立配置，引擎重启中…"})
+                    try:
+                        _reload_engine_config()   # 热重载：不重启服务链，TUN/系统服务保持
+                        return self._send_json({"success": True,
+                            "message": f"已切换到订阅「{sub_name}」的独立配置（已热重载，无需重启）"})
+                    except Exception as _re:
+                        _restart_engine_async()   # 热重载失败才退回整链重启
+                        return self._send_json({"success": True,
+                            "message": f"已切换到订阅「{sub_name}」的独立配置，引擎重启中…"})
                 # ── 切回「聚合」：还原备份的聚合配置 ──
                 if os.path.exists(AGG_BAK_FILE):
                     try:
@@ -5154,9 +5246,25 @@ class AdminHandler(BaseHTTPRequestHandler):
                 else:
                     return self._send_json({"success": False,
                                             "error": "未找到聚合配置备份，请重新导入订阅或恢复默认"}, 400)
+                # 备份可能较早：把当前运行配置里的应用设置搬回聚合配置再热重载
+                try:
+                    import yaml as _yc9
+                    _cur = _yc9.safe_load(_engine_config_text()) or {}
+                    _bak = _yc9.safe_load(read_config()) or {}
+                    if isinstance(_cur, dict) and isinstance(_bak, dict):
+                        for _k in list(APP_MANAGED_KEYS) + list(APP_MANAGED_SECTIONS):
+                            if _k in _cur:
+                                _bak[_k] = _cur[_k]
+                        write_config(_yc9.safe_dump(_bak, allow_unicode=True, sort_keys=False))
+                except Exception as _ce:
+                    print("[aggregate] 还原时应用设置搬运失败: " + str(_ce)[:200], file=sys.stderr)
                 _save_aggregate_state({"aggregate": True, "active_sub": st["active_sub"]})
-                _restart_engine_async()
-                return self._send_json({"success": True, "message": "已恢复聚合配置，引擎重启中…"})
+                try:
+                    _reload_engine_config()
+                    return self._send_json({"success": True, "message": "已恢复聚合配置（已热重载，无需重启）"})
+                except Exception as _re2:
+                    _restart_engine_async()
+                    return self._send_json({"success": True, "message": "已恢复聚合配置，引擎重启中…"})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/providers/probe-name":
