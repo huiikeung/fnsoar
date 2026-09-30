@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930144137';
+  var B='unknown-20260930144530';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -5344,8 +5344,8 @@ document.addEventListener('drop', function(e) {
     if (box) {
       var target = box.querySelector('.prov-grid-inner');
       if (target) {
-        var empty = target.querySelector('.prov-empty-inline');
-        if (empty) empty.remove();
+        // 移除空占示意（旧类名 .prov-empty-inline 与当前 .prov-agg-out-ph 都清）
+        target.querySelectorAll('.prov-empty-inline, .prov-agg-out-ph').forEach(function(e) { e.remove(); });
         target.appendChild(dragged);
       }
     }
@@ -5353,6 +5353,11 @@ document.addEventListener('drop', function(e) {
   document.querySelectorAll('.prov-card.drop-before,.prov-card.drop-after').forEach(function(c) { c.classList.remove('drop-before', 'drop-after'); });
   document.querySelectorAll('.prov-agg-wrap.drag-over,.prov-agg-out.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
   _provDrag = null;
+  // 源容器空了就把空占示意补回来（否则拖回后未聚合区会空格）
+  var outBox2 = document.getElementById('provGridOut');
+  if (outBox2 && !outBox2.querySelector('.prov-mini, .prov-card') && !outBox2.querySelector('.prov-agg-out-ph')) {
+    outBox2.insertAdjacentHTML('beforeend', '<div class="prov-agg-out-ph">' + (t('prov.aggOutPh') || '把上方订阅卡片拖到这里，即可移出聚合') + '</div>');
+  }
   saveProvLayout();
 });
 function saveProvLayout() {
