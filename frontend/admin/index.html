@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930122449';
+  var B='unknown-20260930122823';
   var k='fnsoar_build_stamp';
   if(localStorage.getItem(k)!==B){
     localStorage.setItem(k,B);
@@ -1117,9 +1117,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-note svg{width:14px;height:14px;flex:none;margin-top:3px;fill:var(--accent2)}
 /* 轻量代码编辑器（行号槽 + textarea） */
 .ce-wrap{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card2);height:330px}
-.ce-gutter{flex:none;width:40px;padding:10px 6px 10px 0;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;color:var(--faint);background:var(--card);overflow:hidden;white-space:pre;user-select:none}
+.ce-gutter{flex:none;width:40px;padding:10px 8px 10px 0;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;color:var(--faint);background:var(--card);border-right:1px solid var(--border);overflow:hidden;white-space:pre;user-select:none;-webkit-user-select:none}
 .ce-area{flex:1;min-width:0;padding:10px 12px;border:0;background:transparent;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;resize:none;outline:none;white-space:pre;overflow:auto
-.ce-area:focus{border-color:transparent;box-shadow:none;outline:none}}
+.ce-area{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;border-radius:0}
+.ce-area:focus,.ce-area:active{border:0;box-shadow:none;outline:0;background:transparent}
+.ce-area::selection{background:rgba(59,130,246,.22)}
+.ce-wrap:focus-within{border-color:var(--border);box-shadow:none}}
 .pe-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 20px 18px;border-top:1px solid var(--border-soft);flex-wrap:wrap}
 .pe-foot-right{display:flex;gap:8px}
 .pe-foot-link{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;border:none;background:transparent;color:var(--faint);font-size:11.5px;cursor:pointer;transition:all .12s}
