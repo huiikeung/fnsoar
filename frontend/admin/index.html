@@ -1009,6 +1009,14 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-card:hover{border-color:var(--faint)}
 .filter-sec{margin-bottom:8px}
 .filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
+/* 订阅节点过滤：固定标签列宽 + 名称正则也改行式布局，
+   使「名称关键词」「名称正则」两个编辑区严格等宽（示例文字换到第二行） */
+#vcfg-card-filter .dns-field .dns-field-label{flex:0 0 300px;min-width:0}
+/* 过滤模块字段一律通栏：名称正则此前未加 wide，在双列栅格里只占一列，
+   导致编辑区明显窄于名称关键词 */
+#vcfg-card-filter .dns-grid .dns-field{grid-column:1/-1}
+#vcfg-card-filter .dns-field .mx-bypass{flex:1 1 auto;min-width:0}
+@media(max-width:1500px){#vcfg-card-filter .dns-field .dns-field-label{flex:0 0 240px}}
 .filter-ex code{font-family:ui-monospace,Menlo,monospace;background:var(--card);border:1px solid var(--border);border-radius:5px;padding:1px 5px;font-size:10.5px;color:var(--dim)}
 .vcfg-card.vcfg-flash{animation:vcfgFlash 1.6s ease-out}
 @keyframes vcfgFlash{0%,55%{box-shadow:0 0 0 2px var(--accent);border-color:var(--accent)}100%{box-shadow:0 0 0 0 transparent}}
