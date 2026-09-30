@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930145331';
+  var B='unknown-20260930145841';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -691,15 +691,18 @@ tbody tr:hover{background:var(--card2)}
 /* 字段（label + 控件） */
 .mx-field{padding:10px 12px;border:1px solid var(--mx-line);border-radius:10px;background:var(--mx-inset)}
 .mx-field-label{display:flex;align-items:center;gap:6px;min-height:18px;margin-bottom:7px;font-size:12px;font-weight:600;color:var(--mx-text)}
-.mx-help{position:relative;display:inline-grid;place-items:center;width:16px;height:16px;min-height:0;padding:0;border:none;background:transparent;color:var(--mx-muted);line-height:1;cursor:help;vertical-align:middle;flex:none;transition:color .12s}
+.mx-help{position:relative;display:inline-grid;place-items:center;width:18px;height:18px;min-height:0;padding:0;border:none;border-radius:50%;background:transparent;color:var(--mx-muted);line-height:1;cursor:help;vertical-align:middle;flex:none;transition:color .15s,background .15s}
+.mx-help:hover{color:var(--accent);background:rgba(98,127,230,.1)}
 .mx-help:hover{color:var(--accent2)}
 .mx-help svg{width:14px;height:14px;fill:currentColor}
-.mx-tip{position:absolute;bottom:calc(100% + 8px);left:0;width:max-content;max-width:250px;padding:9px 12px;background:var(--card);border:1px solid var(--mx-line);border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,.22);font-size:11px;font-weight:400;color:var(--mx-sub);line-height:1.65;text-align:left;white-space:normal;opacity:0;visibility:hidden;transition:opacity .14s;z-index:60;pointer-events:none;text-transform:none;letter-spacing:normal}
-.mx-tip::after{content:'';position:absolute;top:100%;left:9px;margin-left:-5px;border:5px solid transparent;border-top-color:var(--mx-line)}
-.mx-tip b{display:block;margin-bottom:2px;font-size:11.5px;font-weight:600;color:var(--mx-text)}
+.mx-tip{position:absolute;bottom:calc(100% + 10px);left:-2px;width:max-content;max-width:264px;padding:10px 13px;background:var(--card);border:1px solid var(--border);border-radius:12px;box-shadow:0 1px 2px rgba(0,0,0,.05),0 10px 28px rgba(0,0,0,.14);font-size:11.5px;font-weight:400;color:var(--dim);line-height:1.7;text-align:left;white-space:normal;opacity:0;visibility:hidden;transform:translateY(4px);transition:opacity .16s ease,transform .16s ease,visibility .16s;z-index:60;pointer-events:none;text-transform:none;letter-spacing:normal;-webkit-backdrop-filter:saturate(1.4);backdrop-filter:saturate(1.4)}
+.mx-help:hover .mx-tip{opacity:1;visibility:visible;transform:translateY(0)}
+.mx-tip::after{content:'';position:absolute;top:100%;left:13px;width:9px;height:9px;background:var(--card);border-right:1px solid var(--border);border-bottom:1px solid var(--border);transform:translate(-50%,-52%) rotate(45deg);border-bottom-right-radius:2px}
+.mx-tip b{display:block;margin-bottom:3px;font-size:12px;font-weight:600;color:var(--text);letter-spacing:-.1px}
+.mx-tip b + *{margin-top:2px}
 .mx-help:hover .mx-tip{opacity:1;visibility:visible}
 .mx-tip.tip-down{bottom:auto;top:calc(100% + 8px)}
-.mx-tip.tip-down::after{top:auto;bottom:100%;border-top-color:transparent;border-bottom-color:var(--mx-line)}
+.mx-tip.tip-down::after{top:auto;bottom:100%;border-right:1px solid var(--border);border-bottom:1px solid var(--border);border-left:0;border-top:0;transform:translate(-50%,52%) rotate(225deg)}
 .mx-input{width:100%;background:var(--mx-ctl);border:1px solid var(--mx-line);color:var(--mx-text);border-radius:8px;padding:8px 10px;outline:none;font-size:12.5px;font-family:inherit;transition:border-color .15s,box-shadow .15s}
 .mx-input:hover{border-color:var(--accent);border-style:dashed}
 .mx-input:focus{border-color:rgba(98,127,230,.65);box-shadow:0 0 0 3px rgba(98,127,230,.1)}
@@ -1112,9 +1115,9 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-agg-wrap .prov-grid-inner{margin-top:0}
 .prov-solo-tip{grid-column:1/-1}
 /* 未参与聚合的订阅（从聚合包拖出来落到这里） */
-.prov-agg-out{grid-column:1/-1;margin-top:14px;border:1.5px dashed var(--border);border-radius:14px;padding:12px 12px 14px;background:rgba(127,127,127,.03)}
-.prov-agg-out-label{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--dim);letter-spacing:.4px;margin:0 2px 10px}
-.prov-agg-out-label svg{width:14px;height:14px;fill:currentColor;color:var(--faint)}
+/* 两个独立区域（已聚合 / 未参与聚合）完全同样式 */
+.prov-agg-out{margin-top:14px;border:1.5px dashed var(--border);border-radius:14px;padding:12px 12px 14px;background:rgba(127,127,127,.03)}
+.prov-agg-out .prov-agg-wrap-label{margin:0 2px 10px}
 /* 未聚合区空占：虚线订阅卡样式 */
 /* 未聚合区空占：纯虚线框 + 文字（无徽章、无背景块） */
 .prov-agg-out-ph{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border:1.5px dashed var(--border);border-radius:11px;color:var(--faint);font-size:12px}
@@ -5010,8 +5013,8 @@ async function runWebTest() {
      const inHtml = buildCards(inCards, agg.aggregate);
      const outHtml = buildCards(outCards, agg.aggregate);
       if (agg.aggregate) {
-        const outBox = '<div class="prov-agg-out" id="provAggOut"><div class="prov-agg-out-label">' + svgIcon(IC.boxout) + (t('prov.aggOut') || '未参与聚合（拖到这里移出聚合）') + '</div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridOut">' + (outHtml || '<div class="prov-agg-out-ph">' + (t('prov.aggOutPh') || '把上方订阅卡片拖到这里，即可移出聚合') + '</div>') + '</div></div>';
-        grid.innerHTML = headHtml + inHtml + '</div>' + outBox;
+        const outBox = '<div class="prov-agg-out" id="provAggOut"><div class="prov-agg-wrap-label">' + svgIcon(IC.boxout) + (t('prov.aggOut') || '未参与聚合（拖到这里移出聚合）') + '</div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridOut">' + (outHtml || '<div class="prov-agg-out-ph">' + (t('prov.aggOutPh') || '把上方订阅卡片拖到这里，即可移出聚合') + '</div>') + '</div></div>';
+        grid.innerHTML = headHtml + inHtml + '</div></div>' + outBox;
       } else {
         grid.innerHTML = headHtml + inHtml + '</div>';
       }
@@ -8107,7 +8110,7 @@ var I18N = {
     'chain.uriList':'节点 URI','chain.filter':'过滤条件…','chain.empty':'暂无内容','chain.needContent':'请填写规则内容','chain.needUri':'请填写节点 URI',
     'chain.needName':'请填写代理组名','chain.saved':'chains 已保存','chain.tip':'左侧添加前插/后插；右侧是订阅原有内容，点删除加入删除名单。','pe.resetDone':'已重置','provMenu.reloadFile':'重新加载','provMenu.reloaded':'已重新加载','provMenu.fileTip':'直接编辑该订阅的本地配置文件；保存后立即重建节点索引。',
 'pe.subHint':'仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。','pe.subScriptHint':'仅对本订阅生效：导入/更新该订阅时执行此脚本，再进入全局扩展。',
-    'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）','prov.aggTitle':'订阅聚合','prov.aggDesc':'所有订阅的节点已合并进默认配置，规则 / 策略组全局共用；关闭「设置 → 聚合订阅」可改用单个订阅的独立配置','prov.aggWrap':'已聚合的订阅','prov.soloTip':'当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅','prov.inUse':'正在使用','prov.dragTip':'拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合','prov.aggOut':'未参与聚合（拖到这里移出聚合）','prov.aggOutEmpty':'暂无——把上方卡片拖下来即可移出聚合','prov.layoutSaved':'布局已保存','prov.updateAll':'更新全部订阅','prov.editDefaultCfg':'编辑默认配置文件','prov.openConfDir':'打开配置目录','prov.aggWrapHint':'拖动手柄可调整顺序，拖到下方即移出聚合','prov.aggOutPh':'Drag a subscription card here to exclude it',
+    'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）','prov.aggTitle':'订阅聚合','prov.aggDesc':'所有订阅的节点已合并进默认配置，规则 / 策略组全局共用；关闭「设置 → 聚合订阅」可改用单个订阅的独立配置','prov.aggWrap':'已聚合的订阅','prov.soloTip':'当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅','prov.inUse':'正在使用','prov.dragTip':'拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合','prov.aggOut':'未参与聚合（拖到这里移出聚合）','prov.aggOutEmpty':'暂无——把上方卡片拖下来即可移出聚合','prov.layoutSaved':'布局已保存','prov.updateAll':'更新全部订阅','prov.editDefaultCfg':'编辑默认配置文件','prov.openConfDir':'打开配置目录','prov.aggWrapHint':'拖动手柄可调整顺序，拖到下方即移出聚合','prov.aggOutPh':'把上方订阅卡片拖到这里，即可移出聚合',
     'prov.chooseFile':'选择文件','prov.tooLarge':'文件过大（上限 2MB）',
     'settings.aggregate':'聚合订阅','settings.aggregateHint':'开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件',
     'settings.activeSub':'当前使用的订阅','settings.aggregateNone':'未选择（关闭聚合前需先选择）',
@@ -8314,7 +8317,7 @@ var I18N = {
     'chain.uriList':'Node URIs','chain.filter':'Filter…','chain.empty':'Nothing here','chain.needContent':'Rule content required','chain.needUri':'Node URI required',
     'chain.needName':'Group name required','chain.saved':'Chains saved','chain.tip':'Use the left form to prepend/append; the right side lists the subscription existing items — delete adds to the delete list.','pe.resetDone':'Reset','provMenu.reloadFile':'Reload','provMenu.reloaded':'Reloaded','provMenu.fileTip':'Edit this subscription local file directly; node index rebuilds on save.',
 'pe.subHint':'Applies to this subscription only: merge and script run on import/update before the global extension.','pe.subScriptHint':'Applies to this subscription only: this script runs on import/update before the global extension.',
-    'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)','prov.aggTitle':'Aggregated subscriptions','prov.aggDesc':'Nodes from all subscriptions are merged into the default config; rules and groups are shared globally. Turn off Settings → Aggregate subscriptions to use a single subscription own config','prov.aggWrap':'Aggregated subscriptions','prov.soloTip':'Single subscription mode: click a card to switch to it; the green dot marks the subscription in use','prov.inUse':'In use','prov.dragTip':'Drag to reorder; in aggregate mode drag to "Not aggregated" below to exclude','prov.aggOut':'Not aggregated (drop here to exclude)','prov.aggOutEmpty':'None - drag a card down here to exclude it','prov.layoutSaved':'Layout saved','prov.updateAll':'Update all','prov.editDefaultCfg':'Edit default config','prov.openConfDir':'Open config folder','prov.aggWrapHint':'Drag the handle to reorder; drag down to exclude','prov.aggOutPh':'Drag a subscription card here',
+    'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)','prov.aggTitle':'Aggregated subscriptions','prov.aggDesc':'Nodes from all subscriptions are merged into the default config; rules and groups are shared globally. Turn off Settings → Aggregate subscriptions to use a single subscription own config','prov.aggWrap':'Aggregated subscriptions','prov.soloTip':'Single subscription mode: click a card to switch to it; the green dot marks the subscription in use','prov.inUse':'In use','prov.dragTip':'Drag to reorder; in aggregate mode drag to "Not aggregated" below to exclude','prov.aggOut':'Not aggregated (drop here to exclude)','prov.aggOutEmpty':'None - drag a card down here to exclude it','prov.layoutSaved':'Layout saved','prov.updateAll':'Update all','prov.editDefaultCfg':'Edit default config','prov.openConfDir':'Open config folder','prov.aggWrapHint':'Drag the handle to reorder; drag down to exclude','prov.aggOutPh':'Drag a subscription card here to exclude it',
     'prov.chooseFile':'Choose file','prov.tooLarge':'File too large (2MB max)',
     'settings.aggregate':'Aggregate subscriptions','settings.aggregateHint':'On: nodes from all subscriptions are merged into the default config. Off: use the selected subscription own config',
     'settings.activeSub':'Active subscription','settings.aggregateNone':'None (required before turning aggregation off)',
