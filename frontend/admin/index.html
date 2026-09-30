@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930212218';
+  var B='unknown-20260930213517';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -5292,6 +5292,8 @@ async function loadProvLayout() {
   } catch (e) {}
 }
 async function toggleAggregate(on) {
+  // 先给反馈（切换本身要几秒，不要让用户觉得没反应）
+  showToast(on ? '正在恢复聚合配置…' : '正在切换到单个订阅配置…', 'info');
   try {
     var r = await fetch('api/aggregate/set', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ aggregate: !!on }) });
@@ -5299,18 +5301,23 @@ async function toggleAggregate(on) {
     if (d.success === false) throw new Error(d.error || '切换失败');
     showToast(d.message || '已切换', 'success');
     loadAggregateState();
-    // 引擎已热重载：刷新策略组/首页数据，使策略组显示当前生效订阅的组
-    if (typeof loadGroups === 'function') loadGroups();
-    if (typeof loadDashboard === 'function') loadDashboard();
-    if (typeof refreshNetworkCard === 'function') refreshNetworkCard();
-    // 订阅页：_provAgg 不重新拉的话 loadProviders 会用陈旧模式渲染
-    // （快照也会按旧模式还原），页面就「切不过来」
-    Promise.resolve().then(async function() {
+    // 引擎已热重载：立即刷新当前页与常用页数据，策略组/节点/规则/连接
+    // 都换成当前生效订阅的内容（重试一次，避免撞上引擎刚重载完的瞬间）
+    var tries = 0;
+    var refresh = async function() {
       try {
-        await loadProvLayout();
-        loadProviders(true);
-      } catch (e) {}
-    });
+        var cur = (typeof curSection !== 'undefined' && curSection) ? curSection.id.replace('section-', '') : '';
+        if (typeof loadGroups === 'function') loadGroups();
+        if (typeof loadDashboard === 'function') loadDashboard();
+        if (typeof refreshNetworkCard === 'function') refreshNetworkCard();
+        if (cur === 'connections' && typeof renderConnections === 'function') renderConnections();
+        if (cur === 'rules' && typeof loadRules === 'function') loadRules();
+        try { await loadProvLayout(); } catch (e2) {}
+        if (typeof loadProviders === 'function') loadProviders(true);
+      } catch (e3) {}
+      if (++tries < 2) setTimeout(refresh, 1500);
+    };
+    setTimeout(refresh, 700);
   } catch (e) {
     showToast(e.message || '切换失败', 'error');
     loadAggregateState();

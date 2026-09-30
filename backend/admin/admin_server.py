@@ -5187,8 +5187,12 @@ class AdminHandler(BaseHTTPRequestHandler):
                 if not want_agg:
                     sub_name = st["active_sub"]
                     if not sub_name:
-                        return self._send_json({"success": False,
-                                                "error": "请先选择要使用的订阅（卡片菜单 → 使用）"}, 400)
+                        # 从未选择过：默认取第一个订阅（按名称），不再要求用户手动选
+                        _meta0 = load_sub_meta() or {}
+                        _cands = [k for k in _meta0 if isinstance(k, str) and not k.startswith("__")]
+                        if _cands:
+                            sub_name = sorted(_cands)[0]
+                            st["active_sub"] = sub_name
                     src = _sub_file_path(sub_name)
                     # 节点过滤会把「公告/到期」类节点从 payload 里剔除，但配置内的
                     # 策略组仍引用它们 —— 独立使用时 mihomo 会 fatal。
