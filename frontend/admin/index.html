@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930125112';
+  var B='unknown-20260930125719';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1120,7 +1120,8 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-btn svg{width:13px;height:13px;fill:currentColor}
 .pe-btn:hover{background:rgba(78,110,242,.18);color:var(--accent)}
 /* 全局扩展编辑弹窗 */
-.modal-card.pe-modal{width:min(640px,96vw);max-width:min(640px,96vw);max-height:92vh;display:flex;flex-direction:column}
+.modal-card.pe-modal{width:min(640px,96vw);max-width:96vw;max-height:92vh;display:flex;flex-direction:column;
+  resize:both;overflow:hidden;min-width:min(360px,92vw);min-height:220px}
 .pe-modal .modal-body{overflow:auto;min-height:0}
 .pe-note{display:flex;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(78,110,242,.08);border:1px solid rgba(78,110,242,.25);font-size:11.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
 .pe-note svg{width:14px;height:14px;flex:none;margin-top:3px;fill:var(--accent2)}
@@ -1336,7 +1337,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
       <!-- 更新日志弹窗 -->
       <div class="modal-backdrop" id="changelogModal" style="display:none" onclick="if(event.target===this)closeChangelogModal()">
-        <div class="modal-card mx-modal" style="width:min(640px,96vw);max-width:min(640px,96vw)">
+        <div class="modal-card mx-modal" style="width:min(640px,96vw);max-width:96vw">
           <div class="mx-head">
             <h3 data-i18n="changelog.title">更新日志</h3>
             <span class="mx-close" onclick="closeChangelogModal()" title="关闭">&times;</span>
@@ -1858,7 +1859,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
     
       <!-- 订阅 chains 可视化编辑弹窗 -->
       <div class="modal-backdrop" id="chainModal" style="display:none" onclick="if(event.target===this)closeChainEditor()">
-        <div class="modal-card pe-modal" style="width:min(880px,97vw);max-width:min(880px,97vw)">
+        <div class="modal-card pe-modal" style="width:min(880px,97vw);max-width:97vw">
           <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between">
             <span id="chainTitle">编辑规则</span>
             <button class="pe-btn" id="chainAdvBtn" style="background:var(--accent);color:#fff;border:none;padding:5px 14px;font-size:12px" onclick="toggleChainAdvanced()">高级</button>
@@ -1875,16 +1876,16 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
       <!-- 每订阅独立扩展弹窗（对齐全局扩展编辑弹窗） -->
       <div class="modal-backdrop" id="subExtModal" style="display:none" onclick="if(event.target===this)closeSubExt()">
-        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
+        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:96vw">
           <div class="modal-title">
             <span id="subExtTitle">扩展</span>
           </div>
           <div class="modal-body" style="padding:16px 20px 6px">
+            <div class="pe-note" data-i18n="pe.subHint">仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。</div>
             <div class="pe-sec-row"><span class="pe-sec-label" data-i18n="pe.mergeName">全局扩展覆写配置</span><span class="pe-sec-state" id="subExtMergeState"></span></div>
             <div class="ce-wrap"><div class="ce-gutter" id="subExtMergeGutter"></div><div class="ce-area" id="subExtMergeText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subExtMerge');" onscroll="ceScroll('subExtMerge');"></div></div>
             <div class="pe-sec-row" style="margin-top:14px"><span class="pe-sec-label" data-i18n="pe.scriptName">全局扩展脚本</span><span class="pe-sec-state" id="subExtScriptState"></span></div>
             <div class="ce-wrap"><div class="ce-gutter" id="subExtScriptGutter"></div><div class="ce-area" id="subExtScriptText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subExtScript');" onscroll="ceScroll('subExtScript');"></div></div>
-            <div class="pe-note" style="margin-top:12px" data-i18n="pe.subHint">仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。</div>
           </div>
           <div class="pe-foot">
             <button class="pe-foot-link" onclick="closeSubExt()" data-i18n="common.cancel">取消</button>
@@ -1897,7 +1898,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
 
       <div class="modal-backdrop" id="subQrModal" style="display:none" onclick="if(event.target===this)closeSubQr()">
-        <div class="modal-card mx-modal" style="width:min(340px,94vw);max-width:min(340px,94vw)">
+        <div class="modal-card mx-modal" style="width:min(340px,94vw);max-width:94vw">
           <div class="mx-head">
             <h3 data-i18n="provMenu.qr">分享二维码</h3>
             <span class="mx-close" onclick="closeSubQr()" title="关闭">&times;</span>
@@ -1907,13 +1908,13 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
       <!-- 订阅文件编辑器弹窗 -->
       <div class="modal-backdrop" id="subFileModal" style="display:none" onclick="if(event.target===this)closeSubFileEditor()">
-        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
+        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:96vw">
           <div class="modal-title" id="subFileTitleRow">
             <span id="subFileTitle">订阅文件</span>
           </div>
           <div class="modal-body" style="padding:16px 20px 6px">
+            <div class="pe-note" data-i18n="provMenu.fileTip">直接编辑该订阅的本地配置文件；保存后立即重建节点索引。</div>
             <div class="ce-wrap"><div class="ce-gutter" id="subFileGutter"></div><div class="ce-area" id="subFileText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subFile');" onscroll="ceScroll('subFile');"></div></div>
-            <div class="pe-note" style="margin-top:12px" data-i18n="provMenu.fileTip">直接编辑该订阅的本地配置文件；保存后立即重建节点索引。</div>
           </div>
           <div class="pe-foot">
             <button class="pe-foot-link" onclick="reloadSubFile()" data-i18n="provMenu.reloadFile">重新加载</button>
