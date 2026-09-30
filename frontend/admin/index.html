@@ -4287,7 +4287,7 @@ async function loadIpInfo() {
 
 // ── Clash 信息 ─────────────────────────────
 async function loadClashInfo() {
-  const [v, c, m, t] = await Promise.all([
+  const [v, c, m, tun] = await Promise.all([
     fetchJSON('version'),
     fetchJSON('configs'),
     fetchJSON('api/mode'),
@@ -4312,7 +4312,7 @@ async function loadClashInfo() {
     if (r && Array.isArray(r.rules)) document.getElementById('ciRuleCount').textContent = r.rules.length + ' ' + t('core.rulesUnit');
   } catch (e) {}
   if (m) document.getElementById('ciMode').textContent = m.mode || '-';
-  if (t) document.getElementById('ciTun').textContent = t.enable ? t('net.tunOn') : t('net.enabledOff');
+  if (tun) document.getElementById('ciTun').textContent = tun.enable ? t('net.tunOn') : t('net.enabledOff');
 }
 
 // ── 系统信息 ───────────────────────────────
@@ -7101,7 +7101,7 @@ var I18N = {
     'vcfg.filterExHtml':'示例：<code>traffic.*expire</code> 匹配 “Traffic-Expire-30d”；<code>^(剩余|流量).*GB</code> 匹配以「剩余/流量」开头且含 GB 的节点名',
 'pe.mergeName':'全局扩展覆写配置','pe.mergeDesc':'应用到所有配置，先递归合并',
     'pe.scriptName':'全局扩展脚本','pe.scriptDesc':'全局覆写后、单配置增强前执行',
-    'dash.updatable':'可更新','core.rulesUnit':'条','logs.readFailed':'无法读取日志',
+    'dash.updatable':'可更新','core.rulesUnit':'条','core.rulesCount':'规则数量','logs.readFailed':'无法读取日志',
     'ph.yamlMerge':'# 在此编写 YAML 合并模板','ph.auth':'user:pass，多组用逗号','ph.noSet':'(留空不设置)',
     'ph.emptyNoEnable':'留空不启用','ph.emptyNoExec':'留空则不执行','ph.kwPerLine':'每行一个域名',
     'ph.kwAdd':'输入关键词，按回车添加','ph.reAdd':'输入正则，如 traffic.*expire，按回车添加',
@@ -7294,7 +7294,7 @@ var I18N = {
     'vcfg.filterExHtml':'Examples: <code>traffic.*expire</code> matches "Traffic-Expire-30d"; <code>^(剩余|流量).*GB</code> matches node names starting with Chinese remainder/traffic and containing GB',
 'pe.mergeName':'Global Merge Config','pe.mergeDesc':'Applied to all configs, merged recursively first',
     'pe.scriptName':'Global Script','pe.scriptDesc':'Runs after global merge, before per-config enhancements',
-    'dash.updatable':'Updatable','core.rulesUnit':'rules','logs.readFailed':'Failed to read logs',
+    'dash.updatable':'Updatable','core.rulesUnit':'rules','core.rulesCount':'Rule Count','logs.readFailed':'Failed to read logs',
     'ph.yamlMerge':'# Write YAML merge template here','ph.auth':'user:pass, comma-separated','ph.noSet':'(leave blank to skip)',
     'ph.emptyNoEnable':'Leave blank to disable','ph.emptyNoExec':'Leave blank to skip','ph.kwPerLine':'One domain per line',
     'ph.kwAdd':'Type a keyword and press Enter','ph.reAdd':'Type a regex, e.g. traffic.*expire, press Enter',
