@@ -48,6 +48,11 @@ if [ -d "${FRONTEND_ADMIN}/flags" ]; then cp -a "${FRONTEND_ADMIN}/flags" "${DES
 
 # Copy fnOS app manifest
 cp -f "${FNPACK_DIR}/app.json" "${DEST_DIR}/"
+# 桌面图标：app.json 的 "icon" 指向根目录 favicon.png（不覆写这里的话，
+# 已安装的 APP 桌面图标不会更新）
+cp -f "${BACKEND_ADMIN}/favicon.png" "${DEST_DIR}/favicon.png" 2>/dev/null \
+  || cp -f "${FRONTEND_ADMIN}/favicon.png" "${DEST_DIR}/favicon.png" 2>/dev/null \
+  || cp -f "${FNPACK_DIR}/ICON.PNG" "${DEST_DIR}/favicon.png" 2>/dev/null || true
 
 # Copy runtime launcher scripts (fnpack/app/bin -> bin/)
 if [ -d "${FNPACK_DIR}/app/bin" ]; then
