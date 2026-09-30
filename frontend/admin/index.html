@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930144530';
+  var B='unknown-20260930145331';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1139,8 +1139,10 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-card.dragging .prov-drag-num, .prov-mini.dragging .prov-drag-num{color:var(--accent);border-color:var(--accent)}
 /* 拖拽过程反馈 */
 .prov-card.dragging{opacity:.45;transform:scale(.98)}
-.prov-card.drop-before{box-shadow:-3px 0 0 0 var(--accent)}
-.prov-card.drop-after{box-shadow:3px 0 0 0 var(--accent)}
+.prov-card.drop-before,.prov-mini.drop-before{box-shadow:-3px 0 0 0 var(--accent)}
+.prov-card.drop-after,.prov-mini.drop-after{box-shadow:3px 0 0 0 var(--accent)}
+.prov-card.drop-top,.prov-mini.drop-top{box-shadow:0 -3px 0 0 var(--accent)}
+.prov-card.drop-bottom,.prov-mini.drop-bottom{box-shadow:0 3px 0 0 var(--accent)}
 .prov-agg-wrap.drag-over,.prov-agg-out.drag-over{border-color:var(--accent);background:rgba(78,110,242,.06)}
 /* 聚合模式：卡片左侧留出层叠徽章位置，避免压住协议徽章 */
 .prov-agg-wrap .prov-card, .prov-agg-out .prov-card{padding-left:42px}
@@ -5288,7 +5290,8 @@ var _provAgg = { aggregate: true, active_sub: '' };
 var _provDrag = null;
 function _provCardName(el) {
   while (el && el !== document.body) {
-    if (el.classList && el.classList.contains('prov-card')) return el.getAttribute('data-sub') || (el.id || '').replace(/^provcard-/, '');
+    if (el.classList && (el.classList.contains('prov-card') || el.classList.contains('prov-mini')))
+      return el.getAttribute('data-sub') || (el.id || '').replace(/^provcard-/, '');
     el = el.parentElement;
   }
   return '';
@@ -5303,18 +5306,21 @@ document.addEventListener('dragstart', function(e) {
 });
 document.addEventListener('dragend', function() {
   document.querySelectorAll('.prov-card.dragging').forEach(function(c) { c.classList.remove('dragging'); });
-  document.querySelectorAll('.prov-card.drop-before,.prov-card.drop-after').forEach(function(c) { c.classList.remove('drop-before', 'drop-after'); });
+  document.querySelectorAll('.prov-card.drop-before,.prov-card.drop-after,.prov-card.drop-top,.prov-card.drop-bottom').forEach(function(c) { c.classList.remove('drop-before', 'drop-after', 'drop-top', 'drop-bottom'); });
   document.querySelectorAll('.prov-agg-wrap.drag-over,.prov-agg-out.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
   _provDrag = null;
 });
 document.addEventListener('dragover', function(e) {
   if (!_provDrag) return;
-  var over = e.target && e.target.closest ? e.target.closest('.prov-card') : null;
+  var over = e.target && e.target.closest ? e.target.closest('.prov-card, .prov-mini') : null;
   if (over && over !== _provDrag) {
     e.preventDefault();
-    document.querySelectorAll('.prov-card.drop-before,.prov-card.drop-after').forEach(function(c) { c.classList.remove('drop-before', 'drop-after'); });
+    document.querySelectorAll('.prov-card.drop-before,.prov-card.drop-after,.prov-card.drop-top,.prov-card.drop-bottom').forEach(function(c) { c.classList.remove('drop-before', 'drop-after', 'drop-top', 'drop-bottom'); });
     var r = over.getBoundingClientRect();
-    over.classList.add(e.clientX < r.left + r.width / 2 ? 'drop-before' : 'drop-after');
+    // 轴向自适应：落点更接近上/下边→竖向（插到前/后），否则横向
+    var useY = Math.min(Math.abs(e.clientY - r.top), Math.abs(r.bottom - e.clientY)) < Math.min(Math.abs(e.clientX - r.left), Math.abs(r.right - e.clientX));
+    if (useY) over.classList.add(e.clientY < r.top + r.height / 2 ? 'drop-top' : 'drop-bottom');
+    else over.classList.add(e.clientX < r.left + r.width / 2 ? 'drop-before' : 'drop-after');
     return;
   }
   var box = e.target && e.target.closest ? e.target.closest('.prov-agg-wrap, .prov-agg-out') : null;
@@ -5331,12 +5337,14 @@ document.addEventListener('drop', function(e) {
   if (!_provDrag) return;
   e.preventDefault();
   var dragged = _provDrag;
-  var over = e.target && e.target.closest ? e.target.closest('.prov-card') : null;
+  var over = e.target && e.target.closest ? e.target.closest('.prov-card, .prov-mini') : null;
   if (over && over !== dragged) {
     var r = over.getBoundingClientRect();
     var grid = over.closest('.prov-grid-inner');
     if (grid) {
-      if (e.clientX < r.left + r.width / 2) grid.insertBefore(dragged, over);
+      var useY2 = Math.min(Math.abs(e.clientY - r.top), Math.abs(r.bottom - e.clientY))
+                < Math.min(Math.abs(e.clientX - r.left), Math.abs(r.right - e.clientX));
+      if ((useY2 ? e.clientY < r.top + r.height / 2 : e.clientX < r.left + r.width / 2)) grid.insertBefore(dragged, over);
       else grid.insertBefore(dragged, over.nextSibling);
     }
   } else {
@@ -5350,7 +5358,7 @@ document.addEventListener('drop', function(e) {
       }
     }
   }
-  document.querySelectorAll('.prov-card.drop-before,.prov-card.drop-after').forEach(function(c) { c.classList.remove('drop-before', 'drop-after'); });
+  document.querySelectorAll('.prov-card.drop-before,.prov-card.drop-after,.prov-card.drop-top,.prov-card.drop-bottom').forEach(function(c) { c.classList.remove('drop-before', 'drop-after', 'drop-top', 'drop-bottom'); });
   document.querySelectorAll('.prov-agg-wrap.drag-over,.prov-agg-out.drag-over').forEach(function(c) { c.classList.remove('drag-over'); });
   _provDrag = null;
   // 源容器空了就把空占示意补回来（否则拖回后未聚合区会空格）
