@@ -1041,6 +1041,14 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-sec-label{font-size:12.5px;font-weight:600;color:var(--text)}
 .pe-sec-state{font-size:12px;color:var(--faint)}
 .pe-sec-state.on{color:#3fb950}
+/* chains 添加按钮（加高 + Verge 同款箭头图标） */
+.chain-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 16px;min-height:46px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:filter .12s, transform .08s}
+.chain-add-btn:hover{filter:brightness(1.08)}
+.chain-add-btn:active{transform:translateY(1px)}
+.chain-add-btn svg{width:17px;height:17px;flex:none}
+/* chains 高级/可视化 切换按钮（分段控件风格） */
+#chainAdvBtn{background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:999px;padding:5px 15px;font-size:12px;font-weight:600;cursor:pointer;transition:background .12s, color .12s}
+#chainAdvBtn:hover{background:var(--accent);color:#fff}
 /* 订阅卡片选项菜单 */
 .prov-menu{position:fixed;z-index:200;min-width:190px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.28);padding:6px}
 .prov-menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:none;background:transparent;color:var(--text);font-size:12.5px;text-align:left;border-radius:7px;cursor:pointer;transition:background .12s}
@@ -5165,6 +5173,13 @@ function resetChain() {
   renderChainModal();
   showToast(t('pe.resetDone') || '已重置', 'info');
 }
+// chains 添加按钮（Verge 同款：图标 + 文字、通栏、加高）
+function _chainBtn(onclick, dir, label, mt) {
+  var icon = dir === 'up'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5"/><path d="M5 12l7-7 7 7"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>';
+  return '<button class="chain-add-btn" style="margin-top:' + mt + 'px" onclick="' + onclick + '">' + icon + '<span>' + esc(label) + '</span></button>';
+}
 function renderChainModal() {
   var sec = _chain.section;
   var advBtn = document.getElementById('chainAdvBtn');
@@ -5192,19 +5207,19 @@ function renderChainModal() {
     html += '<div class="chain-f"><label>' + (t('chain.ruleContent') || '规则内容') + '</label><input class="mx-input" id="chContent" placeholder="example.com"></div>';
     html += '<div class="chain-f"><label>' + (t('chain.rulePolicy') || '代理策略') + '</label><select class="mx-input" id="chPolicy">'
       + groups.map(function(g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('') + '</select></div>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddRule(\'prepend\')">&uarr; ' + (t('chain.prepend') || '添加前置规则') + '</button>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:8px" onclick="chainAddRule(\'append\')">&darr; ' + (t('chain.append') || '添加后置规则') + '</button>';
+    html += _chainBtn('chainAddRule(\'prepend\')', 'up', t('chain.prepend') || '添加前置规则', 0);
+    html += _chainBtn('chainAddRule(\'append\')', 'down', t('chain.append') || '添加后置规则', 8);
   } else if (sec === 'proxies') {
     html += '<div class="chain-f"><label>' + (t('chain.uriList') || '节点 URI') + '</label><textarea class="mx-input" id="chUris" rows="9" placeholder="多条 URI 请使用换行分隔（支持 Base64 编码）"></textarea></div>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddProxy(\'prepend\')">&uarr; ' + (t('chain.prependNode') || '添加前置代理节点') + '</button>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:8px" onclick="chainAddProxy(\'append\')">&darr; ' + (t('chain.appendNode') || '添加后置代理节点') + '</button>';
+    html += _chainBtn('chainAddProxy(\'prepend\')', 'up', t('chain.prependNode') || '添加前置代理节点', 0);
+    html += _chainBtn('chainAddProxy(\'append\')', 'down', t('chain.appendNode') || '添加后置代理节点', 8);
   } else {
     html += '<div class="chain-f"><label>' + (t('chain.groupType') || '代理组类型') + '</label><select class="mx-input" id="chGType">'
       + _GROUP_TYPES.map(function(x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</select></div>';
     html += '<div class="chain-f"><label>' + (t('chain.groupName') || '代理组名') + '</label><input class="mx-input" id="chGName" placeholder="MyGroup"></div>';
     html += '<div class="chain-f"><label>' + (t('chain.groupIcon') || '代理组图标') + '</label><input class="mx-input" id="chGIcon" placeholder="https://…"></div>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddGroup(\'prepend\')">&uarr; ' + (t('chain.prependGroup') || '添加前置代理组') + '</button>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:8px" onclick="chainAddGroup(\'append\')">&darr; ' + (t('chain.appendGroup') || '添加后置代理组') + '</button>';
+    html += _chainBtn('chainAddGroup(\'prepend\')', 'up', t('chain.prependGroup') || '添加前置代理组', 0);
+    html += _chainBtn('chainAddGroup(\'append\')', 'down', t('chain.appendGroup') || '添加后置代理组', 8);
   }
   html += '</div>';
   // 右：订阅原有 + 前插/后插 + 删除名单
@@ -5212,6 +5227,8 @@ function renderChainModal() {
   html += '</div>';
   body.innerHTML = html;
   renderChainList('');
+  // 升级为自定义下拉（与全站一致，避免原生 select 展开难看）
+  setTimeout(function() { if (window.csInitAll) csInitAll(); }, 0);
 }
 function _chainItemLabel(item) {
   if (typeof item === 'string') {
