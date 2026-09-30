@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930233817';
+  var B='unknown-20261001000855';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -3077,6 +3077,19 @@ function showSection(name) {
   if (name === 'settings') {
   }
   if (name === 'groups') {
+    _groupViewTouched = false;
+    groupView = defaultGroupView();   // 进入即按模式选默认视图（带蓝色高亮）
+    syncGroupView();                 // 立即同步三个按钮的 active 与右侧标签
+    // 异步校正：页面刚打开时 _provAgg 还是初始值（假设聚合开），
+    // 拉到真实模式后若与默认不一致且用户还没手动切过，则改回正硤默认
+    Promise.resolve(loadProvLayout()).then(function() {
+      var want = defaultGroupView();
+      if (want !== groupView && !_groupViewTouched) {
+        groupView = want;
+        syncGroupView();
+        renderGroups();
+      }
+    });
     // 秒开：优先恢复上次渲染快照（内存 > localStorage），数据后台刷新后原位重绘
     const gw = document.getElementById('groupsWrap');
     let snap = null;
@@ -3108,7 +3121,13 @@ function showSection(name) {
         // 旧格式快照（无模式标记）不还原：无法判定它属于哪种模式，还原可能闪出错样式
       }
     } catch (e) {}
-    if (snapHtml && !grid.querySelector('.prov-card')) grid.innerHTML = snapHtml;
+    if (snapHtml && !grid.querySelector('.prov-card')) {
+      grid.innerHTML = snapHtml;
+      // 快照可能存着展开态（swiped/内联位移）——先清掉，否则切页回来会
+      // 闪一下「展开的卡片」，等 loadProviders 重绘后才恢复正常
+      grid.querySelectorAll('.prov-mini.swiped').forEach(function(r) { r.classList.remove('swiped'); });
+      grid.querySelectorAll('.prov-mini-main').forEach(function(m) { m.style.transform = ''; });
+    }
     // 总是先拉最新聚合/布局状态：从设置页切聚合、或别处改过后，
     // _provAgg 会是陈旧的（loadProviders 只在其 order 未定义时才自查）
     Promise.resolve(loadProvLayout()).then(function() {
@@ -5334,6 +5353,7 @@ async function loadProvLayout() {
       _provAgg = { aggregate: !!d.aggregate, active_sub: '', order: d.order || [], excluded: d.excluded || [] };
       var ag = await (await fetch('api/aggregate')).json();
       if (ag && ag.success) { _provAgg.aggregate = !!ag.aggregate; _provAgg.active_sub = ag.active_sub || ''; }
+      try { localStorage.setItem('fnsoarLastAggMode', _provAgg.aggregate ? 'agg' : 'solo'); } catch (e) {}
     }
   } catch (e) {}
 }
@@ -6833,8 +6853,10 @@ function showIconsEnabled() {
 }
 let groupOrder = [];                // 策略组配置顺序（config.yaml proxy-groups 的排列）
 let hiddenGroups = {};              // 组名 -> true（config.yaml 中 hidden: true 的组）
+var _groupViewTouched = false;   // 本次进入策略组页后用户是否手动切过视图
 function setGroupView(v) {
-  groupView = v || 'strategy';
+  groupView = v || defaultGroupView();
+  _groupViewTouched = true;
   syncGroupView();
   renderGroups();
 }
@@ -6842,7 +6864,7 @@ function setGroupView(v) {
 function syncGroupView() {
   const seg = document.getElementById('gviewSeg');
   if (seg) {
-    seg.querySelectorAll('.mode-btn[data-mode]').forEach(b => b.classList.toggle('active', b.dataset.view === groupView));
+    seg.querySelectorAll('.mode-btn[data-view]').forEach(b => b.classList.toggle('active', b.dataset.view === groupView));
   }
   if (!proxiesData) return;
   const types = ['Selector','URLTest','Fallback','LoadBalance'];
@@ -6870,7 +6892,17 @@ function syncGroupView() {
   const lbl = document.getElementById('gviewLabel');
   if (lbl) lbl.textContent = (names[groupView] || t('groups.title')) + ' · ' + (counts[groupView] || 0);
 }
-let groupView = 'strategy';   // all / strategy / region, 默认显示策略组
+let groupView = 'strategy';   // all / strategy / region
+// 默认视图随聚合模式：聚合开=中间(策略组)，聚合关=第一个(全部)
+// 先读本地缓存（loadProvLayout 里写的，同步可用），避免页面刚打开、
+// _provAgg 还是初始值时误判成聚合态
+function defaultGroupView() {
+  var cached = null;
+  try { cached = localStorage.getItem('fnsoarLastAggMode'); } catch (e) {}
+  var isSolo = cached ? (cached === 'solo')
+                      : (_provAgg && _provAgg.aggregate === false);
+  return isSolo ? 'all' : 'strategy';
+}
 // 图标本地化：http(s) 走 /api/icon 由服务端下载缓存到本机；data:/相对路径 直接使用
 function localIcon(url) {
   if (/^https?:\/\//i.test(url || '')) return 'api/icon?url=' + encodeURIComponent(url);
@@ -8710,7 +8742,7 @@ var I18N = {
     'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示策略组图标','settings.appIcon':'软件图标','settings.appIconHint':'切换 fnOS 桌面与窗口显示的应用图标',
         'sys.load':'系统负载','sys.hostname':'主机名','sys.platform':'平台','sys.appVersion':'软件版本',
     'traffic.totalUp':'总上传','traffic.totalDown':'总下载','traffic.pts':'数据点:','traffic.sampled':'| 压缩后:','traffic.fps':'| 帧率:',
-    'home.modules':'首页模块','groups.title':'策略组',
+    'home.modules':'首页模块','groups.title':'策略组','groups.viewAll':'全部','groups.viewRegion':'区域',
     'prov.import':'导入','prov.importPh':'输入订阅链接，点击导入…','prov.updateAll':'一键更新所有订阅',
     'prov.officialSite':'官网','prov.expireAt':'到期','prov.noExpire':'不限时','prov.daysAgo':'天前',
     'prov.noTraffic':'无流量统计','prov.expireTitle':'到期时间',
@@ -8917,7 +8949,7 @@ var I18N = {
     'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Group Icons','settings.appIcon':'App Icon','settings.appIconHint':'Icon shown on the fnOS desktop and window',
         'sys.load':'System Load','sys.hostname':'Hostname','sys.platform':'Platform','sys.appVersion':'App Version',
     'traffic.totalUp':'Total Upload','traffic.totalDown':'Total Download','traffic.pts':'Data Points:','traffic.sampled':'| Sampled:','traffic.fps':'| FPS:',
-    'home.modules':'Home Modules','groups.title':'Groups',
+    'home.modules':'Home Modules','groups.title':'Groups','groups.viewAll':'All','groups.viewRegion':'Region',
     'prov.import':'Import','prov.importPh':'Paste subscription URL and click Import…','prov.updateAll':'Update All',
     'prov.officialSite':'Website','prov.expireAt':'Expires','prov.noExpire':'No expiry','prov.daysAgo':'d ago',
     'prov.noTraffic':'No usage data','prov.expireTitle':'Expiry date',
