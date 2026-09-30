@@ -207,6 +207,34 @@ def _engine_config_path():
     return CONFIG_FILE
 
 
+def _sub_layout():
+    """订阅卡片布局：{order: [名字...], excluded: [不参与聚合的名字...]}。"""
+    try:
+        with open(SUB_META_FILE, "r", encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        d = {}
+    lay = (d.get("__aggregate__") or {}).get("layout") if isinstance(d, dict) else None
+    if not isinstance(lay, dict):
+        lay = {}
+    order = lay.get("order") if isinstance(lay.get("order"), list) else []
+    excl = lay.get("excluded") if isinstance(lay.get("excluded"), list) else []
+    return {"order": [str(x) for x in order], "excluded": [str(x) for x in excl]}
+
+
+def _save_sub_layout(layout):
+    meta = load_sub_meta()
+    agg = meta.setdefault("__aggregate__", {})
+    if not isinstance(agg, dict):
+        agg = {}
+        meta["__aggregate__"] = agg
+    agg["layout"] = {
+        "order": [str(x) for x in (layout.get("order") or [])],
+        "excluded": [str(x) for x in (layout.get("excluded") or [])],
+    }
+    save_sub_meta(meta)
+
+
 def _restart_engine_async():
     """异步重启引擎（engine-start 重启整条服务链）。"""
     import subprocess as _sp
@@ -3372,6 +3400,66 @@ def _sub_payload_digest(name):
             "groups": [x["name"] for x in groups] + ["DIRECT", "REJECT"]}
 
 
+def _apply_excluded_to_config(excluded):
+    """把「不参与聚合」的订阅从 config.yaml 的 proxy-providers 中移除；
+    把重新参与的补回来。返回 (changed, error)。"""
+    excluded = set(excluded or [])
+    content = read_config()
+    meta = load_sub_meta()
+    new_content = content
+    if excluded:
+        m = re.search(r'^proxy-providers:\s*$', new_content, re.M)
+        if m:
+            prefix = new_content[:m.start()]
+            suffix = new_content[m.start():]
+            for nm in excluded:
+                head, rest, found = _strip_provider_block(suffix, nm)
+                if found:
+                    suffix = "proxy-providers:\n" + head + rest
+                    new_content = prefix + suffix
+    import yaml as _ylay
+    try:
+        doc = _ylay.safe_load(new_content) or {}
+        have = set((doc.get("proxy-providers") or {}).keys())
+    except Exception:
+        have = set()
+    missing = []
+    for nm, ent in (meta or {}).items():
+        if not isinstance(nm, str) or nm.startswith("__") or nm in excluded or nm in have:
+            continue
+        if not isinstance(ent, dict):
+            continue
+        url = (ent.get("url") or "").strip()
+        if not url.startswith("http"):
+            continue
+        try:
+            iv = int(ent.get("interval") or 0)
+        except Exception:
+            iv = 0
+        missing.append((nm, url, iv or 3600))
+    if missing:
+        block_all = "".join(_provider_block(nm, url, iv, "http") for nm, url, iv in missing)
+        m = re.search(r'^proxy-providers:\s*\{\}\s*$', new_content, re.M)
+        if m:
+            new_content = new_content[:m.start()] + "proxy-providers:\n" + block_all + new_content[m.end():]
+        else:
+            m2 = re.search(r'^proxy-providers:\s*$', new_content, re.M)
+            if m2:
+                head, rest, _ = _strip_provider_block(new_content[m2.start():], "\x00never")
+                new_content = new_content[:m2.start()] + "proxy-providers:\n" + head + block_all + rest
+            else:
+                new_content = new_content.rstrip("\n") + "\n\nproxy-providers:\n" + block_all
+    if new_content == content:
+        return False, None
+    try:
+        doc2 = _ylay.safe_load(new_content)
+        assert isinstance(doc2, dict) and isinstance(doc2.get("proxy-providers"), dict), "invalid"
+    except Exception as e:
+        return False, f"布局应用后配置校验失败: {e}"
+    write_config(new_content)
+    return True, None
+
+
 class AdminHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # Unix socket clients have no IP (client_address is a bare string like ""),
@@ -3456,6 +3544,40 @@ class AdminHandler(BaseHTTPRequestHandler):
             return True
         return False
 
+
+    def _api_providers_layout(self, body=""):
+        """订阅卡片布局：GET 读取顺序/排除名单，POST 保存并把排除应用到配置。"""
+        import json as _jl
+        if self.command == "GET":
+            lay = _sub_layout()
+            st = _aggregate_state()
+            lay["aggregate"] = bool(st["aggregate"])
+            return self._send_json({"success": True, **lay})
+        try:
+            data = _jl.loads(body or "{}")
+            order = data.get("order") or []
+            excluded = data.get("excluded") or []
+            _save_sub_layout({"order": order, "excluded": excluded})
+            st = _aggregate_state()
+            changed = False
+            if st["aggregate"]:
+                changed, err = _apply_excluded_to_config(excluded)
+                if err:
+                    return self._send_json({"success": False, "error": err}, 500)
+            msg = ("已应用，引擎重启中…" if changed else "已保存")
+            self._send_json({"success": True, "changed": changed, "message": msg})
+            if changed:
+                # 后台重启：会连同本服务一起停，必须在响应完成后再做
+                def _bg_restart():
+                    try:
+                        time.sleep(1)
+                        _restart_engine_async()
+                    except Exception:
+                        pass
+                threading.Thread(target=_bg_restart, daemon=True).start()
+            return
+        except Exception as e:
+            return self._send_json({"success": False, "error": str(e)}, 500)
 
     def _api_sub_section_write(self, body):
         """写回订阅 payload 的顶层段（rules/proxies/proxy-groups）。"""
@@ -3870,6 +3992,8 @@ class AdminHandler(BaseHTTPRequestHandler):
             except Exception:
                 pass
             return self._send_json({"stamp": stamp, "server_time": int(time.time())})
+        if path == "/api/providers/layout":
+            return self._api_providers_layout()
         if path.startswith("/api/sub-chain"):
             q = parse_qs(urlparse(self.path).query)
             name = (q.get("name", [""])[0] or "").strip()
@@ -4884,6 +5008,8 @@ class AdminHandler(BaseHTTPRequestHandler):
                                         "message": f"本地配置「{name}」已导入"})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/providers/layout":
+            return self._api_providers_layout(body)
         if path.startswith("/api/sub-section"):
             return self._api_sub_section_write(body)
         if path.startswith("/api/sub-file"):
