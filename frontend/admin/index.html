@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930164918';
+  var B='unknown-20260930165438';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -3048,7 +3048,11 @@ function showSection(name) {
       }
     } catch (e) {}
     if (snapHtml && !grid.querySelector('.prov-card')) grid.innerHTML = snapHtml;
-    loadProviders(!!grid.querySelector('.prov-card'));
+    // 总是先拉最新聚合/布局状态：从设置页切聚合、或别处改过后，
+    // _provAgg 会是陈旧的（loadProviders 只在其 order 未定义时才自查）
+    Promise.resolve(loadProvLayout()).then(function() {
+      loadProviders(!!grid.querySelector('.prov-card'));
+    });
   }
     loadProfileExt();  // 全局扩展（合并模板/脚本）
   if (name === 'connections') { loadConnections(); startConnPolling(); }
@@ -5270,6 +5274,14 @@ async function toggleAggregate(on) {
     if (typeof loadGroups === 'function') loadGroups();
     if (typeof loadDashboard === 'function') loadDashboard();
     if (typeof refreshNetworkCard === 'function') refreshNetworkCard();
+    // 订阅页：_provAgg 不重新拉的话 loadProviders 会用陈旧模式渲染
+    // （快照也会按旧模式还原），页面就「切不过来」
+    Promise.resolve().then(async function() {
+      try {
+        await loadProvLayout();
+        loadProviders(true);
+      } catch (e) {}
+    });
   } catch (e) {
     showToast(e.message || '切换失败', 'error');
     loadAggregateState();
