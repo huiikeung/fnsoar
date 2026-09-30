@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930220301';
+  var B='unknown-20260930222839';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1154,6 +1154,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pma-btn:hover{filter:brightness(.94)}
 .pma-btn.del{background:rgba(248,81,73,.1);color:var(--red)}
 @media(max-width:760px){.prov-mini.swiped .prov-mini-main{transform:translateX(-258px)}.pma-btn{min-width:84px}}
+.prov-mini-traf-s{display:none;flex:none;align-items:center;gap:4px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
+.prov-mini-traf-s svg{width:13px;height:13px;fill:currentColor;color:var(--faint)}
+@media(max-width:760px){
+  .prov-mini-traf{display:none}
+  .prov-mini-traf-s{display:inline-flex;margin-left:auto}
+}
 @media(max-width:760px){
 /* 手机端紧凒行简化：一行显示必要信息（序号/协议徽章/名称/节点数/流量），
    隐去更新时间；名称与流量超长时省略号截断（悬停看全文） */
@@ -1164,13 +1170,6 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-mini-time{display:none}
 .prov-mini-stat{flex:none;font-size:11px}
 .prov-mini-stat b{font-size:11.5px}
-.prov-mini-traf{flex:1 1 auto;min-width:0;max-width:42%;font-size:11px;text-align:right}
-.prov-mini-traf-s{display:none;flex:none;align-items:center;gap:4px;font-size:11px;color:var(--dim);font-variant-numeric:tabular-nums;white-space:nowrap}
-.prov-mini-traf-s svg{width:13px;height:13px;fill:currentColor;color:var(--faint)}
-@media(max-width:760px){
-  .prov-mini-traf{display:none}
-  .prov-mini-traf-s{display:inline-flex}
-}
 .prov-mini-bar{height:2px}
 .pma-btn{min-width:78px;padding:0 8px;font-size:11.5px}
 /* 展开后空间有限＊隐去流量文字，保证名称/节点数仍可读 */
