@@ -731,10 +731,15 @@ def _read_profile_ext():
             d = json.load(f) or {}
     except Exception:
         d = {}
+    # subs: 每订阅独立扩展 {订阅名: {merge_config, script}}（对齐 Verge 的 per-profile chains）
+    subs = d.get("subs") or {}
+    if not isinstance(subs, dict):
+        subs = {}
     # 默认空：未配置时不改动用户配置；模板仅作为「重置为默认值」的初始内容
     return {
         "merge_config": d.get("merge_config", ""),
         "script": d.get("script", ""),
+        "subs": subs,
     }
 
 def _save_profile_ext(data):
@@ -743,7 +748,8 @@ def _save_profile_ext(data):
         tmp = PROFILE_EXT_FILE + ".tmp"
         with open(tmp, "w", encoding="utf-8") as f:
             json.dump({"merge_config": data.get("merge_config", ""),
-                       "script": data.get("script", "")}, f, ensure_ascii=False, indent=2)
+                       "script": data.get("script", ""),
+                       "subs": data.get("subs") or {}}, f, ensure_ascii=False, indent=2)
         os.replace(tmp, PROFILE_EXT_FILE)
         return True
     except Exception:
@@ -845,6 +851,107 @@ def _apply_profile_ext(cfg_text):
         except Exception as e:
             print("[profile-ext] 应用设置回写失败: " + str(e)[:300], file=sys.stderr)
     return text
+
+_CHAIN_EMPTY = {
+    "rules": {"prepend": [], "append": [], "delete": []},
+    "proxies": {"prepend": [], "append": [], "delete": []},
+    "proxy-groups": {"prepend": [], "append": [], "delete": []},
+}
+
+
+def _read_sub_chain(name):
+    """读取某订阅的 chains（rules/proxies/proxy-groups 的 前插/后插/删除）。"""
+    try:
+        ext = _read_profile_ext()
+        chain = ((ext.get("subs") or {}).get(name) or {}).get("chain")
+        if not isinstance(chain, dict):
+            return json.loads(json.dumps(_CHAIN_EMPTY))
+        out = json.loads(json.dumps(_CHAIN_EMPTY))
+        for sec in ("rules", "proxies", "proxy-groups"):
+            c = chain.get(sec) or {}
+            for k in ("prepend", "append", "delete"):
+                v = c.get(k)
+                if isinstance(v, list):
+                    out[sec][k] = v
+        return out
+    except Exception:
+        return json.loads(json.dumps(_CHAIN_EMPTY))
+
+
+def _apply_chain(doc, chain, section):
+    """对 payload 应用 chain：删除命中项 → 前插 → 后插。"""
+    if not isinstance(doc, dict) or not isinstance(chain, dict):
+        return doc
+    c = chain.get(section) or {}
+    items = doc.get(section)
+    if items is None:
+        items = []
+    if not isinstance(items, list):
+        return doc
+    dels = c.get("delete") or []
+    if dels:
+        dels = dels if isinstance(dels, list) else [dels]
+        if section == "rules":
+            # 规则是 "类型,内容,策略"：任一字段命中删除名单即删
+            def _hit(item):
+                if isinstance(item, str):
+                    return any(p in dels for p in item.split(","))
+                return False
+        else:
+            # proxies / proxy-groups：按 name 命中
+            def _hit(item):
+                if isinstance(item, dict):
+                    nm = item.get("name")
+                    return bool(nm) and nm in dels
+                if isinstance(item, str):
+                    return item in dels
+                return False
+        items = [it for it in items if not _hit(it)]
+    pre = [x for x in (c.get("prepend") or [])]
+    app = [x for x in (c.get("append") or [])]
+    if pre or app or dels:
+        doc[section] = pre + items + app
+    return doc
+
+
+def _apply_sub_ext(name, payload_text):
+    """对单个订阅的 payload 应用其独立扩展（merge 深合并 → script）。
+
+    与全局扩展同一套执行器，但配置来自 profile-ext.json 的 subs[name]；
+    未配置时原文返回。payload 非 YAML 字典（纯节点列表/b64）时原样返回。
+    """
+    try:
+        ext = _read_profile_ext()
+        sub = (ext.get("subs") or {}).get(name) or {}
+        merge = (sub.get("merge_config") or "").strip()
+        script = (sub.get("script") or "").strip()
+        chain = _read_sub_chain(name)
+        _has_chain = any((chain.get(s) or {}).get(k) for s in chain for k in ("prepend", "append", "delete"))
+        if not merge and not script and not _has_chain:
+            return payload_text
+        base = yaml.safe_load(payload_text)
+        if not isinstance(base, dict):
+            return payload_text
+        text = payload_text
+        if merge:
+            patch = yaml.safe_load(merge) or {}
+            if isinstance(patch, dict):
+                merged = _deep_merge(base, patch)
+                text = yaml.safe_dump(merged, allow_unicode=True, sort_keys=False)
+        # chains：前插/后插/删除（对齐 Verge 的可视化 chains）
+        chain = _read_sub_chain(name)
+        doc2 = yaml.safe_load(text) if text.strip() else {}
+        if isinstance(doc2, dict):
+            for sec in ("rules", "proxies", "proxy-groups"):
+                _apply_chain(doc2, chain, sec)
+            text = yaml.safe_dump(doc2, allow_unicode=True, sort_keys=False)
+        if script:
+            text = _run_profile_script(text, script)
+        return text
+    except Exception as e:
+        print(f"[profile-ext] 订阅「{name}」扩展执行失败: " + str(e)[:300], file=sys.stderr)
+        return payload_text
+
 
 def write_config(content):
     """Save config safely via /var/apps/<app>/etc path (writable)."""
@@ -2185,11 +2292,17 @@ class _IPv4Only:
         return False
 
 
-def _download_sub_validated(name_hint, url, timeout=25):
+def _download_sub_validated(name_hint, url, timeout=25, via_proxy=False):
     """verge语义的完整订阅获取: 下载→必须是有效clash/b64且含节点→
-    否则按UA阶梯(clash.meta→clash-verge)重试。失败抛最后异常。"""
+    否则按UA阶梯(clash.meta→clash-verge)重试。失败抛最后异常。
+    via_proxy=True 时所有请求经本机 mihomo 代理端口（机场误判/被墙时用）。"""
     import yaml as _yv
     import time as _t3
+    if via_proxy:
+        proxy = os.environ.get("MIHOMO_PROXY_ADDR", "http://127.0.0.1:7890")
+        import urllib.request as _up2
+        _up2.install_opener(_up2.build_opener(
+            _up2.ProxyHandler({"http": proxy, "https": proxy})))
     last_err = None
     def _is_net_eof(e):
         s = str(e).lower()
@@ -3322,10 +3435,54 @@ class AdminHandler(BaseHTTPRequestHandler):
             return True
         return False
 
+    def _api_sub_section_write(self, body):
+        """写回订阅 payload 的顶层段（rules/proxies/proxy-groups）。"""
+        import yaml as _ysw, re as _resw
+        try:
+            data = json.loads(body) if body else {}
+            name = (data.get("name") or "").strip()
+            section = (data.get("section") or "").strip()
+            new_yaml = data.get("yaml") or ""
+        except Exception as e:
+            return self._send_json({"success": False, "error": f"请求解析失败: {e}"}, 400)
+        if section not in ("rules", "proxies", "proxy-groups"):
+            return self._send_json({"success": False, "error": "不支持的段: " + section}, 400)
+        fp = _sub_file_path(name)
+        if not name or not os.path.exists(fp):
+            return self._send_json({"success": False, "error": "订阅文件不存在"}, 404)
+        try:
+            new_doc = _ysw.safe_load(new_yaml) or {}
+        except Exception as e:
+            return self._send_json({"success": False, "error": f"YAML 语法错误: {e}"}, 400)
+        if section not in new_doc:
+            return self._send_json({"success": False, "error": "缺少顶层键: " + section}, 400)
+        text = open(fp, "r", encoding="utf-8").read()
+        block = _ysw.safe_dump({section: new_doc[section]}, allow_unicode=True, sort_keys=False).rstrip("\n") + "\n"
+        pat = r'^' + _resw.escape(section) + r':.*?(?=^\S|\Z)'
+        if _resw.search(pat, text, _resw.MULTILINE | _resw.DOTALL):
+            new_text = _resw.sub(pat, lambda _m: block, text, count=1, flags=_resw.MULTILINE | _resw.DOTALL)
+        else:
+            new_text = text.rstrip("\n") + "\n" + block
+        with open(fp, "w", encoding="utf-8") as f:
+            f.write(new_text)
+        try:
+            request_provider_restart()
+        except Exception:
+            pass
+        return self._send_json({"success": True, "message": f"订阅「{name}」的{section}已保存"})
+
     def _api_update_provider(self):
         """对齐 clash-verge:面板下载→落盘→通知内核重载(file型)"""
         qs = parse_qs(urlparse(self.path).query)
         name = (qs.get("name") or [""])[0]
+        via_proxy = (qs.get("via_proxy") or [""])[0] in ("1", "true")
+        if self.command == "POST" and body:
+            try:
+                _b = json.loads(body)
+                name = name or (_b.get("name") or "")
+                via_proxy = via_proxy or bool(_b.get("via_proxy"))
+            except Exception:
+                pass
         if not name:
             return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
         meta_store = load_sub_meta()
@@ -3341,7 +3498,11 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self._send_json({"success": False,
                 "error": f"未找到 '{name}' 的源URL, 请删除后重新添加"}, 400)
         try:
-            body, hd = _download_sub_validated(name, url)
+            body, hd = _download_sub_validated(name, url, via_proxy=via_proxy)
+            try:
+                body = _apply_sub_ext(name, body.decode("utf-8", "ignore")).encode("utf-8")
+            except Exception:
+                pass
             open(_sub_file_path(name), "wb").write(body)
         except Exception as e:
             return self._send_json({"success": False,
@@ -3625,6 +3786,12 @@ class AdminHandler(BaseHTTPRequestHandler):
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
 
+    def do_DELETE(self):
+        return self.do_POST()
+
+    def do_PUT(self):
+        return self.do_POST()
+
     def do_GET(self):
         path = self._strip_gateway_prefix(urlparse(self.path).path)
         # API endpoints
@@ -3638,10 +3805,90 @@ class AdminHandler(BaseHTTPRequestHandler):
                                     "tun_enabled": tun_enabled,
                                     "ipv6_available": ipv6_available,
                                     "ipv6_udp_blocked": bool(running and ipv6_available and not tun_enabled)})
+        if path.startswith("/api/sub-qr"):
+            try:
+                q = parse_qs(urlparse(self.path).query)
+                name = (q.get("name", [""])[0] or "").strip()
+                ms = load_sub_meta()
+                ent = ms.get(name) or {}
+                url = (ent.get("url") or "").strip()
+                if not url:
+                    return self._send_json({"success": False, "error": "该订阅没有源链接（本地导入的配置无 URL 可分享）"}, 400)
+                try:
+                    import segno as _sq
+                    import io as _io
+                    buf = _io.BytesIO()
+                    _sq.make(url, error="m").save(buf, kind="png", scale=6, border=2)
+                    data = buf.getvalue()
+                    self.send_response(200)
+                    self.send_header("Content-Type", "image/png")
+                    self.send_header("Content-Length", str(len(data)))
+                    self.send_header("Cache-Control", "no-store")
+                    self.end_headers()
+                    self.wfile.write(data)
+                    return
+                except Exception:
+                    raise
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/aggregate":
             st = _aggregate_state()
             return self._send_json({"success": True, "aggregate": st["aggregate"],
                                     "active_sub": st["active_sub"]})
+        if path.startswith("/api/sub-chain"):
+            q = parse_qs(urlparse(self.path).query)
+            name = (q.get("name", [""])[0] or "").strip()
+            if not name:
+                return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+            fp = _sub_file_path(name)
+            groups = []
+            if os.path.exists(fp):
+                try:
+                    doc = yaml.safe_load(open(fp, "r", encoding="utf-8").read()) or {}
+                    if isinstance(doc, dict):
+                        for g in (doc.get("proxy-groups") or []):
+                            if isinstance(g, dict) and g.get("name"):
+                                groups.append(g["name"])
+                except Exception:
+                    pass
+            return self._send_json({"success": True, "name": name,
+                                    "chain": _read_sub_chain(name),
+                                    "groups": groups + ["DIRECT", "REJECT"]})
+        if path.startswith("/api/profile-ext/sub"):
+            q = parse_qs(urlparse(self.path).query)
+            name = (q.get("name", [""])[0] or "").strip()
+            ext = _read_profile_ext()
+            sub = (ext.get("subs") or {}).get(name) or {}
+            return self._send_json({"success": True, "name": name,
+                                    "merge_config": sub.get("merge_config", ""),
+                                    "script": sub.get("script", "")})
+        if path.startswith("/api/sub-section"):
+            # 订阅分节编辑：规则 / 节点 / 代理组（针对该订阅自己的配置文件，仅 GET）
+            try:
+                import yaml as _ysec
+                import re as _resec
+                q = parse_qs(urlparse(self.path).query)
+                name = (q.get("name", [""])[0] or "").strip()
+                section = (q.get("section", [""])[0] or "").strip()
+                if section not in ("rules", "proxies", "proxy-groups"):
+                    return self._send_json({"success": False, "error": "不支持的段: " + section}, 400)
+                fp = _sub_file_path(name)
+                if not name or not os.path.exists(fp):
+                    return self._send_json({"success": False, "error": "订阅文件不存在"}, 404)
+                text = open(fp, "r", encoding="utf-8").read()
+                try:
+                    doc = _ysec.safe_load(text) or {}
+                except Exception as e:
+                    return self._send_json({"success": False, "error": f"订阅文件解析失败: {e}"}, 400)
+                val = doc.get(section)
+                if val is None:
+                    return self._send_json({"success": True, "name": name, "section": section,
+                                            "yaml": "", "empty": True,
+                                            "message": "该订阅文件里没有这一段"})
+                return self._send_json({"success": True, "name": name, "section": section,
+                                        "yaml": _ysec.safe_dump({section: val}, allow_unicode=True, sort_keys=False)})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         if path.startswith("/api/sub-file"):
             q = parse_qs(urlparse(self.path).query)
             name = (q.get("name", [""])[0] or "").strip()
@@ -4430,6 +4677,10 @@ class AdminHandler(BaseHTTPRequestHandler):
                             else:
                                 body, hd7 = _download_sub_validated(final_name, ent["url"])
                             tmpf = dest + ".tmp"
+                            try:
+                                body = _apply_sub_ext(final_name, body.decode("utf-8", "ignore")).encode("utf-8")
+                            except Exception:
+                                pass
                             open(tmpf, "wb").write(body)
                             os.replace(tmpf, dest)
                         except Exception as e8:
@@ -4585,6 +4836,8 @@ class AdminHandler(BaseHTTPRequestHandler):
                                         "message": f"本地配置「{name}」已导入"})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
+        if path.startswith("/api/sub-section"):
+            return self._api_sub_section_write(body)
         if path.startswith("/api/sub-file"):
             try:
                 if path.startswith("/api/sub-file/raw"):
@@ -4729,6 +4982,73 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json(meta)
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
+        if path.startswith("/api/sub-chain"):
+            # 订阅 chains（前插/后插/删除）可视化编辑
+            try:
+                if self.command == "GET":
+                    q = parse_qs(urlparse(self.path).query)
+                    name = (q.get("name", [""])[0] or "").strip()
+                    if not name:
+                        return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+                    fp = _sub_file_path(name)
+                    groups = []
+                    if os.path.exists(fp):
+                        try:
+                            doc = yaml.safe_load(open(fp, "r", encoding="utf-8").read()) or {}
+                            if isinstance(doc, dict):
+                                for g in (doc.get("proxy-groups") or []):
+                                    if isinstance(g, dict) and g.get("name"):
+                                        groups.append(g["name"])
+                        except Exception:
+                            pass
+                    return self._send_json({"success": True, "name": name,
+                                            "chain": _read_sub_chain(name),
+                                            "groups": groups + ["DIRECT", "REJECT"]})
+                data = json.loads(body) if body else {}
+                name = (data.get("name") or "").strip()
+                if not name:
+                    return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+                chain = data.get("chain") or {}
+                ext = _read_profile_ext()
+                subs = dict(ext.get("subs") or {})
+                ent = dict(subs.get(name) or {})
+                ent["chain"] = chain
+                subs[name] = ent
+                ext["subs"] = subs
+                if _save_profile_ext(ext):
+                    return self._send_json({"success": True, "message": f"订阅「{name}」的 chains 已保存"})
+                return self._send_json({"success": False, "error": "保存失败"}, 500)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path.startswith("/api/profile-ext/sub"):
+            # 每订阅独立扩展（merge/script）。GET?name= 读，POST 写，DELETE?name= 删
+            try:
+                if self.command == "GET":
+                    q = parse_qs(urlparse(self.path).query)
+                    name = (q.get("name", [""])[0] or "").strip()
+                    ext = _read_profile_ext()
+                    sub = (ext.get("subs") or {}).get(name) or {}
+                    return self._send_json({"success": True, "name": name,
+                                            "merge_config": sub.get("merge_config", ""),
+                                            "script": sub.get("script", "")})
+                data = json.loads(body) if body else {}
+                q = parse_qs(urlparse(self.path).query)
+                name = (data.get("name") or q.get("name", [""])[0] or "").strip()
+                if not name:
+                    return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+                ext = _read_profile_ext()
+                subs = dict(ext.get("subs") or {})
+                if self.command == "DELETE":
+                    subs.pop(name, None)
+                else:
+                    subs[name] = {"merge_config": data.get("merge_config", "") or "",
+                                  "script": data.get("script", "") or ""}
+                ext["subs"] = subs
+                if _save_profile_ext(ext):
+                    return self._send_json({"success": True, "message": f"订阅「{name}」的扩展已保存"})
+                return self._send_json({"success": False, "error": "保存失败"}, 500)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/profile-ext":
             try:
                 data = json.loads(body) if body else {}
@@ -4820,6 +5140,8 @@ class AdminHandler(BaseHTTPRequestHandler):
     def do_DELETE(self):
         """Proxy DELETE requests to mihomo (e.g. cache flush)."""
         path = self._strip_gateway_prefix(urlparse(self.path).path)
+        if path.startswith("/api/"):
+            return self.do_POST()   # 面板自有 DELETE 端点（如每订阅扩展）
         if self._maybe_proxy_clash_api(path, "DELETE", b""):
             return
         qs = urlparse(self.path).query

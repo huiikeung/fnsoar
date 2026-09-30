@@ -1016,6 +1016,20 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-card:hover{border-color:var(--faint)}
 .filter-sec{margin-bottom:8px}
 .filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
+/* chains 可视化编辑 */
+.chain-wrap{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:16px;align-items:start}
+@media(max-width:760px){.chain-wrap{grid-template-columns:1fr}}
+.chain-f{margin-bottom:10px}
+.chain-f label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
+.chain-f .mx-input{width:100%}
+.chain-list{min-width:0}
+.chain-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--card2);margin-bottom:8px}
+.chain-item-main{min-width:0}
+.chain-item-name{font-size:12.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chain-item-meta{font-size:11px;color:var(--faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chain-badge{display:inline-block;padding:0 6px;border-radius:5px;background:var(--card);border:1px solid var(--border);font-size:10px;color:var(--dim);margin-right:4px}
+.chain-del{flex:none;width:24px;height:24px;border:none;background:transparent;color:var(--faint);font-size:14px;cursor:pointer;border-radius:6px}
+.chain-del:hover{background:rgba(248,81,73,.12);color:var(--red)}
 /* 订阅卡片选项菜单 */
 .prov-menu{position:fixed;z-index:200;min-width:190px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.28);padding:6px}
 .prov-menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:none;background:transparent;color:var(--text);font-size:12.5px;text-align:left;border-radius:7px;cursor:pointer;transition:background .12s}
@@ -1800,6 +1814,53 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
 
     
+      <!-- 订阅 chains 可视化编辑弹窗 -->
+      <div class="modal-backdrop" id="chainModal" style="display:none" onclick="if(event.target===this)closeChainEditor()">
+        <div class="modal-card mx-modal" style="width:min(880px,97vw);max-width:min(880px,97vw)">
+          <div class="mx-head">
+            <h3 id="chainTitle">编辑规则</h3>
+            <button class="pe-btn" id="chainAdvBtn" style="background:var(--accent);color:#fff;border:none;padding:5px 14px;font-size:12px" onclick="toggleChainAdvanced()">高级</button>
+          </div>
+          <div class="mx-body" id="chainBody" style="padding:14px 18px"></div>
+          <div class="pe-foot" style="padding:12px 18px 16px;display:flex;justify-content:flex-end;gap:8px">
+            <button class="pe-btn-cancel" onclick="closeChainEditor()" data-i18n="common.cancel">取消</button>
+            <button class="pe-btn-save" onclick="saveChainEditor()" data-i18n="common.save">保存</button>
+          </div>
+        </div>
+      </div>
+      <!-- 订阅分享二维码弹窗 -->
+      <div class="modal-backdrop" id="subExtModal" style="display:none" onclick="if(event.target===this)closeSubExt()">
+        <div class="modal-card mx-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
+          <div class="mx-head">
+            <h3 id="subExtTitle">扩展</h3>
+            <span class="mx-close" onclick="closeSubExt()" title="关闭">&times;</span>
+          </div>
+          <div class="mx-body" style="padding:14px 18px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+              <span style="font-size:12px;font-weight:600" data-i18n="pe.mergeName">全局扩展覆写配置</span>
+              <span style="font-size:11px;color:var(--faint)" id="subExtStatus"></span>
+            </div>
+            <textarea id="subExtMerge" class="ce-area" style="width:100%;height:18vh;min-height:120px;resize:vertical" placeholder="# 在此编写 YAML 合并模板"></textarea>
+            <div style="font-size:12px;font-weight:600;margin:12px 0 8px" data-i18n="pe.scriptName">全局扩展脚本</div>
+            <textarea id="subExtScript" class="ce-area" style="width:100%;height:18vh;min-height:120px;resize:vertical" placeholder="function main(config, profileName) { return config; }"></textarea>
+            <div style="font-size:11px;color:var(--faint);margin-top:6px" data-i18n="pe.subHint">仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。</div>
+          </div>
+          <div class="pe-foot" style="padding:12px 18px 16px;display:flex;justify-content:flex-end;gap:8px">
+            <button class="pe-btn-cancel" onclick="closeSubExt()" data-i18n="common.cancel">取消</button>
+            <button class="pe-btn-save" onclick="saveSubExt()" data-i18n="common.save">保存</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-backdrop" id="subQrModal" style="display:none" onclick="if(event.target===this)closeSubQr()">
+        <div class="modal-card mx-modal" style="width:min(340px,94vw);max-width:min(340px,94vw)">
+          <div class="mx-head">
+            <h3 data-i18n="provMenu.qr">分享二维码</h3>
+            <span class="mx-close" onclick="closeSubQr()" title="关闭">&times;</span>
+          </div>
+          <div class="mx-body" id="subQrBox" style="padding:16px 20px 20px"></div>
+        </div>
+      </div>
       <!-- 订阅文件编辑器弹窗 -->
       <div class="modal-backdrop" id="subFileModal" style="display:none" onclick="if(event.target===this)closeSubFileEditor()">
         <div class="modal-card mx-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
@@ -4908,11 +4969,11 @@ function openProvMenu(ev, name) {
     { k: 'use', icon: IC.use, label: t('provMenu.use'), run: function() { setActiveSub(name); } },
     { k: 'info', icon: IC.edit, label: t('provMenu.info'), run: function() { openProvModal(name); } },
     { k: 'file', icon: IC.edit, label: t('provMenu.editFile'), run: function() { editSubFile(name); } },
-    { k: 'rules', icon: IC.rules, label: t('provMenu.rules'), run: function() { gotoConfigModule('vcfg-card-advanced'); } },
-    { k: 'nodes', icon: IC.nodes, label: t('provMenu.nodes'), run: function() { gotoConfigModule('vcfg-card-basic'); } },
-    { k: 'groups', icon: IC.groups, label: t('provMenu.groups'), run: function() { showSection('groups'); } },
-    { k: 'extMerge', icon: IC.extMerge, label: t('provMenu.extMerge'), run: function() { openPeModal('merge'); } },
-    { k: 'extScript', icon: IC.extScript, label: t('provMenu.extScript'), run: function() { openPeModal('script'); } },
+    { k: 'rules', icon: IC.rules, label: t('provMenu.rules'), run: function() { openChainEditor(name, 'rules'); } },
+    { k: 'nodes', icon: IC.nodes, label: t('provMenu.nodes'), run: function() { openChainEditor(name, 'proxies'); } },
+    { k: 'groups', icon: IC.groups, label: t('provMenu.groups'), run: function() { openChainEditor(name, 'proxy-groups'); } },
+    { k: 'extMerge', icon: IC.extMerge, label: t('provMenu.extMerge'), run: function() { openSubExt(name); } },
+    { k: 'extScript', icon: IC.extScript, label: t('provMenu.extScript'), run: function() { openSubExt(name); } },
     { k: 'open', icon: IC.external, label: t('provMenu.openFile'), run: function() { openSubFile(name); } },
     { k: 'update', icon: IC.refresh, label: t('provMenu.update'), run: function() { updateProvider(name, false); } },
     { k: 'updateProxy', icon: IC.clock, label: t('provMenu.updateProxy'), run: function() { updateProvider(name, true); } },
@@ -4972,15 +5033,300 @@ function openSubFile(name) {
   var dir = (_versionData.config_dir || '').replace(/\/+$/, '');
   _openPathInFileManager(dir + '/providers');
 }
-// 分享二维码（订阅链接 → 简易二维码弹窗）
-function showSubQr(name) {
-  showToast(t('provMenu.qrTodo'), 'info');
+// 分享二维码（订阅链接 → 二维码弹窗）
+async function showSubQr(name) {
+  var dlg = document.getElementById('subQrModal');
+  var box = document.getElementById('subQrBox');
+  if (!dlg || !box) return;
+  dlg.style.display = 'flex';
+  box.innerHTML = '<div style="font-size:12px;color:var(--faint);padding:24px 0;text-align:center">' + (t('changelog.loading') || '加载中…') + '</div>';
+  try {
+    var r = await fetch('api/sub-qr?name=' + encodeURIComponent(name));
+    var ct = r.headers.get('content-type') || '';
+    if (!r.ok) {
+      var e = await r.json().catch(function() { return {}; });
+      throw new Error(e.error || '生成失败');
+    }
+    if (ct.indexOf('image') === 0) {
+      var url = URL.createObjectURL(await r.blob());
+      box.innerHTML = '<img src="' + url + '" alt="QR" style="width:220px;height:220px;display:block;margin:0 auto;border-radius:10px;background:#fff">'
+        + '<div style="font-size:12px;color:var(--dim);text-align:center;margin-top:12px;word-break:break-all">' + esc(name) + '</div>';
+    } else {
+      throw new Error('生成失败');
+    }
+  } catch (e) {
+    box.innerHTML = '<div style="font-size:12px;color:var(--red);padding:24px 0;text-align:center">' + esc(e.message || '生成失败') + '</div>';
+  }
+}
+function closeSubQr() { document.getElementById('subQrModal').style.display = 'none'; }
+// 每订阅独立扩展（merge + script），对齐 Verge 的 per-profile chains
+var _subExtName = '';
+async function openSubExt(name) {
+  _subExtName = name;
+  document.getElementById('subExtTitle').textContent = (t('pe.merge') || '扩展') + ' · ' + name;
+  document.getElementById('subExtModal').style.display = 'flex';
+  var merge = document.getElementById('subExtMerge'), script = document.getElementById('subExtScript');
+  var st = document.getElementById('subExtStatus');
+  merge.value = ''; script.value = '';
+  st.textContent = t('conn.loading');
+  try {
+    var r = await fetch('api/profile-ext/sub?name=' + encodeURIComponent(name));
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '读取失败');
+    merge.value = d.merge_config || '';
+    script.value = d.script || '';
+    st.textContent = ((d.merge_config || '').trim() || (d.script || '').trim())
+      ? (t('pe.configured') || '已配置独立扩展') : (t('pe.notConfigured') || '未配置');
+  } catch (e) {
+    st.textContent = t('net.saveFailed');
+    showToast(e.message || '读取失败', 'error');
+  }
+}
+function closeSubExt() { document.getElementById('subExtModal').style.display = 'none'; }
+async function saveSubExt() {
+  try {
+    var r = await fetch('api/profile-ext/sub', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: _subExtName,
+        merge_config: document.getElementById('subExtMerge').value,
+        script: document.getElementById('subExtScript').value }) });
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '保存失败');
+    showToast(d.message || (t('pe.saved') || '已保存'), 'success');
+    closeSubExt();
+  } catch (e) { showToast(e.message || '保存失败', 'error'); }
+}
+// ── 订阅 chains 可视化编辑（前插/后插/删除，对齐 Verge） ──────────
+var _chain = { name: '', section: '', data: null, groups: [], advanced: false };
+var _RULE_TYPES = [
+  ['DOMAIN', '匹配完整域名 (DOMAIN)'], ['DOMAIN-SUFFIX', '匹配域名后缀 (DOMAIN-SUFFIX)'],
+  ['DOMAIN-KEYWORD', '匹配域名关键字 (DOMAIN-KEYWORD)'], ['GEOIP', 'GEOIP 地理 (GEOIP)'],
+  ['GEOSITE', 'GEOSITE 分类 (GEOSITE)'], ['IP-CIDR', '匹配 IP 段 (IP-CIDR)'],
+  ['IP-CIDR6', '匹配 IPv6 段 (IP-CIDR6)'], ['SRC-IP-CIDR', '匹配源 IP 段 (SRC-IP-CIDR)'],
+  ['DST-PORT', '匹配目标端口 (DST-PORT)'], ['SRC-PORT', '匹配源端口 (SRC-PORT)'],
+  ['PROCESS-NAME', '匹配进程名 (PROCESS-NAME)'], ['RULE-SET', '规则集 (RULE-SET)'],
+  ['MATCH', '全局匹配 (MATCH)'],
+];
+var _GROUP_TYPES = [
+  ['select', '手动选择代理'], ['url-test', '自动测速选择'], ['fallback', '故障转移'],
+  ['load-balance', '负载均衡'], ['relay', ' relay 链式'],
+];
+async function openChainEditor(name, section) {
+  _chain.name = name; _chain.section = section; _chain.advanced = false;
+  try {
+    var r = await fetch('api/sub-chain?name=' + encodeURIComponent(name));
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '读取失败');
+    _chain.data = d.chain;
+    _chain.groups = d.groups || [];
+  } catch (e) { showToast(e.message || '读取失败', 'error'); return; }
+  document.getElementById('chainModal').style.display = 'flex';
+  document.getElementById('chainTitle').textContent = _chainTitle(section) + ' · ' + name;
+  renderChainModal();
+}
+function _chainTitle(section) {
+  return section === 'rules' ? t('provMenu.rules') : section === 'proxies' ? t('provMenu.nodes') : t('provMenu.groups');
+}
+function closeChainEditor() { document.getElementById('chainModal').style.display = 'none'; }
+function toggleChainAdvanced() {
+  _chain.advanced = !_chain.advanced;
+  renderChainModal();
+}
+function renderChainModal() {
+  var sec = _chain.section;
+  var advBtn = document.getElementById('chainAdvBtn');
+  advBtn.textContent = _chain.advanced ? (t('chain.visual') || '可视化') : (t('chain.advanced') || '高级');
+  var body = document.getElementById('chainBody');
+  if (_chain.advanced) {
+    var yamlText = _chainYamlDumpChain();
+    body.innerHTML = '<textarea id="chainYaml" class="ce-area" style="width:100%;height:52vh;min-height:320px;resize:vertical"></textarea>';
+    document.getElementById('chainYaml').value = yamlText;
+    return;
+  }
+  var groups = _chain.groups.length ? _chain.groups : ['DIRECT', 'REJECT'];
+  var html = '<div class="chain-wrap">';
+  // 左：添加表单
+  html += '<div class="chain-form">';
+  if (sec === 'rules') {
+    html += '<div class="chain-f"><label>' + (t('chain.ruleType') || '规则类型') + '</label><select class="mx-input" id="chType">'
+      + _RULE_TYPES.map(function(x) { return '<option value="' + x[0] + '">' + x[1] + '</option>'; }).join('') + '</select></div>';
+    html += '<div class="chain-f"><label>' + (t('chain.ruleContent') || '规则内容') + '</label><input class="mx-input" id="chContent" placeholder="example.com"></div>';
+    html += '<div class="chain-f"><label>' + (t('chain.rulePolicy') || '代理策略') + '</label><select class="mx-input" id="chPolicy">'
+      + groups.map(function(g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('') + '</select></div>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px" onclick="chainAddRule(\'prepend\')">↑ ' + (t('chain.prepend') || '添加前置规则') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddRule(\'append\')">↓ ' + (t('chain.append') || '添加后置规则') + '</button>';
+  } else if (sec === 'proxies') {
+    html += '<div class="chain-f"><label>' + (t('chain.uriList') || '节点 URI') + '</label><textarea class="mx-input" id="chUris" rows="8" placeholder="多条 URI 请使用换行分隔（支持 Base64 编码）"></textarea></div>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px" onclick="chainAddProxy(\'prepend\')">↑ ' + (t('chain.prependNode') || '添加前置代理节点') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px;margin-top:6px" onclick="chainAddProxy(\'append\')">↓ ' + (t('chain.appendNode') || '添加后置代理节点') + '</button>';
+  } else {
+    html += '<div class="chain-f"><label>' + (t('chain.groupType') || '代理组类型') + '</label><select class="mx-input" id="chGType">'
+      + _GROUP_TYPES.map(function(x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</select></div>';
+    html += '<div class="chain-f"><label>' + (t('chain.groupName') || '代理组名') + '</label><input class="mx-input" id="chGName" placeholder="MyGroup"></div>';
+    html += '<div class="chain-f"><label>' + (t('chain.groupIcon') || '代理组图标') + '</label><input class="mx-input" id="chGIcon" placeholder="https://…"></div>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px" onclick="chainAddGroup(\'prepend\')">↑ ' + (t('chain.prependGroup') || '添加前置代理组') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px;margin-top:6px" onclick="chainAddGroup(\'append\')">↓ ' + (t('chain.appendGroup') || '添加后置代理组') + '</button>';
+  }
+  html += '</div>';
+  // 右：列表（前插 / 原有 / 后插 / 删除）
+  html += '<div class="chain-list"><div class="chain-list-head"><input class="mx-input" placeholder="' + (t('chain.filter') || '过滤条件') + '…" oninput="renderChainList(this.value)"></div><div id="chainItems"></div></div>';
+  html += '</div>';
+  body.innerHTML = html;
+  renderChainList('');
+}
+function _chainYamlDumpChain() {
+  return yamlDump({'prepend': _chain.data[_chain.section].prepend, 'append': _chain.data[_chain.section].append, 'delete': _chain.data[_chain.section].delete});
+}
+function renderChainList(filter) {
+  var box = document.getElementById('chainItems');
+  if (!box) return;
+  var c = _chain.data[_chain.section];
+  var groups = ['prepend', 'append'];
+  var html = '';
+  var f = (filter || '').toLowerCase();
+  function itemRow(kind, label, item, idx) {
+    var text = typeof item === 'string' ? item : JSON.stringify(item);
+    if (f && text.toLowerCase().indexOf(f) < 0) return '';
+    var kind = typeof item === 'string' ? (item.split(',')[0] || item) : (item.name || '');
+    var target = typeof item === 'string' ? (item.split(',').slice(1).join(',') || '') : (item.type || item.icon || '');
+    return '<div class="chain-item"><div class="chain-item-main"><div class="chain-item-name">' + esc(kind) + '</div>'
+      + '<div class="chain-item-meta"><span class="chain-badge">' + esc(label) + '</span> ' + esc(target) + '</div></div>'
+      + '<button class="chain-del" title="删除" onclick="chainDel(\'' + kind + '\',' + idx + ')">&times;</button></div>';
+  }
+  groups.forEach(function(kind) {
+    c[kind].forEach(function(item, idx) { html += itemRow(kind, kind === 'prepend' ? '前置' : '后置', item, idx); });
+  });
+  (c.delete || []).forEach(function(nm, idx) {
+    html += '<div class="chain-item del"><div class="chain-item-main"><div class="chain-item-name">' + esc(nm) + '</div><div class="chain-item-meta"><span class="chain-badge">删除</span></div></div><button class="chain-del" onclick="chainDel(\'delete\',' + idx + ')">&times;</button></div>';
+  });
+  box.innerHTML = html || '<div style="font-size:12px;color:var(--faint);padding:16px;text-align:center">' + (t('chain.empty') || '暂无内容') + '</div>';
+}
+function chainAddRule(kind) {
+  var type = document.getElementById('chType').value;
+  var content = document.getElementById('chContent').value.trim();
+  var policy = document.getElementById('chPolicy').value;
+  if (!content) { showToast(t('chain.needContent') || '请填写规则内容', 'error'); return; }
+  _chain.data[_chain.section][kind].push(type + ',' + content + ',' + policy);
+  document.getElementById('chContent').value = '';
+  renderChainList('');
+}
+function chainAddProxy(kind) {
+  var text = document.getElementById('chUris').value.trim();
+  if (!text) { showToast(t('chain.needUri') || '请填写节点 URI', 'error'); return; }
+  var lines = text.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
+  lines.forEach(function(u) { _chain.data[_chain.section][kind].push('__uri__:' + u); });
+  document.getElementById('chUris').value = '';
+  renderChainList('');
+}
+function chainAddGroup(kind) {
+  var name = document.getElementById('chGName').value.trim();
+  var type = document.getElementById('chGType').value;
+  var icon = document.getElementById('chGIcon').value.trim();
+  if (!name) { showToast(t('chain.needName') || '请填写代理组名', 'error'); return; }
+  var g = { name: name, type: type, proxies: [] };
+  if (icon) g.icon = icon;
+  if (type === 'url-test') g.url = 'https://cp.cloudflare.com/generate_204';
+  if (type === 'fallback') g.url = 'https://cp.cloudflare.com/generate_204';
+  _chain.data[_chain.section][kind].push(g);
+  document.getElementById('chGName').value = '';
+  renderChainList('');
+}
+function chainDel(kind, idx) {
+  var c = _chain.data[_chain.section];
+  if (kind === 'delete') { c.delete.splice(idx, 1); }
+  else {
+    var item = c[kind].splice(idx, 1)[0];
+    if (kind === 'prepend' || kind === 'append') {
+      var nm = typeof item === 'string' ? (item.replace(/^__uri__:/, '').split(',')[0]) : item.name;
+      if (nm) c.delete.push(nm);
+    }
+  }
+  renderChainList('');
+}
+function yamlDump(obj) {
+  var lines = [];
+  function dumpVal(v) {
+    if (typeof v === 'string') return JSON.stringify(v);
+    return JSON.stringify(v);
+  }
+  Object.keys(obj).forEach(function(k) {
+    var arr = obj[k];
+    if (!arr || !arr.length) { lines.push(k + ': []'); return; }
+    lines.push(k + ':');
+    arr.forEach(function(item) {
+      if (typeof item === 'string') {
+        lines.push('  - ' + dumpVal(item.replace(/^__uri__:/, '')));
+      } else {
+        var first = true;
+        Object.keys(item).forEach(function(k2) {
+          var v = item[k2];
+          if (typeof v === 'string') {
+            lines.push((first ? '  - ' : '    ') + k2 + ': ' + dumpVal(v));
+            first = false;
+          } else if (Array.isArray(v)) {
+            lines.push((first ? '  - ' : '    ') + k2 + ':');
+            v.forEach(function(x) { lines.push('      - ' + dumpVal(x)); });
+            first = false;
+          }
+        });
+      }
+    });
+  });
+  return lines.join('\n');
+}
+async function saveChainEditor() {
+  var data = _chain.data;
+  if (_chain.advanced) {
+    try {
+      var text = document.getElementById('chainYaml').value;
+      var doc = _parseSimpleYaml(text);
+      if (!doc) throw new Error('解析失败');
+      data = { rules: doc, proxies: {prepend: [], append: [], delete: []}, 'proxy-groups': {prepend: [], append: [], delete: []} };
+      if (_chain.section !== 'rules') {
+        // 节点/代理组的高级模式：整段写回对应段
+        data = { rules: {prepend: [], append: [], delete: []}, proxies: {prepend: [], append: [], delete: []}, 'proxy-groups': {prepend: [], append: [], delete: []} };
+        data[_chain.section] = doc;
+      }
+    } catch (e) { showToast(e.message || '解析失败', 'error'); return; }
+  }
+  try {
+    var r = await fetch('api/sub-chain', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: _chain.name, chain: data }) });
+    var dd = await r.json();
+    if (dd.success === false) throw new Error(dd.error || '保存失败');
+    showToast(dd.message || (t('chain.saved') || '已保存'), 'success');
+    closeChainEditor();
+  } catch (e) { showToast(e.message || '保存失败', 'error'); }
+}
+function _parseSimpleYaml(text) {
+  // 极简解析：prepend/append/delete 三段 + '- ' 列表项（字符串或 key: value 映射）
+  var out = { prepend: [], append: [], delete: [] };
+  var cur = null, item = null;
+  text.split('\n').forEach(function(line) {
+    if (!line.trim() || line.trim().indexOf('#') === 0) return;
+    var m = line.match(/^(\w[\w-]*):/);
+    if (m && ['prepend', 'append', 'delete'].indexOf(m[1]) >= 0) { cur = m[1]; out[cur] = out[cur] || []; return; }
+    if (!cur) return;
+    var li = line.match(/^\s{2,}-\s+(.*)$/);
+    if (li) {
+      var v = li[1].trim();
+      if (/^["'].*["']$/.test(v)) out[cur].push(v.slice(1, -1));
+      else if (v.indexOf(': ') >= 0) { item = {}; var kv = v.split(': '); item[kv[0].trim()] = kv[1].trim().replace(/^["']|["']$/g, ''); out[cur].push(item); }
+      else out[cur].push(v);
+      return;
+    }
+    var fi = line.match(/^\s{4,}([\w-]+):\s*(.*)$/);
+    if (fi && item) {
+      var val = fi[2].trim().replace(/^["']|["']$/g, '');
+      item[fi[1]] = val === '' ? [] : (val.indexOf(',') >= 0 && fi[1] === 'proxies' ? val.split(',').map(function(s){return s.trim();}) : val);
+    }
+  });
+  return out;
 }
 // 更新订阅（可选走代理）
 async function updateProvider(name, viaProxy) {
   try {
-    var r = await fetch('api/providers/update', { method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name, via_proxy: !!viaProxy }) });
+    var r = await fetch('api/providers/update?name=' + encodeURIComponent(name)
+      + (viaProxy ? '&via_proxy=1' : ''), { method: 'PUT' });
     var d = await r.json();
     showToast(d.success ? (d.message || '已更新') : (d.error || '更新失败'), d.success ? 'success' : 'error');
     if (d.success) loadProviders();
@@ -7321,7 +7667,12 @@ var I18N = {
     'provMenu.rules':'编辑规则','provMenu.nodes':'编辑节点','provMenu.groups':'编辑代理组',
     'provMenu.extMerge':'扩展覆写配置','provMenu.extScript':'扩展脚本','provMenu.openFile':'打开文件',
     'provMenu.update':'更新','provMenu.updateProxy':'更新（代理）','provMenu.qr':'分享二维码',
-    'provMenu.usedToast':'已设为当前使用的订阅','provMenu.qrTodo':'二维码分享开发中',
+    'provMenu.usedToast':'已设为当前使用的订阅','provMenu.noSection':'该订阅文件里没有这一段','pe.configured':'已配置独立扩展','pe.notConfigured':'未配置','pe.saved':'扩展已保存',    'chain.visual':'可视化','chain.advanced':'高级','chain.ruleType':'规则类型','chain.ruleContent':'规则内容','chain.rulePolicy':'代理策略',
+    'chain.prepend':'添加前置规则','chain.append':'添加后置规则','chain.prependNode':'添加前置代理节点','chain.appendNode':'添加后置代理节点',
+    'chain.groupType':'代理组类型','chain.groupName':'代理组名','chain.groupIcon':'代理组图标','chain.prependGroup':'添加前置代理组','chain.appendGroup':'添加后置代理组',
+    'chain.uriList':'节点 URI','chain.filter':'过滤条件…','chain.empty':'暂无内容','chain.needContent':'请填写规则内容','chain.needUri':'请填写节点 URI',
+    'chain.needName':'请填写代理组名','chain.saved':'chains 已保存',
+'pe.subHint':'仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。',
     'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）',
     'prov.chooseFile':'选择文件','prov.tooLarge':'文件过大（上限 2MB）',
     'settings.aggregate':'聚合订阅','settings.aggregateHint':'开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件',
@@ -7523,7 +7874,12 @@ var I18N = {
     'provMenu.rules':'Edit rules','provMenu.nodes':'Edit nodes','provMenu.groups':'Edit proxy groups',
     'provMenu.extMerge':'Global merge config','provMenu.extScript':'Global script','provMenu.openFile':'Open file',
     'provMenu.update':'Update','provMenu.updateProxy':'Update (via proxy)','provMenu.qr':'Share QR code',
-    'provMenu.usedToast':'Set as active subscription','provMenu.qrTodo':'QR sharing coming soon',
+    'provMenu.usedToast':'Set as active subscription','provMenu.noSection':'This section is not present in the subscription file','pe.configured':'Per-sub extension configured','pe.notConfigured':'Not configured','pe.saved':'Extension saved',    'chain.visual':'Visual','chain.advanced':'Advanced','chain.ruleType':'Rule type','chain.ruleContent':'Rule content','chain.rulePolicy':'Proxy policy',
+    'chain.prepend':'Add prepend rule','chain.append':'Add append rule','chain.prependNode':'Add prepend node','chain.appendNode':'Add append node',
+    'chain.groupType':'Group type','chain.groupName':'Group name','chain.groupIcon':'Group icon','chain.prependGroup':'Add prepend group','chain.appendGroup':'Add append group',
+    'chain.uriList':'Node URIs','chain.filter':'Filter…','chain.empty':'Nothing here','chain.needContent':'Rule content required','chain.needUri':'Node URI required',
+    'chain.needName':'Group name required','chain.saved':'Chains saved',
+'pe.subHint':'Applies to this subscription only: merge and script run on import/update before the global extension.',
     'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)',
     'prov.chooseFile':'Choose file','prov.tooLarge':'File too large (2MB max)',
     'settings.aggregate':'Aggregate subscriptions','settings.aggregateHint':'On: nodes from all subscriptions are merged into the default config. Off: use the selected subscription own config',
