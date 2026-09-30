@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930222839';
+  var B='unknown-20260930224559';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1181,6 +1181,13 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 /* 展开时最不必要的协议徽章先隐藏，把空间留给名称+节点数 */
 .prov-mini.swiped .prov-mini-badge{display:none}
 }
+
+/* 行内小进度条（单订模式，显示在用量左边） */
+.prov-mini-pbar{flex:none;width:64px;height:5px;border-radius:3px;background:rgba(127,127,127,.16);overflow:hidden}
+.prov-mini-pbar i{display:block;height:100%;border-radius:3px;background:var(--accent);transition:width .3s}
+.prov-mini-pbar i.warn{background:#f0a63c}
+.prov-mini-pbar i.over{background:var(--red)}
+@media(max-width:760px){.prov-mini-pbar{width:44px;height:4px}}
 .pe-sec-state.on{color:#3fb950}
 /* chains 添加按钮（加高 + Verge 同款箭头图标） */
 .chain-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 16px;min-height:46px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:filter .12s, transform .08s}
@@ -5122,7 +5129,7 @@ async function runWebTest() {
              <span class="prov-mini-name" title="${esc(name)}">${esc(name)}</span>
              <span class="prov-mini-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b></span>
              <span class="prov-mini-stat prov-mini-time">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
-             <span class="prov-mini-traf" title="${esc(traf2)}">${esc(traf2)}</span><span class="prov-mini-traf-s" title="${esc(traf2)}">${svgIcon(IC.delay)}${si && si.total > 0 ? pct2 + '%' : '∞'}</span>
+             ${(!agg.aggregate && (si || (localUsage[name] && (localUsage[name].u + localUsage[name].d) > 0))) ? '<span class="prov-mini-pbar" title="' + esc(traf2) + '"><i class="' + barCls2 + '" style="width:' + pct2 + '%"></i></span>' : ''}<span class="prov-mini-traf" title="${esc(traf2)}">${esc(traf2)}</span><span class="prov-mini-traf-s" title="${esc(traf2)}">${svgIcon(IC.delay)}${si && si.total > 0 ? pct2 + '%' : '∞'}</span>
              </div>
              ${si && si.total > 0 ? '<span class="prov-mini-bar"><i class="' + barCls2 + '" style="width:' + pct2 + '%"></i></span>' : ''}
            </div>`;
@@ -5145,7 +5152,7 @@ async function runWebTest() {
          </div>
        </div>`;
      }).join('');
-     const inHtml = buildCards(inCards, agg.aggregate);
+     const inHtml = buildCards(inCards, true);   // 单订模式也用紧凒行，与聚合视觉一致
      const outHtml = buildCards(outCards, agg.aggregate);
      // 单订视图：整行卡片（prov-solo-grid 此前只有 CSS、JS 从未应用，
      // 导致卡片走默认 auto-fill 半列栅格）
