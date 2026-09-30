@@ -3858,6 +3858,18 @@ class AdminHandler(BaseHTTPRequestHandler):
             st = _aggregate_state()
             return self._send_json({"success": True, "aggregate": st["aggregate"],
                                     "active_sub": st["active_sub"]})
+        if path == "/api/build-stamp":
+            # 页面自检：HTML 可能被 WebView 缓存，接口不会 → 页面据此判断是否陈旧
+            stamp = "unknown"
+            try:
+                import re as _reb
+                with open(f"{ADMIN_UI_DIR}/index.html", "r", encoding="utf-8") as _f:
+                    _m = _reb.search(r"var B='([^']+)'", _f.read())
+                    if _m:
+                        stamp = _m.group(1)
+            except Exception:
+                pass
+            return self._send_json({"stamp": stamp, "server_time": int(time.time())})
         if path.startswith("/api/sub-chain"):
             q = parse_qs(urlparse(self.path).query)
             name = (q.get("name", [""])[0] or "").strip()

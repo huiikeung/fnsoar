@@ -3,14 +3,22 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930123820';
+  var B='unknown-20260930124617';
   window.__FNSoAR_BUILD__ = B;
-  var k='fnsoar_build_stamp';
-  if(localStorage.getItem(k)!==B){
-    localStorage.setItem(k,B);
-    if(localStorage.getItem(k+'_had')){location.reload(true);return;}
-    localStorage.setItem(k+'_had','1');
-  }
+  /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
+     用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
+     （URL 变化必然穿过缓存），彻底解决「改了但 APP 里不生效」。 */
+  fetch('api/build-stamp', {cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+    if (!d || !d.stamp || d.stamp === B) return;
+    var u = new URL(location.href);
+    // 防循环：已带该戳的 URL 就不跳（说明带参刷新仍是旧文档，
+    // 只能等 WebView 自己过期缓存，不能无限重定向）
+    if (u.searchParams.get('v') === d.stamp) return;
+    try { if (sessionStorage.getItem('fnsoar_redirected') === d.stamp) return; } catch(e2) {}
+    try { sessionStorage.setItem('fnsoar_redirected', d.stamp); } catch(e3) {}
+    u.searchParams.set('v', d.stamp);
+    location.replace(u.toString());
+  }).catch(function(){});
 }catch(e){}})();
 </script>
 <meta charset="UTF-8">
