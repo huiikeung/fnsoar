@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930175037';
+  var B='unknown-20260930211411';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1146,12 +1146,6 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-mini-main{display:flex;align-items:center;gap:12px;width:100%;will-change:transform}
 .prov-mini-acts{transition:opacity .16s}
 /* 悬停提示：告诉用户可以左滑露出操作按钮 */
-.prov-mini-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;background:var(--card);border:1px solid var(--border);color:var(--faint);font-size:10.5px;white-space:nowrap;opacity:0;pointer-events:none;z-index:2;transition:opacity .16s}
-.prov-mini-hint svg{width:12px;height:12px;fill:currentColor;flex:none}
-.prov-mini:hover .prov-mini-hint{opacity:1}
-.prov-mini:hover .prov-mini-traf{opacity:.35}
-.prov-mini-traf{transition:opacity .16s}
-@media(max-width:760px){.prov-mini-hint{display:none}}
 .prov-mini.swiped .prov-mini-main{transform:translateX(-272px)}
 .prov-mini-acts{position:absolute;right:0;top:0;bottom:0;display:flex;align-items:stretch;z-index:1}
 /* 按钮：图标+文字一行，保证显示完整 */
@@ -1159,11 +1153,6 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pma-btn svg{width:14px;height:14px;fill:currentColor;flex:none}
 .pma-btn:hover{filter:brightness(.94)}
 .pma-btn.del{background:rgba(248,81,73,.1);color:var(--red)}
-/* 右侧箭头：点击展开/收起操作按钮 */
-.pma-arrow{flex:none;display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;margin-left:2px;border:none;border-radius:7px;background:transparent;color:var(--faint);cursor:pointer;transition:color .14s, transform .18s, background .14s}
-.pma-arrow:hover{color:var(--accent);background:var(--card2)}
-.pma-arrow svg{width:16px;height:16px;fill:currentColor;transition:transform .18s}
-.prov-mini.swiped .pma-arrow svg{transform:rotate(180deg)}
 @media(max-width:760px){.prov-mini.swiped .prov-mini-main{transform:translateX(-258px)}.pma-btn{min-width:84px}}
 .pe-sec-state.on{color:#3fb950}
 /* chains 添加按钮（加高 + Verge 同款箭头图标） */
@@ -5101,16 +5090,14 @@ async function runWebTest() {
          return `<div class="prov-mini${isActive ? ' active' : ''}"${soloAttrs} id="provcard-${esc(name)}" draggable="true">
              ${activeDot}${dragHandle}
              ${acts}
-             <span class="prov-mini-hint">${svgIcon(IC.grip)}${t('prov.swipeHint') || '左滑操作'}</span>
              <div class="prov-mini-main">
              <span class="prov-mini-badge">${badge}</span>
              <span class="prov-mini-name" title="${esc(name)}">${esc(name)}</span>
              <span class="prov-mini-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b></span>
              <span class="prov-mini-stat">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
              <span class="prov-mini-traf" title="${esc(traf2)}">${esc(traf2)}</span>
-             <button class="pma-arrow" title="${t('prov.swipeHint') || '左滑操作'}" onclick="event.stopPropagation();toggleCardActs(this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
-             ${si && si.total > 0 ? '<span class="prov-mini-bar"><i class="' + barCls2 + '" style="width:' + pct2 + '%"></i></span>' : ''}
              </div>
+             ${si && si.total > 0 ? '<span class="prov-mini-bar"><i class="' + barCls2 + '" style="width:' + pct2 + '%"></i></span>' : ''}
            </div>`;
        }
        return `<div class="prov-card${isActive ? ' active' : ''}${si ? '' : ' data-unlim="1"'}${soloAttrs} id="provcard-${esc(name)}" draggable="true">
@@ -5426,10 +5413,11 @@ function openProvMenu(ev, name) {
 // 非聚合模式：点击卡片直接切换为该订阅的独立配置
 var _provAgg = { aggregate: true, active_sub: '' };
 // ── 紧凑行：右侧箭头展开/收起操作按钮（更新/编辑/删除） ──────────
-window.toggleCardActs = function(arrowBtn) {
-  var row = arrowBtn.closest('.prov-mini');
+// 展开/收起卡片右侧操作（更新/编辑/删除）：电脑双击、手机左滑超阈值
+function _cardActsW() { return window.innerWidth <= 760 ? 258 : 272; }
+window.toggleCardActs = function(row, force) {
   if (!row) return;
-  var willOpen = !row.classList.contains('swiped');
+  var willOpen = (typeof force === 'boolean') ? force : !row.classList.contains('swiped');
   document.querySelectorAll('.prov-mini.swiped').forEach(function(r) {
     r.classList.remove('swiped');
     var m = r.querySelector('.prov-mini-main');
@@ -5438,16 +5426,44 @@ window.toggleCardActs = function(arrowBtn) {
   if (willOpen) {
     row.classList.add('swiped');
     var main = row.querySelector('.prov-mini-main');
-    // 内联设置（不依赖 CSS 类的 transform＋适配屏幕宽度）
-    var w = window.innerWidth <= 760 ? 258 : 272;
-    if (main) main.style.transform = 'translateX(-' + w + 'px)';
+    if (main) main.style.transform = 'translateX(-' + _cardActsW() + 'px)';
   }
 };
-document.addEventListener('click', function(e) {
-  if (!e.target.closest || !e.target.closest('.prov-mini')) {
-    document.querySelectorAll('.prov-mini.swiped').forEach(function(r) { r.classList.remove('swiped'); });
-  }
-}, true);
+(function(){
+  var isTouch = ('ontouchstart' in window) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+  var sx = 0, sy = 0, tracking = false;
+  document.addEventListener('dblclick', function(e) {
+    if (isTouch) return;
+    var row = e.target.closest && e.target.closest('.prov-mini');
+    if (!row || e.target.closest('.pma-btn')) return;
+    toggleCardActs(row);
+  }, true);
+  document.addEventListener('touchstart', function(e) {
+    var row = e.target.closest && e.target.closest('.prov-mini');
+    if (!row || e.target.closest('.pma-btn')) { tracking = false; return; }
+    var t = e.touches[0];
+    sx = t.clientX; sy = t.clientY; tracking = true;
+  }, {passive: true});
+  document.addEventListener('touchend', function(e) {
+    if (!tracking) return;
+    tracking = false;
+    var row = e.target.closest && e.target.closest('.prov-mini');
+    if (!row) return;
+    var t = e.changedTouches[0];
+    var dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
+    toggleCardActs(row, dx < 0);
+  }, {passive: true});
+  document.addEventListener('click', function(e) {
+    if (!e.target.closest || !e.target.closest('.prov-mini')) {
+      document.querySelectorAll('.prov-mini.swiped').forEach(function(r) {
+        r.classList.remove('swiped');
+        var m = r.querySelector('.prov-mini-main');
+        if (m) m.style.transform = '';
+      });
+    }
+  }, true);
+})();
 // ── 订阅卡片拖拽：同容器内排序；聚合模式跨容器 = 移出/移入聚合 ──────────
 var _provDrag = null;
 function _provCardName(el) {
