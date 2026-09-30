@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930140424';
+  var B='unknown-20260930141301';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1063,7 +1063,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 
 /* 聚合模式：紧冻成员行（无操作按钮，操作收集到总览卡） */
 .prov-grid-mini{grid-template-columns:1fr;gap:8px}
-.prov-mini{position:relative;display:flex;align-items:center;gap:10px;padding:11px 14px 11px 44px;border:1px solid var(--border);border-radius:11px;background:var(--card);transition:border-color .14s, box-shadow .14s}
+.prov-mini{position:relative;display:flex;align-items:center;gap:12px;min-height:54px;padding:14px 16px 15px 42px;border:1px solid var(--border);border-radius:11px;background:var(--card);overflow:hidden;transition:border-color .14s, box-shadow .14s}
 .prov-mini:hover{border-color:var(--accent);box-shadow:0 4px 14px rgba(0,0,0,.08)}
 .prov-mini.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .prov-mini .prov-drag-handle{left:9px;top:50%;transform:translateY(-50%);width:24px;height:24px}
@@ -1073,8 +1073,9 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-mini-stat svg{width:12px;height:12px;fill:currentColor;color:var(--faint)}
 .prov-mini-stat b{color:var(--text);font-weight:700}
 .prov-mini-traf{flex:1;min-width:0;font-size:11.5px;color:var(--dim);text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.prov-mini-bar{position:absolute;left:0;right:0;bottom:0;height:2px;border-radius:0 0 11px 11px;overflow:hidden;background:rgba(127,127,127,.12)}
-.prov-mini-bar i{display:block;height:100%;background:var(--accent)}
+/* 进度条贴合卡片底边（作为底边的一部分，不是外方直线） */
+.prov-mini-bar{position:absolute;left:0;right:0;bottom:0;height:3px;background:transparent}
+.prov-mini-bar i{display:block;height:100%;background:var(--accent);border-radius:0 2px 2px 0}
 .prov-mini-bar i.warn{background:#f0a63c}
 .prov-mini-bar i.over{background:var(--red)}
 /* 总览卡操作工具条 */
@@ -1119,17 +1120,21 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-grid-inner{gap:12px}
 /* 层叠徽章（聚合模式：表示该订阅是聚合包的层） */
 /* 拖手柄（原层叠徽章）：按住它拖拽卡片排序；聚合状态下拖到「未参与聚合」即可移出 */
-.prov-drag-handle{position:absolute;left:11px;top:11px;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;background:var(--card2);border:1px solid var(--border);color:var(--dim);cursor:grab;z-index:3;transition:color .12s,border-color .12s,background .12s}
-.prov-drag-handle:hover{color:var(--accent);border-color:var(--accent);background:var(--card)}
+/* 拖拽提示（非传统图标）：默认隐藏，鼠标悬停才显示，无背景 */
+.prov-drag-handle{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:18px;height:18px;display:flex;align-items:center;justify-content:center;color:var(--faint);opacity:0;cursor:grab;z-index:3;transition:opacity .14s, color .14s}
+.prov-card:hover .prov-drag-handle, .prov-mini:hover .prov-drag-handle{opacity:1}
+.prov-drag-handle:hover{color:var(--accent)}
 .prov-drag-handle:active{cursor:grabbing}
-.prov-drag-handle svg{width:15px;height:15px;fill:currentColor;pointer-events:none}
+.prov-drag-handle svg{width:16px;height:16px;fill:currentColor;pointer-events:none}
+.prov-card.dragging .prov-drag-handle, .prov-mini.dragging .prov-drag-handle{opacity:1}
 /* 拖拽过程反馈 */
 .prov-card.dragging{opacity:.45;transform:scale(.98)}
 .prov-card.drop-before{box-shadow:-3px 0 0 0 var(--accent)}
 .prov-card.drop-after{box-shadow:3px 0 0 0 var(--accent)}
 .prov-agg-wrap.drag-over,.prov-agg-out.drag-over{border-color:var(--accent);background:rgba(78,110,242,.06)}
 /* 聚合模式：卡片左侧留出层叠徽章位置，避免压住协议徽章 */
-.prov-agg-wrap .prov-card, .prov-agg-out .prov-card{padding-left:44px}
+.prov-agg-wrap .prov-card, .prov-agg-out .prov-card{padding-left:42px}
+.prov-agg-wrap .prov-mini, .prov-agg-out .prov-mini{padding-left:42px}
 /* 非聚合模式：选中卡片 + 右上角绿点 */
 .prov-solo-tip{display:flex;align-items:center;gap:8px;padding:11px 14px;margin-bottom:14px;border-radius:11px;border:1px solid var(--border);background:var(--card2);font-size:12px;color:var(--dim);line-height:1.5}
 .prov-solo-tip svg{width:15px;height:15px;fill:currentColor;color:var(--accent);flex:none}
@@ -4833,6 +4838,7 @@ async function runWebTest() {
    refresh: 'M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z',
    menu: 'M12,16A2,2 0 0,1 2,14A2,2 0 0,1 12,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 2,8A2,2 0 0,1 12,8A2,2 0 0,1 12,10M12,4A2,2 0 0,1 2,2A2,2 0 0,1 12,4',
   grip: 'M9,3H11V5H9V3M13,3H15V5H13V3M9,7H11V9H9V7M13,7H15V9H13V7M9,11H11V13H9V11M13,11H15V13H13V11M9,15H11V17H9V15M13,15H15V17H13V15M9,19H11V21H9V19M13,19H15V21H13V19',
+  layers: 'M12,2.6L2.6,7.3L12,12l9.4-4.7L12,2.6zM2.6,12.4L12,17.1l9.4-4.7v2.1L12,19.2L2.6,14.5V12.4zM2.6,17.1L12,21.8l9.4-4.7v2.1L12,23.9L2.6,19.2V17.1z',
   use: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
   rules: 'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
   groups: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 1.08-.24 2.09-.64 3z',
@@ -4941,7 +4947,7 @@ async function runWebTest() {
          trafficHtml = '<div class="prov-traffic"><div class="prov-traffic-line"><span><b class="prov-traffic-val">' + fmtTraffic(lu ? (lu.u + lu.d) : 0) + '</b> / ∞</span><span title="到期时间">∞</span></div><div class="prov-traffic-bar"><i style="width:0%"></i></div></div>';
        }
        const isActive = !agg.aggregate && agg.active_sub === name;
-       const dragHandle = '<span class="prov-drag-handle" draggable="true" title="' + (t('prov.dragTip') || '拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合') + '">' + svgIcon(IC.grip) + '</span>';
+       const dragHandle = '<span class="prov-drag-handle" title="' + (t('prov.dragTip') || '拖动卡片调整位置；聚合状态下拖到下方「未参与聚合」即可移出') + '">' + svgIcon(IC.layers) + '</span>';
        const activeDot = isActive ? '<span class="prov-active-dot" title="' + (t('prov.inUse') || '正在使用') + '"></span>' : '';
        const soloAttrs = (agg.aggregate ? '' : ' onclick="activateSubscription(this)"') + ' data-sub="' + esc(name) + '"';
        if (compact) {
@@ -4951,7 +4957,7 @@ async function runWebTest() {
          const traf2 = si && si.total > 0
            ? fmtTraffic(used2) + ' / ' + fmtTraffic(si.total) + (si.expire > 0 ? ' · ' + fmtExpire(si.expire) : (si.expire === 0 ? ' · ' + t('prov.noExpire') : ''))
            : (si ? t('prov.noTraffic') : fmtTraffic((localUsage[name] || {u: 0, d: 0}).u + (localUsage[name] || {u: 0, d: 0}).d));
-         return `<div class="prov-mini${isActive ? ' active' : ''}"${soloAttrs} id="provcard-${esc(name)}" draggable="false">
+         return `<div class="prov-mini${isActive ? ' active' : ''}"${soloAttrs} id="provcard-${esc(name)}" draggable="true">
              ${activeDot}${dragHandle}
              <span class="prov-mini-badge">${badge}</span>
              <span class="prov-mini-name" title="${esc(name)}">${esc(name)}</span>
@@ -4961,7 +4967,7 @@ async function runWebTest() {
              ${si && si.total > 0 ? '<span class="prov-mini-bar"><i class="' + barCls2 + '" style="width:' + pct2 + '%"></i></span>' : ''}
            </div>`;
        }
-       return `<div class="prov-card${isActive ? ' active' : ''}${si ? '' : ' data-unlim="1"'}${soloAttrs} id="provcard-${esc(name)}" draggable="false">
+       return `<div class="prov-card${isActive ? ' active' : ''}${si ? '' : ' data-unlim="1"'}${soloAttrs} id="provcard-${esc(name)}" draggable="true">
            ${activeDot}${dragHandle}
            <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
           <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
@@ -5265,10 +5271,8 @@ function _provCardName(el) {
   return '';
 }
 document.addEventListener('dragstart', function(e) {
-  var h = e.target && e.target.closest ? e.target.closest('.prov-drag-handle') : null;
-  if (!h) return;
-  var card = h.closest('.prov-card');
-  if (!card) return;
+  var card = e.target && e.target.closest ? e.target.closest('.prov-card, .prov-mini') : null;
+  if (!card || card.getAttribute('draggable') !== 'true') return;
   _provDrag = card;
   card.classList.add('dragging');
   try { e.dataTransfer.setData('text/plain', _provCardName(card)); } catch (err) {}
@@ -5330,11 +5334,12 @@ document.addEventListener('drop', function(e) {
 });
 function saveProvLayout() {
   var order = [], excluded = [];
+  var SEL = '.prov-card, .prov-mini';
   var inG = document.getElementById('provGridIn'), outG = document.getElementById('provGridOut');
-  if (inG) Array.from(inG.querySelectorAll('.prov-card')).forEach(function(c) { order.push(_provCardName(c)); });
-  if (outG) Array.from(outG.querySelectorAll('.prov-card')).forEach(function(c) { excluded.push(_provCardName(c)); });
+  if (inG) Array.from(inG.querySelectorAll(SEL)).forEach(function(c) { order.push(_provCardName(c)); });
+  if (outG) Array.from(outG.querySelectorAll(SEL)).forEach(function(c) { excluded.push(_provCardName(c)); });
   if (!inG) {   // 单订模式：整体顺序
-    Array.from(document.querySelectorAll('.prov-grid-inner .prov-card')).forEach(function(c) { order.push(_provCardName(c)); });
+    Array.from(document.querySelectorAll('.prov-grid-inner ' + SEL)).forEach(function(c) { order.push(_provCardName(c)); });
   }
   fetch('api/providers/layout', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ order: order, excluded: excluded }) })
