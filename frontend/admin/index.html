@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930124617';
+  var B='unknown-20260930125112';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1127,7 +1127,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 /* 轻量代码编辑器（行号槽 + textarea） */
 .ce-wrap{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card2);height:330px}
 .ce-gutter{flex:none;width:40px;padding:10px 6px 10px 0;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;color:var(--faint);background:var(--card);overflow:hidden;white-space:pre;user-select:none}
-.ce-area{flex:1;min-width:0;padding:10px 12px;border:0;background:transparent;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;resize:none;outline:none;white-space:pre;overflow:auto
+.ce-area{flex:1;min-width:0;min-height:0;padding:10px 12px;border:0;background:transparent;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;resize:none;outline:none;white-space:pre;overflow:auto;overflow-wrap:normal;word-break:normal;-webkit-user-select:text;user-select:text;cursor:text
 .ce-area{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;border-radius:0}
 .ce-area:focus,.ce-area:active{border:0;box-shadow:none;outline:0;background:transparent}
 }.pe-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 20px 18px;border-top:1px solid var(--border-soft);flex-wrap:wrap}
@@ -1881,9 +1881,9 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           </div>
           <div class="modal-body" style="padding:16px 20px 6px">
             <div class="pe-sec-row"><span class="pe-sec-label" data-i18n="pe.mergeName">全局扩展覆写配置</span><span class="pe-sec-state" id="subExtMergeState"></span></div>
-            <div class="ce-wrap"><div class="ce-gutter" id="subExtMergeGutter"></div><textarea class="ce-area" id="subExtMergeText" spellcheck="false" oninput="ceSync('subExtMerge');" onscroll="ceScroll('subExtMerge');"></textarea></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="subExtMergeGutter"></div><div class="ce-area" id="subExtMergeText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subExtMerge');" onscroll="ceScroll('subExtMerge');"></div></div>
             <div class="pe-sec-row" style="margin-top:14px"><span class="pe-sec-label" data-i18n="pe.scriptName">全局扩展脚本</span><span class="pe-sec-state" id="subExtScriptState"></span></div>
-            <div class="ce-wrap"><div class="ce-gutter" id="subExtScriptGutter"></div><textarea class="ce-area" id="subExtScriptText" spellcheck="false" oninput="ceSync('subExtScript');" onscroll="ceScroll('subExtScript');"></textarea></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="subExtScriptGutter"></div><div class="ce-area" id="subExtScriptText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subExtScript');" onscroll="ceScroll('subExtScript');"></div></div>
             <div class="pe-note" style="margin-top:12px" data-i18n="pe.subHint">仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。</div>
           </div>
           <div class="pe-foot">
@@ -1912,7 +1912,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <span id="subFileTitle">订阅文件</span>
           </div>
           <div class="modal-body" style="padding:16px 20px 6px">
-            <div class="ce-wrap"><div class="ce-gutter" id="subFileGutter"></div><textarea class="ce-area" id="subFileText" spellcheck="false" oninput="ceSync('subFile');" onscroll="ceScroll('subFile');"></textarea></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="subFileGutter"></div><div class="ce-area" id="subFileText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subFile');" onscroll="ceScroll('subFile');"></div></div>
             <div class="pe-note" style="margin-top:12px" data-i18n="provMenu.fileTip">直接编辑该订阅的本地配置文件；保存后立即重建节点索引。</div>
           </div>
           <div class="pe-foot">
@@ -1930,7 +1930,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           <div class="modal-title">全局扩展覆写配置</div>
           <div class="modal-body">
             <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="pe.mergeNoteHtml" data-i18n-html>对所有订阅的配置写入生效；应用设置已随配置合入，本模板在其之上深合并（字典递归合并、列表整体覆盖）。<br><span data-i18n="pe.pipelineHtml" data-i18n-html>执行顺序：订阅原文 + 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 应用设置回写</span><br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在此模板中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
-            <div class="ce-wrap"><div class="ce-gutter" id="peMergeGutter"></div><textarea class="ce-area" id="peMergeText" spellcheck="false" wrap="off" data-i18n="ph.yamlMerge" placeholder="# 在此编写 YAML 合并模板" oninput="ceSync('peMerge')" onscroll="ceScroll('peMerge')"></textarea></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="peMergeGutter"></div><div class="ce-area" id="peMergeText" contenteditable="true" spellcheck="false" role="textbox" wrap="off" data-i18n="ph.yamlMerge" placeholder="# 在此编写 YAML 合并模板" oninput="ceSync('peMerge')" onscroll="ceScroll('peMerge')"></div></div>
           </div>
           <div class="pe-foot">
             <button class="pe-foot-link" data-i18n="pe.resetDefault" onclick="resetPe('merge')"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重置为默认值</button>
@@ -1947,7 +1947,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           <div class="modal-title">全局扩展脚本</div>
           <div class="modal-body">
             <div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span data-i18n="pe.scriptNoteHtml" data-i18n-html>对所有订阅的配置写入生效，在全局扩展配置合并之后由本机 node 执行（超时 10 秒，node 缺失或报错时跳过、不影响保存）。<br>函数签名：<b>function main(config, profileName) { return config; }</b>，返回修改后的配置对象。<br>执行顺序：订阅原文 + 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在脚本中修改不会生效；订阅自带的代理、规则、规则集可自由增改。</span></div>
-            <div class="ce-wrap"><div class="ce-gutter" id="peScriptGutter"></div><textarea class="ce-area" id="peScriptText" spellcheck="false" wrap="off" placeholder="// function main(config, profileName) { return config; }" oninput="ceSync('peScript')" onscroll="ceScroll('peScript')"></textarea></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="peScriptGutter"></div><div class="ce-area" id="peScriptText" contenteditable="true" spellcheck="false" role="textbox" wrap="off" placeholder="// function main(config, profileName) { return config; }" oninput="ceSync('peScript')" onscroll="ceScroll('peScript')"></div></div>
           </div>
           <div class="pe-foot">
             <button class="pe-foot-link" data-i18n="pe.resetDefault" onclick="resetPe('script')"><svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-8 3.58-8 8s3.58 8 8 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>重置为默认值</button>
@@ -3811,20 +3811,21 @@ function openPeModal(kind) {
   var e = _peEls(kind);
   var saved = (kind === 'merge' ? _peData.merge : _peData.script) || '';
   // 未配置过时预填默认模板（取消不会写入；保存后才生效）
-  e.text.value = saved || (kind === 'merge' ? _peData.defaults.merge : _peData.defaults.script) || '';
+  ceSetText(e.text, saved || (kind === 'merge' ? _peData.defaults.merge : _peData.defaults.script) || '');
+  ceBindPlainPaste(e.text);
   e.modal.style.display = 'flex';
   ceSync(e.gutter);
 }
 function closePeModal(kind) { _peEls(kind).modal.style.display = 'none'; }
 function resetPe(kind) {
   var e = _peEls(kind);
-  e.text.value = (kind === 'merge' ? _peData.defaults.merge : _peData.defaults.script) || '';
+  ceSetText(e.text, (kind === 'merge' ? _peData.defaults.merge : _peData.defaults.script) || '');
   ceSync(e.gutter);
   showToast('已填入默认模板，保存后生效', 'info');
 }
 function savePe(kind) {
   var e = _peEls(kind);
-  var text = e.text.value;
+  var text = ceText(e.text);
   if (kind === 'merge') _peData.merge = text; else _peData.script = text;
   fetch('api/profile-ext', { method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ merge_config: _peData.merge, script: _peData.script }) })
@@ -3837,11 +3838,31 @@ function savePe(kind) {
     .catch(function(err) { showToast((err.message || '保存失败'), 'error'); });
 }
 // 轻量编辑器：行号同步 + 滚动联动
+/* 轻量代码编辑器：内容同时支持 textarea 与 contenteditable div
+   （div 无 WebView 默认聚焦外观，样式 100% 可控） */
+function ceText(el) {
+  if (!el) return '';
+  return (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') ? el.value : (el.textContent || '');
+}
+function ceSetText(el, v) {
+  if (!el) return;
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') el.value = v;
+  else el.textContent = v == null ? '' : String(v);
+}
+function ceBindPlainPaste(el) {
+  if (!el || el._cePaste) return;
+  el._cePaste = true;
+  el.addEventListener('paste', function(e) {
+    e.preventDefault();
+    var t = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, t);
+  });
+}
 function ceSync(name) {
   var ta = document.getElementById(name + 'Text');
   var g = document.getElementById(name + 'Gutter');
   if (!ta || !g) return;
-  var lines = ta.value.split('\n').length;
+  var lines = ceText(ta).split('\n').length;
   var s = '';
   for (var i = 1; i <= lines; i++) s += i + '\n';
   g.textContent = s;
@@ -4980,7 +5001,8 @@ var _subFileSave = null, _subFileName = '';
 function openSubFileEditor(title, content, onSave) {
   document.getElementById('subFileTitle').textContent = title;
   var ta = document.getElementById('subFileText');
-  ta.value = content || '';
+  ceSetText(ta, content || '');
+  ceBindPlainPaste(ta);
   _subFileSave = onSave;
   document.getElementById('subFileModal').style.display = 'flex';
   ceSync('subFile');
@@ -4992,7 +5014,7 @@ async function reloadSubFile() {
     var r = await fetch('api/sub-file?name=' + encodeURIComponent(_subFileName));
     var d = await r.json();
     if (d.success === false) throw new Error(d.error || '读取失败');
-    document.getElementById('subFileText').value = d.content || '';
+    ceSetText(document.getElementById('subFileText'), d.content || '');
     ceSync('subFile');
     showToast(t('provMenu.reloaded') || '已重新加载', 'info');
   } catch (e) { showToast(e.message || '读取失败', 'error'); }
@@ -5003,7 +5025,7 @@ function closeSubFileEditor() {
 }
 document.getElementById('subFileSaveBtn').addEventListener('click', async function() {
   if (!_subFileSave) return;
-  var text = document.getElementById('subFileText').value;
+  var text = ceText(document.getElementById('subFileText'));
   try {
     var r = await _subFileSave(text);
     var d = await (r.json ? r.json() : Promise.resolve(r));
@@ -5130,14 +5152,14 @@ async function openSubExt(name) {
   document.getElementById('subExtTitle').textContent = (t('pe.merge') || '扩展') + ' · ' + name;
   document.getElementById('subExtModal').style.display = 'flex';
   var merge = document.getElementById('subExtMergeText'), script = document.getElementById('subExtScriptText');
-  merge.value = ''; script.value = '';
+  ceSetText(merge, ''); ceSetText(script, '');
   ceSync('subExtMerge'); ceSync('subExtScript');
   try {
     var r = await fetch('api/profile-ext/sub?name=' + encodeURIComponent(name));
     var d = await r.json();
     if (d.success === false) throw new Error(d.error || '读取失败');
-    merge.value = d.merge_config || '';
-    script.value = d.script || '';
+    ceSetText(merge, d.merge_config || '');
+    ceSetText(script, d.script || '');
     ceSync('subExtMerge'); ceSync('subExtScript');
     var hasM = !!(d.merge_config || '').trim(), hasS = !!(d.script || '').trim();
     var ms = document.getElementById('subExtMergeState'), ss = document.getElementById('subExtScriptState');
@@ -5158,8 +5180,8 @@ async function saveSubExt() {
   try {
     var r = await fetch('api/profile-ext/sub', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: _subExtName,
-        merge_config: document.getElementById('subExtMergeText').value,
-        script: document.getElementById('subExtScriptText').value }) });
+        merge_config: ceText(document.getElementById('subExtMergeText')),
+        script: ceText(document.getElementById('subExtScriptText')) }) });
     var d = await r.json();
     if (d.success === false) throw new Error(d.error || '保存失败');
     showToast(d.message || (t('pe.saved') || '已保存'), 'success');
@@ -5219,9 +5241,10 @@ function renderChainModal() {
   var body = document.getElementById('chainBody');
   if (_chain.advanced) {
     var yamlText = _chainYamlDumpChain();
-    body.innerHTML = '<div class="ce-wrap"><div class="ce-gutter" id="chainGutter"></div><textarea class="ce-area" id="chainText" spellcheck="false" oninput="ceSync(\'chain\');" onscroll="ceScroll(\'chain\');"></textarea></div>';
+    body.innerHTML = '<div class="ce-wrap"><div class="ce-gutter" id="chainGutter"></div><div class="ce-area" id="chainText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync(\'chain\');" onscroll="ceScroll(\'chain\');"></div></div>';
     var ta = document.getElementById('chainText');
-    ta.value = yamlText;
+    ceSetText(ta, yamlText);
+    ceBindPlainPaste(ta);
     ceSync('chain');
     setTimeout(function() { ta.focus(); }, 60);
     return;
@@ -5384,7 +5407,7 @@ async function saveChainEditor() {
   var data = _chain.data;
   if (_chain.advanced) {
     try {
-      var doc = _parseSimpleYaml(document.getElementById('chainText').value);
+      var doc = _parseSimpleYaml(ceText(document.getElementById('chainText')));
       data = { rules: { prepend: [], append: [], delete: [] }, proxies: { prepend: [], append: [], delete: [] }, 'proxy-groups': { prepend: [], append: [], delete: [] } };
       data[_chain.section] = doc;
     } catch (e) { showToast(e.message || '解析失败', 'error'); return; }
