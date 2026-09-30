@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20261001063239';
+  var B='unknown-20261001064243';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -3107,31 +3107,37 @@ function showSection(name) {
   }
   // 已有订阅卡片时立即展示，仅后台静默刷新；不再每次切换都闪“加载中”。
   if (name === 'providers') {
-    // 秒开：订阅卡片快照先铺底（内存 > localStorage），再后台静默刷新
     const grid = document.getElementById('provGrid');
-    let snap = null;
-    let snapHtml = null;
-    try {
-      var raw = provSnapMem || localStorage.getItem('fnsoarProvSnap');
-      if (raw) {
-        var sn = null;
-        try { sn = JSON.parse(raw); } catch (e3) { sn = null; }
-        // 带模式标记的快照：与当前聚合/单订模式不一致则不还原（避免闪一下错样式）
-        if (sn && typeof sn === 'object' && sn.html) snapHtml = (sn.mode === (_provAgg && _provAgg.aggregate ? 'agg' : 'solo')) ? sn.html : null;
-        // 旧格式快照（无模式标记）不还原：无法判定它属于哪种模式，还原可能闪出错样式
-      }
-    } catch (e) {}
-    if (snapHtml && !grid.querySelector('.prov-card')) {
-      grid.innerHTML = snapHtml;
-      // 快照可能存着展开态（swiped/内联位移）——先清掉，否则切页回来会
-      // 闪一下「展开的卡片」，等 loadProviders 重绘后才恢复正常
-      grid.querySelectorAll('.prov-mini.swiped').forEach(function(r) { r.classList.remove('swiped'); });
-      grid.querySelectorAll('.prov-mini-main').forEach(function(m) { m.style.transform = ''; });
-    }
-    // 总是先拉最新聚合/布局状态：从设置页切聚合、或别处改过后，
-    // _provAgg 会是陈旧的（loadProviders 只在其 order 未定义时才自查）
+    // 关键：先把最新聚合/布局状态拉回来，再用「新鲜」的模式去判断快照该不该还原。
+    // 此前是先用 _provAgg（可能是页面初始值/陈旧值）判断快照模式，模式不匹配时
+    // 要么还原错样式的快照、要么干脆不还原只显示旧内容，等 loadProviders 重绘完
+    // 才跳成正确样式 —— 就是切页时那一下闪屏。
     Promise.resolve(loadProvLayout()).then(function() {
-      loadProviders(!!grid.querySelector('.prov-card'));
+      let snapHtml = null;
+      try {
+        var raw = provSnapMem || localStorage.getItem('fnsoarProvSnap');
+        if (raw) {
+          var sn = null;
+          try { sn = JSON.parse(raw); } catch (e3) { sn = null; }
+          // 带模式标记的快照：与当前聚合/单订模式不一致则不还原
+          if (sn && typeof sn === 'object' && sn.html) {
+            snapHtml = (sn.mode === (_provAgg && _provAgg.aggregate ? 'agg' : 'solo')) ? sn.html : null;
+          }
+          // 旧格式快照（无模式标记）不还原：无法判定它属于哪种模式
+        }
+      } catch (e) {}
+      if (snapHtml && !grid.querySelector('.prov-card')) {
+        grid.innerHTML = snapHtml;
+        // 快照可能带着展开态（swiped/内联位移），先清掉，避免闪一下展开的卡片
+        grid.querySelectorAll('.prov-mini.swiped').forEach(function(r) { r.classList.remove('swiped'); });
+        grid.querySelectorAll('.prov-mini-main').forEach(function(m) { m.style.transform = ''; });
+      } else if (!snapHtml && grid.querySelector('.prov-card, .prov-mini')) {
+        // 没有当前模式的快照（典型：刚在设置页切了聚合开关）——栅格里还留着
+        // 另一种模式的旧卡片，直接清掉，否则会先闪一下错样式再被重绘掉
+        grid.innerHTML = '<div class="card" style="grid-column:1/-1;color:var(--faint);text-align:center;padding:36px">'
+          + (t('conn.loading') || '加载中…') + '</div>';
+      }
+      loadProviders(!!grid.querySelector('.prov-mini') && !!snapHtml);
     });
   }
     loadProfileExt();  // 全局扩展（合并模板/脚本）
