@@ -3,7 +3,8 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930122823';
+  var B='unknown-20260930123445';
+  window.__FNSoAR_BUILD__ = B;
   var k='fnsoar_build_stamp';
   if(localStorage.getItem(k)!==B){
     localStorage.setItem(k,B);
@@ -2591,6 +2592,10 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <span class="set-val" id="setVersion">-</span>
               <button class="link-btn" onclick="openChangelogModal()" data-i18n="settings.changelog">更新日志</button>
             </div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.pageBuild">页面构建</span></div>
+              <span class="set-val" id="setPageBuild" style="font-size:11px;color:var(--faint);text-align:right">-</span>
+            </div>
           </div>
           <div class="set-card">
             <div class="set-title" data-i18n="settings.dashboard">面板升级</div>
@@ -5137,6 +5142,12 @@ async function openSubExt(name) {
   }
 }
 function closeSubExt() { document.getElementById('subExtModal').style.display = 'none'; }
+// 显示页面构建戳（设置→高级设置→页面构建；用于排查 APP 是否加载了最新页面）
+(function() {
+  var m = (document.currentScript && document.currentScript.textContent || '').match(/var B='([^']+)'/);
+  var el = document.getElementById('setPageBuild');
+  if (el) el.textContent = (window.__FNSoAR_BUILD__ || (m && m[1]) || '-');
+})();
 async function saveSubExt() {
   try {
     var r = await fetch('api/profile-ext/sub', { method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -7730,7 +7741,7 @@ var I18N = {
     'settings.startupScript':'启动脚本','settings.runtimeConfig':'运行时配置',
     'settings.openConfDir':'打开配置目录','settings.openCoreDir':'打开核心目录',
     'settings.openLogs':'打开日志','settings.checkUpdate':'检查更新',
-    'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.dashboard':'面板升级','settings.dashStatus':'状态','settings.dashUpToDate':'已最新','settings.dashUpdateAvail':'有可用更新',
+    'settings.exportDiag':'导出诊断信息','settings.version':'应用版本','settings.pageBuild':'页面构建','settings.dashboard':'面板升级','settings.dashStatus':'状态','settings.dashUpToDate':'已最新','settings.dashUpdateAvail':'有可用更新',
     'settings.service':'系统服务','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'深色','settings.themeLight':'浅色','settings.themeSystem':'系统',
     'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示策略组图标','settings.appIcon':'软件图标','settings.appIconHint':'切换 fnOS 桌面与窗口显示的应用图标',
@@ -7937,7 +7948,7 @@ var I18N = {
     'settings.startupScript':'Startup Script','settings.runtimeConfig':'Runtime Config',
     'settings.openConfDir':'Open Config Dir','settings.openCoreDir':'Open Core Dir',
     'settings.openLogs':'Open Logs','settings.checkUpdate':'Check Updates',
-    'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status','settings.dashUpToDate':'Up to date','settings.dashUpdateAvail':'Update available',
+    'settings.exportDiag':'Export Diagnostics','settings.version':'Version','settings.pageBuild':'Page build','settings.dashboard':'Dashboard Updates','settings.dashStatus':'Status','settings.dashUpToDate':'Up to date','settings.dashUpdateAvail':'Update available',
     'settings.service':'System Service','settings.langZh':'简体中文','settings.langEn':'English',
     'settings.themeDark':'Dark','settings.themeLight':'Light','settings.themeSystem':'System',
     'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Group Icons','settings.appIcon':'App Icon','settings.appIconHint':'Icon shown on the fnOS desktop and window',
