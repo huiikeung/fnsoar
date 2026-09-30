@@ -3351,6 +3351,27 @@ def get_system_info_cached():
     return info
 
 # ── HTTP Request Handler ─────────────────────────────────────────────────
+def _sub_payload_digest(name):
+    """订阅 payload 的三段概要 + 代理组名（供 chains 可视化编辑器展示既有条目）。"""
+    fp = _sub_file_path(name)
+    if not os.path.exists(fp):
+        return {"rules": [], "proxies": [], "proxy-groups": [], "groups": ["DIRECT", "REJECT"]}
+    doc = yaml.safe_load(open(fp, "r", encoding="utf-8").read()) or {}
+    if not isinstance(doc, dict):
+        doc = {}
+    rules = [str(r) for r in (doc.get("rules") or []) if r is not None]
+    proxies = []
+    for p in (doc.get("proxies") or []):
+        if isinstance(p, dict) and p.get("name"):
+            proxies.append({"name": str(p["name"]), "type": str(p.get("type") or "")})
+    groups = []
+    for g in (doc.get("proxy-groups") or []):
+        if isinstance(g, dict) and g.get("name"):
+            groups.append({"name": str(g["name"]), "type": str(g.get("type") or "")})
+    return {"rules": rules, "proxies": proxies, "proxy-groups": groups,
+            "groups": [x["name"] for x in groups] + ["DIRECT", "REJECT"]}
+
+
 class AdminHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
         # Unix socket clients have no IP (client_address is a bare string like ""),
@@ -3435,6 +3456,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             return True
         return False
 
+
     def _api_sub_section_write(self, body):
         """写回订阅 payload 的顶层段（rules/proxies/proxy-groups）。"""
         import yaml as _ysw, re as _resw
@@ -3470,6 +3492,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         except Exception:
             pass
         return self._send_json({"success": True, "message": f"订阅「{name}」的{section}已保存"})
+
 
     def _api_update_provider(self):
         """对齐 clash-verge:面板下载→落盘→通知内核重载(file型)"""
@@ -3840,20 +3863,11 @@ class AdminHandler(BaseHTTPRequestHandler):
             name = (q.get("name", [""])[0] or "").strip()
             if not name:
                 return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
-            fp = _sub_file_path(name)
-            groups = []
-            if os.path.exists(fp):
-                try:
-                    doc = yaml.safe_load(open(fp, "r", encoding="utf-8").read()) or {}
-                    if isinstance(doc, dict):
-                        for g in (doc.get("proxy-groups") or []):
-                            if isinstance(g, dict) and g.get("name"):
-                                groups.append(g["name"])
-                except Exception:
-                    pass
+            digest = _sub_payload_digest(name)
             return self._send_json({"success": True, "name": name,
                                     "chain": _read_sub_chain(name),
-                                    "groups": groups + ["DIRECT", "REJECT"]})
+                                    "groups": digest["groups"],
+                                    "existing": digest})
         if path.startswith("/api/profile-ext/sub"):
             q = parse_qs(urlparse(self.path).query)
             name = (q.get("name", [""])[0] or "").strip()

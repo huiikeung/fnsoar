@@ -1017,19 +1017,23 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .filter-sec{margin-bottom:8px}
 .filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
 /* chains 可视化编辑 */
-.chain-wrap{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:16px;align-items:start}
+.chain-wrap{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:14px;align-items:start}
 @media(max-width:760px){.chain-wrap{grid-template-columns:1fr}}
 .chain-f{margin-bottom:10px}
-.chain-f label{display:block;font-size:12px;color:var(--dim);margin-bottom:4px}
-.chain-f .mx-input{width:100%}
+.chain-f label{display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px}
+.chain-f .mx-input{width:100%;color:var(--text)}
+.chain-f .mx-input::placeholder{color:var(--faint)}
 .chain-list{min-width:0}
+.chain-list-head{margin-bottom:8px}
+.chain-list-head .mx-input{width:100%;color:var(--text)}
 .chain-item{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;border:1px solid var(--border);border-radius:9px;background:var(--card2);margin-bottom:8px}
 .chain-item-main{min-width:0}
 .chain-item-name{font-size:12.5px;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.chain-item-meta{font-size:11px;color:var(--faint);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.chain-item-meta{font-size:11.5px;color:var(--dim);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .chain-badge{display:inline-block;padding:0 6px;border-radius:5px;background:var(--card);border:1px solid var(--border);font-size:10px;color:var(--dim);margin-right:4px}
-.chain-del{flex:none;width:24px;height:24px;border:none;background:transparent;color:var(--faint);font-size:14px;cursor:pointer;border-radius:6px}
+.chain-del{flex:none;width:24px;height:24px;border:none;background:transparent;color:var(--dim);font-size:14px;cursor:pointer;border-radius:6px}
 .chain-del:hover{background:rgba(248,81,73,.12);color:var(--red)}
+.pe-note{margin-bottom:12px}
 /* 订阅卡片选项菜单 */
 .prov-menu{position:fixed;z-index:200;min-width:190px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.28);padding:6px}
 .prov-menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:none;background:transparent;color:var(--text);font-size:12.5px;text-align:left;border-radius:7px;cursor:pointer;transition:background .12s}
@@ -1816,15 +1820,18 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
     
       <!-- 订阅 chains 可视化编辑弹窗 -->
       <div class="modal-backdrop" id="chainModal" style="display:none" onclick="if(event.target===this)closeChainEditor()">
-        <div class="modal-card mx-modal" style="width:min(880px,97vw);max-width:min(880px,97vw)">
-          <div class="mx-head">
-            <h3 id="chainTitle">编辑规则</h3>
+        <div class="modal-card pe-modal" style="width:min(880px,97vw);max-width:min(880px,97vw)">
+          <div class="modal-title" style="display:flex;align-items:center;justify-content:space-between">
+            <span id="chainTitle">编辑规则</span>
             <button class="pe-btn" id="chainAdvBtn" style="background:var(--accent);color:#fff;border:none;padding:5px 14px;font-size:12px" onclick="toggleChainAdvanced()">高级</button>
           </div>
-          <div class="mx-body" id="chainBody" style="padding:14px 18px"></div>
-          <div class="pe-foot" style="padding:12px 18px 16px;display:flex;justify-content:flex-end;gap:8px">
-            <button class="pe-btn-cancel" onclick="closeChainEditor()" data-i18n="common.cancel">取消</button>
-            <button class="pe-btn-save" onclick="saveChainEditor()" data-i18n="common.save">保存</button>
+          <div class="modal-body" id="chainBody"></div>
+          <div class="pe-foot">
+            <button class="pe-foot-link" onclick="resetChain()" data-i18n="pe.resetDefault">恢复默认值</button>
+            <div class="pe-foot-right">
+              <button class="pe-btn-cancel" onclick="closeChainEditor()" data-i18n="common.cancel">取消</button>
+              <button class="pe-btn-save" onclick="saveChainEditor()" data-i18n="common.save">保存</button>
+            </div>
           </div>
         </div>
       </div>
@@ -5118,6 +5125,7 @@ async function openChainEditor(name, section) {
     if (d.success === false) throw new Error(d.error || '读取失败');
     _chain.data = d.chain;
     _chain.groups = d.groups || [];
+    _chain.existing = d.existing || { rules: [], proxies: [], 'proxy-groups': [] };
   } catch (e) { showToast(e.message || '读取失败', 'error'); return; }
   document.getElementById('chainModal').style.display = 'flex';
   document.getElementById('chainTitle').textContent = _chainTitle(section) + ' · ' + name;
@@ -5127,9 +5135,11 @@ function _chainTitle(section) {
   return section === 'rules' ? t('provMenu.rules') : section === 'proxies' ? t('provMenu.nodes') : t('provMenu.groups');
 }
 function closeChainEditor() { document.getElementById('chainModal').style.display = 'none'; }
-function toggleChainAdvanced() {
-  _chain.advanced = !_chain.advanced;
+function toggleChainAdvanced() { _chain.advanced = !_chain.advanced; renderChainModal(); }
+function resetChain() {
+  _chain.data = { rules: { prepend: [], append: [], delete: [] }, proxies: { prepend: [], append: [], delete: [] }, 'proxy-groups': { prepend: [], append: [], delete: [] } };
   renderChainModal();
+  showToast(t('pe.resetDone') || '已重置', 'info');
 }
 function renderChainModal() {
   var sec = _chain.section;
@@ -5138,12 +5148,18 @@ function renderChainModal() {
   var body = document.getElementById('chainBody');
   if (_chain.advanced) {
     var yamlText = _chainYamlDumpChain();
-    body.innerHTML = '<textarea id="chainYaml" class="ce-area" style="width:100%;height:52vh;min-height:320px;resize:vertical"></textarea>';
-    document.getElementById('chainYaml').value = yamlText;
+    body.innerHTML = '<div class="ce-wrap"><div class="ce-gutter" id="chainGutter"></div><textarea class="ce-area" id="chainYaml" spellcheck="false" oninput="ceSync(\'chain\');" onscroll="ceScroll(\'chain\');"></textarea></div>';
+    var ta = document.getElementById('chainYaml');
+    ta.value = yamlText;
+    ceSync('chain');
+    setTimeout(function() { ta.focus(); }, 60);
     return;
   }
   var groups = _chain.groups.length ? _chain.groups : ['DIRECT', 'REJECT'];
-  var html = '<div class="chain-wrap">';
+  var ex = _chain.existing[sec] || [];
+  var c = _chain.data[sec];
+  var html = '<div class="pe-note"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg><span>' + (t('chain.tip') || '左侧添加到前插/后插；右侧为订阅原有内容，点垃圾桶加入删除名单。') + '</span></div>';
+  html += '<div class="chain-wrap">';
   // 左：添加表单
   html += '<div class="chain-form">';
   if (sec === 'rules') {
@@ -5152,52 +5168,68 @@ function renderChainModal() {
     html += '<div class="chain-f"><label>' + (t('chain.ruleContent') || '规则内容') + '</label><input class="mx-input" id="chContent" placeholder="example.com"></div>';
     html += '<div class="chain-f"><label>' + (t('chain.rulePolicy') || '代理策略') + '</label><select class="mx-input" id="chPolicy">'
       + groups.map(function(g) { return '<option value="' + esc(g) + '">' + esc(g) + '</option>'; }).join('') + '</select></div>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px" onclick="chainAddRule(\'prepend\')">↑ ' + (t('chain.prepend') || '添加前置规则') + '</button>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddRule(\'append\')">↓ ' + (t('chain.append') || '添加后置规则') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddRule(\'prepend\')">&uarr; ' + (t('chain.prepend') || '添加前置规则') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:8px" onclick="chainAddRule(\'append\')">&darr; ' + (t('chain.append') || '添加后置规则') + '</button>';
   } else if (sec === 'proxies') {
-    html += '<div class="chain-f"><label>' + (t('chain.uriList') || '节点 URI') + '</label><textarea class="mx-input" id="chUris" rows="8" placeholder="多条 URI 请使用换行分隔（支持 Base64 编码）"></textarea></div>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px" onclick="chainAddProxy(\'prepend\')">↑ ' + (t('chain.prependNode') || '添加前置代理节点') + '</button>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px;margin-top:6px" onclick="chainAddProxy(\'append\')">↓ ' + (t('chain.appendNode') || '添加后置代理节点') + '</button>';
+    html += '<div class="chain-f"><label>' + (t('chain.uriList') || '节点 URI') + '</label><textarea class="mx-input" id="chUris" rows="9" placeholder="多条 URI 请使用换行分隔（支持 Base64 编码）"></textarea></div>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddProxy(\'prepend\')">&uarr; ' + (t('chain.prependNode') || '添加前置代理节点') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:8px" onclick="chainAddProxy(\'append\')">&darr; ' + (t('chain.appendNode') || '添加后置代理节点') + '</button>';
   } else {
     html += '<div class="chain-f"><label>' + (t('chain.groupType') || '代理组类型') + '</label><select class="mx-input" id="chGType">'
       + _GROUP_TYPES.map(function(x) { return '<option value="' + x[0] + '">' + esc(x[1]) + '</option>'; }).join('') + '</select></div>';
     html += '<div class="chain-f"><label>' + (t('chain.groupName') || '代理组名') + '</label><input class="mx-input" id="chGName" placeholder="MyGroup"></div>';
     html += '<div class="chain-f"><label>' + (t('chain.groupIcon') || '代理组图标') + '</label><input class="mx-input" id="chGIcon" placeholder="https://…"></div>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px" onclick="chainAddGroup(\'prepend\')">↑ ' + (t('chain.prependGroup') || '添加前置代理组') + '</button>';
-    html += '<button class="pe-btn-save" style="width:100%;margin-top:4px;margin-top:6px" onclick="chainAddGroup(\'append\')">↓ ' + (t('chain.appendGroup') || '添加后置代理组') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:6px" onclick="chainAddGroup(\'prepend\')">&uarr; ' + (t('chain.prependGroup') || '添加前置代理组') + '</button>';
+    html += '<button class="pe-btn-save" style="width:100%;margin-top:8px" onclick="chainAddGroup(\'append\')">&darr; ' + (t('chain.appendGroup') || '添加后置代理组') + '</button>';
   }
   html += '</div>';
-  // 右：列表（前插 / 原有 / 后插 / 删除）
+  // 右：订阅原有 + 前插/后插 + 删除名单
   html += '<div class="chain-list"><div class="chain-list-head"><input class="mx-input" placeholder="' + (t('chain.filter') || '过滤条件') + '…" oninput="renderChainList(this.value)"></div><div id="chainItems"></div></div>';
   html += '</div>';
   body.innerHTML = html;
   renderChainList('');
 }
-function _chainYamlDumpChain() {
-  return yamlDump({'prepend': _chain.data[_chain.section].prepend, 'append': _chain.data[_chain.section].append, 'delete': _chain.data[_chain.section].delete});
+function _chainItemLabel(item) {
+  if (typeof item === 'string') {
+    if (item.indexOf('__uri__:') === 0) return '节点URI';
+    var parts = item.split(',');
+    return parts.length > 1 ? parts[1] : parts[0];
+  }
+  return (item && item.name) || '';
+}
+function _chainItemSub(item) {
+  if (typeof item === 'string') {
+    if (item.indexOf('__uri__:') === 0) return item.replace(/^__uri__:/, '').slice(0, 60);
+    var parts = item.split(',');
+    return parts.length > 2 ? parts.slice(2).join(',') : (parts[0] || '');
+  }
+  return (item && (item.type || item.icon || '')) || '';
 }
 function renderChainList(filter) {
   var box = document.getElementById('chainItems');
   if (!box) return;
-  var c = _chain.data[_chain.section];
-  var groups = ['prepend', 'append'];
-  var html = '';
+  var sec = _chain.section;
+  var c = _chain.data[sec];
+  var ex = _chain.existing[sec] || [];
   var f = (filter || '').toLowerCase();
-  function itemRow(kind, label, item, idx) {
-    var text = typeof item === 'string' ? item : JSON.stringify(item);
-    if (f && text.toLowerCase().indexOf(f) < 0) return '';
-    var kind = typeof item === 'string' ? (item.split(',')[0] || item) : (item.name || '');
-    var target = typeof item === 'string' ? (item.split(',').slice(1).join(',') || '') : (item.type || item.icon || '');
-    return '<div class="chain-item"><div class="chain-item-main"><div class="chain-item-name">' + esc(kind) + '</div>'
-      + '<div class="chain-item-meta"><span class="chain-badge">' + esc(label) + '</span> ' + esc(target) + '</div></div>'
-      + '<button class="chain-del" title="删除" onclick="chainDel(\'' + kind + '\',' + idx + ')">&times;</button></div>';
+  function row(kind, item, idx) {
+    var label = _chainItemLabel(item), sub = _chainItemSub(item);
+    var text = (label + ' ' + sub).toLowerCase();
+    if (f && text.indexOf(f) < 0) return '';
+    return '<div class="chain-item"><div class="chain-item-main"><div class="chain-item-name">' + esc(label) + '</div>'
+      + '<div class="chain-item-meta"><span class="chain-badge">' + esc(kind) + '</span>' + esc(sub) + '</div></div>'
+      + '<button class="chain-del" title="' + (t('common.delete') || '删除') + '" onclick="chainDel(\'item\',' + JSON.stringify(kind) + ',' + idx + ')">&times;</button></div>';
   }
-  groups.forEach(function(kind) {
-    c[kind].forEach(function(item, idx) { html += itemRow(kind, kind === 'prepend' ? '前置' : '后置', item, idx); });
+  var html = '';
+  (c.delete || []).forEach(function(nm) {
+    if (!f || String(nm).toLowerCase().indexOf(f) >= 0) {
+      html += '<div class="chain-item del"><div class="chain-item-main"><div class="chain-item-name">' + esc(nm) + '</div><div class="chain-item-meta"><span class="chain-badge">删除</span></div></div>'
+        + '<button class="chain-del" onclick="chainDel(\'delete\',0,this)">&times;</button></div>';
+    }
   });
-  (c.delete || []).forEach(function(nm, idx) {
-    html += '<div class="chain-item del"><div class="chain-item-main"><div class="chain-item-name">' + esc(nm) + '</div><div class="chain-item-meta"><span class="chain-badge">删除</span></div></div><button class="chain-del" onclick="chainDel(\'delete\',' + idx + ')">&times;</button></div>';
-  });
+  html += ex.map(function(item, idx) { return row('原有', item, idx); }).join('');
+  html += (c.prepend || []).map(function(item, idx) { return row('前置', item, idx); }).join('');
+  html += (c.append || []).map(function(item, idx) { return row('后置', item, idx); }).join('');
   box.innerHTML = html || '<div style="font-size:12px;color:var(--faint);padding:16px;text-align:center">' + (t('chain.empty') || '暂无内容') + '</div>';
 }
 function chainAddRule(kind) {
@@ -5212,8 +5244,8 @@ function chainAddRule(kind) {
 function chainAddProxy(kind) {
   var text = document.getElementById('chUris').value.trim();
   if (!text) { showToast(t('chain.needUri') || '请填写节点 URI', 'error'); return; }
-  var lines = text.split('\n').map(function(s) { return s.trim(); }).filter(Boolean);
-  lines.forEach(function(u) { _chain.data[_chain.section][kind].push('__uri__:' + u); });
+  text.split('\n').map(function(s) { return s.trim(); }).filter(Boolean)
+    .forEach(function(u) { _chain.data[_chain.section][kind].push('__uri__:' + u); });
   document.getElementById('chUris').value = '';
   renderChainList('');
 }
@@ -5224,68 +5256,64 @@ function chainAddGroup(kind) {
   if (!name) { showToast(t('chain.needName') || '请填写代理组名', 'error'); return; }
   var g = { name: name, type: type, proxies: [] };
   if (icon) g.icon = icon;
-  if (type === 'url-test') g.url = 'https://cp.cloudflare.com/generate_204';
-  if (type === 'fallback') g.url = 'https://cp.cloudflare.com/generate_204';
+  if (type === 'url-test' || type === 'fallback') g.url = 'https://cp.cloudflare.com/generate_204';
   _chain.data[_chain.section][kind].push(g);
   document.getElementById('chGName').value = '';
   renderChainList('');
 }
-function chainDel(kind, idx) {
-  var c = _chain.data[_chain.section];
-  if (kind === 'delete') { c.delete.splice(idx, 1); }
-  else {
-    var item = c[kind].splice(idx, 1)[0];
-    if (kind === 'prepend' || kind === 'append') {
-      var nm = typeof item === 'string' ? (item.replace(/^__uri__:/, '').split(',')[0]) : item.name;
-      if (nm) c.delete.push(nm);
-    }
+// 删除：原有项 → 进 delete 名单；前插/后插项 → 移出 chain；delete 项 → 移出名单
+function chainDel(kind, idx, btn) {
+  var sec = _chain.section;
+  var c = _chain.data[sec];
+  if (kind === 'delete') {
+    var row = btn ? btn.closest('.chain-item') : null;
+    var nm = row ? row.querySelector('.chain-item-name').textContent : '';
+    var i = (c.delete || []).indexOf(nm);
+    if (i >= 0) c.delete.splice(i, 1);
+  } else if (kind === '原有') {
+    var label = _chainItemLabel((_chain.existing[sec] || [])[idx]);
+    if (label && (c.delete || []).indexOf(label) < 0) c.delete.push(label);
+  } else {
+    c[kind === '前置' ? 'prepend' : 'append'].splice(idx, 1);
   }
   renderChainList('');
 }
 function yamlDump(obj) {
   var lines = [];
-  function dumpVal(v) {
-    if (typeof v === 'string') return JSON.stringify(v);
-    return JSON.stringify(v);
-  }
+  function dv(v) { return JSON.stringify(v); }
   Object.keys(obj).forEach(function(k) {
     var arr = obj[k];
     if (!arr || !arr.length) { lines.push(k + ': []'); return; }
     lines.push(k + ':');
     arr.forEach(function(item) {
       if (typeof item === 'string') {
-        lines.push('  - ' + dumpVal(item.replace(/^__uri__:/, '')));
+        lines.push('  - ' + dv(item.replace(/^__uri__:/, '')));
       } else {
         var first = true;
         Object.keys(item).forEach(function(k2) {
           var v = item[k2];
-          if (typeof v === 'string') {
-            lines.push((first ? '  - ' : '    ') + k2 + ': ' + dumpVal(v));
-            first = false;
-          } else if (Array.isArray(v)) {
+          if (typeof v === 'string') { lines.push((first ? '  - ' : '    ') + k2 + ': ' + dv(v)); first = false; }
+          else if (Array.isArray(v)) {
             lines.push((first ? '  - ' : '    ') + k2 + ':');
-            v.forEach(function(x) { lines.push('      - ' + dumpVal(x)); });
+            v.forEach(function(x) { lines.push('      - ' + dv(x)); });
             first = false;
-          }
+          } else { lines.push((first ? '  - ' : '    ') + k2 + ': ' + dv(String(v))); first = false; }
         });
       }
     });
   });
   return lines.join('\n');
 }
+function _chainYamlDumpChain() {
+  return yamlDump(_chain.data[_chain.section]);
+}
 async function saveChainEditor() {
   var data = _chain.data;
   if (_chain.advanced) {
     try {
-      var text = document.getElementById('chainYaml').value;
-      var doc = _parseSimpleYaml(text);
-      if (!doc) throw new Error('解析失败');
-      data = { rules: doc, proxies: {prepend: [], append: [], delete: []}, 'proxy-groups': {prepend: [], append: [], delete: []} };
-      if (_chain.section !== 'rules') {
-        // 节点/代理组的高级模式：整段写回对应段
-        data = { rules: {prepend: [], append: [], delete: []}, proxies: {prepend: [], append: [], delete: []}, 'proxy-groups': {prepend: [], append: [], delete: []} };
-        data[_chain.section] = doc;
-      }
+      var doc = _parseSimpleYaml(document.getElementById('chainYaml').value);
+      data = { rules: { prepend: [], append: [], delete: [] }, proxies: { prepend: [], append: [], delete: [] }, 'proxy-groups': { prepend: [], append: [], delete: [] } };
+      data[_chain.section] = doc;
     } catch (e) { showToast(e.message || '解析失败', 'error'); return; }
   }
   try {
@@ -5298,7 +5326,6 @@ async function saveChainEditor() {
   } catch (e) { showToast(e.message || '保存失败', 'error'); }
 }
 function _parseSimpleYaml(text) {
-  // 极简解析：prepend/append/delete 三段 + '- ' 列表项（字符串或 key: value 映射）
   var out = { prepend: [], append: [], delete: [] };
   var cur = null, item = null;
   text.split('\n').forEach(function(line) {
@@ -7671,7 +7698,7 @@ var I18N = {
     'chain.prepend':'添加前置规则','chain.append':'添加后置规则','chain.prependNode':'添加前置代理节点','chain.appendNode':'添加后置代理节点',
     'chain.groupType':'代理组类型','chain.groupName':'代理组名','chain.groupIcon':'代理组图标','chain.prependGroup':'添加前置代理组','chain.appendGroup':'添加后置代理组',
     'chain.uriList':'节点 URI','chain.filter':'过滤条件…','chain.empty':'暂无内容','chain.needContent':'请填写规则内容','chain.needUri':'请填写节点 URI',
-    'chain.needName':'请填写代理组名','chain.saved':'chains 已保存',
+    'chain.needName':'请填写代理组名','chain.saved':'chains 已保存','chain.tip':'左侧添加前插/后插；右侧是订阅原有内容，点删除加入删除名单。','pe.resetDone':'已重置',
 'pe.subHint':'仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。',
     'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）',
     'prov.chooseFile':'选择文件','prov.tooLarge':'文件过大（上限 2MB）',
@@ -7878,7 +7905,7 @@ var I18N = {
     'chain.prepend':'Add prepend rule','chain.append':'Add append rule','chain.prependNode':'Add prepend node','chain.appendNode':'Add append node',
     'chain.groupType':'Group type','chain.groupName':'Group name','chain.groupIcon':'Group icon','chain.prependGroup':'Add prepend group','chain.appendGroup':'Add append group',
     'chain.uriList':'Node URIs','chain.filter':'Filter…','chain.empty':'Nothing here','chain.needContent':'Rule content required','chain.needUri':'Node URI required',
-    'chain.needName':'Group name required','chain.saved':'Chains saved',
+    'chain.needName':'Group name required','chain.saved':'Chains saved','chain.tip':'Use the left form to prepend/append; the right side lists the subscription existing items — delete adds to the delete list.','pe.resetDone':'Reset',
 'pe.subHint':'Applies to this subscription only: merge and script run on import/update before the global extension.',
     'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)',
     'prov.chooseFile':'Choose file','prov.tooLarge':'File too large (2MB max)',
