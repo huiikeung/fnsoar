@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930160812';
+  var B='unknown-20260930162303';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1163,8 +1163,21 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-agg-wrap-label svg{width:14px;height:14px;fill:currentColor;color:var(--accent)}
 .prov-grid-inner{gap:12px}
 /* 单订模式：一行一张大卡（保留信息完整的卡片，与聚合紧凑行区分） */
-.prov-solo-grid{grid-template-columns:1fr!important;max-width:860px}
-.prov-solo-grid .prov-card{display:grid;grid-template-columns:1fr auto;grid-template-areas:"top top" "info actions" "stats stats" "traffic traffic";gap:6px 14px;align-items:center}
+.prov-solo-grid{grid-template-columns:1fr!important;max-width:none}
+/* 单订卡片：整行。左侧固定序号/拖拽栏；订阅链接整行不全截；
+   选中态不加边框（保留右上角绿点）；进度条贴卡片底边框 */
+.prov-solo-grid .prov-card{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:"num top actions" "num info actions" "num stats actions" "traffic traffic traffic";gap:3px 14px;align-items:center;padding:14px 16px 0;padding-left:46px;overflow:hidden}
+.prov-solo-grid .prov-card .prov-drag-num{position:static;grid-area:num;transform:none;font-size:14px}
+.prov-solo-grid .prov-card-top{grid-area:top;align-items:center}
+.prov-solo-grid .prov-url{grid-area:info;display:block;-webkit-line-clamp:unset;line-clamp:unset;overflow:visible}
+.prov-solo-grid .prov-actions{grid-area:actions;align-self:start}
+.prov-solo-grid .prov-stats{grid-area:stats}
+.prov-solo-grid .prov-traffic{grid-area:traffic;margin:10px -16px 0;padding:0}
+/* 进度条贴底边框（左右一起出血） */
+.prov-solo-grid .prov-traffic-bar{border-radius:0;height:5px}
+/* 选中态不用边框/阴影，只保留右上角绿点 */
+.prov-solo-grid .prov-card.active{border-color:var(--border);box-shadow:none}
+.prov-solo-grid .prov-card.active::before{background:none}
 .prov-solo-grid .prov-card-top{grid-area:top}
 .prov-solo-grid .prov-url{grid-area:info}
 .prov-solo-grid .prov-actions{grid-area:actions;justify-content:flex-end}
@@ -4959,8 +4972,8 @@ async function runWebTest() {
        + '</div>'
        + '<div class="prov-agg-tools">'
        +   '<button class="pe-btn" onclick="updateAllProviders()" title="' + (t('prov.updateAll') || '更新全部订阅') + '">' + svgIcon(IC.refresh) + '<span>' + (t('prov.updateAll') || '更新全部订阅') + '</span></button>'
-       +   '<button class="pe-btn" onclick="showConfigRaw()" title="' + (t('prov.editDefaultCfg') || '编辑默认配置文件') + '">' + svgIcon(IC.edit) + '<span>' + (t('prov.editDefaultCfg') || '编辑默认配置文件') + '</span></button>'
-       +   '<button class="pe-btn" onclick="openConfigFile()" title="' + (t('prov.openConfDir') || '打开配置目录') + '">' + svgIcon(IC.external) + '<span>' + (t('prov.openConfDir') || '打开配置目录') + '</span></button>'
+       +   '<button class="pe-btn" id="aggEditBtn" onclick="openAggCfgMenu(event)" title="' + (t('prov.editDefaultCfg') || '编辑默认配置文件') + '">' + svgIcon(IC.edit) + '<span>' + (t('prov.editDefaultCfg') || '编辑默认配置文件') + '</span></button>'
+       +   '<button class="pe-btn" onclick="showPathDialog(\'config\')" title="' + (t('prov.openConfDir') || '打开配置目录') + '">' + svgIcon(IC.external) + '<span>' + (t('prov.openConfDir') || '打开配置目录') + '</span></button>'
        + '</div>'
        + '</div>'
        + '<div class="prov-agg-wrap" id="provAggIn"><div class="prov-agg-wrap-label">' + svgIcon(IC.layers) + (t('prov.aggWrap') || '已聚合的订阅') + '<span class="prov-agg-wrap-hint">' + (t('prov.aggWrapHint') || '拖动手柄可调整顺序，拖到下方即移出聚合') + '</span></div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridIn">';
@@ -5047,6 +5060,9 @@ async function runWebTest() {
      }).join('');
      const inHtml = buildCards(inCards, agg.aggregate);
      const outHtml = buildCards(outCards, agg.aggregate);
+     // 单订视图：整行卡片（prov-solo-grid 此前只有 CSS、JS 从未应用，
+     // 导致卡片走默认 auto-fill 半列栅格）
+     grid.classList.toggle('prov-solo-grid', !agg.aggregate);
       if (agg.aggregate) {
         const outBox = '<div class="prov-agg-out" id="provAggOut"><div class="prov-agg-wrap-label">' + svgIcon(IC.boxout) + (t('prov.aggOut') || '未参与聚合（拖到这里移出聚合）') + '</div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridOut">' + (outHtml || '<div class="prov-agg-out-ph">' + (t('prov.aggOutPh') || '把上方订阅卡片拖到这里，即可移出聚合') + '</div>') + '</div></div>';
         grid.innerHTML = headHtml + inHtml + '</div></div>' + outBox;
@@ -5536,6 +5552,92 @@ async function showSubQr(name) {
 function closeSubQr() { document.getElementById('subQrModal').style.display = 'none'; }
 // 每订阅独立扩展（merge / script 各自独立弹窗，对齐 Verge per-profile chains）
 var _subExtName = '', _subExtKind = 'merge';
+// ── 聚合默认配置：选项菜单（与订阅卡片菜单同款） ──────────
+function openAggCfgMenu(ev) {
+  ev.stopPropagation();
+  closeProvMenu();
+  var items = [
+    { icon: IC.rules,  label: t('provMenu.rules'),      run: function() { editConfigSection('rules'); } },
+    { icon: IC.nodes,  label: t('provMenu.nodes'),      run: function() { editConfigSection('proxies'); } },
+    { icon: IC.groups, label: t('provMenu.groups'),     run: function() { editConfigSection('proxy-groups'); } },
+    { icon: IC.extMerge,  label: t('provMenu.extMerge'),  run: function() { openPeModal('merge'); } },
+    { icon: IC.extScript, label: t('provMenu.extScript'), run: function() { openPeModal('script'); } },
+    { icon: IC.external, label: t('provMenu.openFile'),   run: function() { showPathDialog('config'); } },
+    { icon: IC.edit,     label: t('config.editRaw'),      run: function() { showConfigRaw(); } }
+  ];
+  var html = '<div class="prov-menu" id="aggCfgMenu">';
+  items.forEach(function(it) {
+    html += '<button class="prov-menu-item">' + svgIcon(it.icon) + '<span>' + esc(it.label) + '</span></button>';
+  });
+  html += '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  var m = document.getElementById('aggCfgMenu');
+  var r = ev.currentTarget.getBoundingClientRect();
+  var mw = 200, mh = items.length * 36 + 12;
+  m.style.left = Math.max(8, Math.min(r.left, window.innerWidth - mw - 8)) + 'px';
+  var top = r.bottom + 6;
+  if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+  m.style.top = top + 'px';
+  m.addEventListener('click', function(e) {
+    var b = e.target.closest('.prov-menu-item');
+    if (!b) return;
+    var idx = Array.from(m.querySelectorAll('.prov-menu-item')).indexOf(b);
+    closeAggCfgMenu();
+    if (items[idx] && items[idx].run) items[idx].run();
+  });
+  setTimeout(function() { document.addEventListener('click', closeAggCfgMenu, {once: true}); }, 0);
+}
+function closeAggCfgMenu() { var m = document.getElementById('aggCfgMenu'); if (m) m.remove(); }
+// 编辑 config.yaml 的指定顶层段（规则/节点/代理组）
+async function editConfigSection(section) {
+  try {
+    var r = await fetch('api/config-section?section=' + encodeURIComponent(section));
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '读取失败');
+    if (d.empty) { showToast(t('provMenu.noSection') || '配置里没有这一段', 'info'); return; }
+    _cfgSection = section;
+    openSubFileEditor((section === 'rules' ? t('provMenu.rules') : section === 'proxies' ? t('provMenu.nodes') : t('provMenu.groups')) + ' · config.yaml',
+      d.yaml || '', function(text) {
+        return fetch('api/config-section', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ section: section, yaml: text }) });
+      });
+  } catch (e) { showToast(e.message || '读取失败', 'error'); }
+}
+// 路径弹窗（fnOS SDK 的 openFileManager 不接受路径，无法定位，故显示路径+复制）
+function showPathDialog(kind) {
+  var dir = (_versionData && (kind === 'core' ? _versionData.core_dir : _versionData.config_dir)) || '';
+  if (!dir) { showToast('未获取目录', 'error'); return; }
+  dir = dir.replace(/\/+$/, '');
+  var dlg = document.getElementById('pathDialog');
+  if (!dlg) {
+    dlg = document.createElement('div');
+    dlg.id = 'pathDialog';
+    dlg.className = 'modal-backdrop';
+    dlg.onclick = function(e) { if (e.target === dlg) dlg.style.display = 'none'; };
+    dlg.innerHTML = '<div class="modal-card pe-modal" style="width:min(460px,94vw);max-width:min(460px,94vw)">'
+      + '<div class="modal-title" data-i18n="prov.pathTitle">文件位置</div>'
+      + '<div class="modal-body" style="padding:16px 20px 10px">'
+      +   '<div style="font-size:12px;color:var(--dim);line-height:1.6;margin-bottom:10px" data-i18n="prov.pathTip">fnOS 文件管理器无法定位到具体目录，请手动前往：</div>'
+      +   '<div class="ce-wrap" style="padding:10px 12px;font-size:12.5px;word-break:break-all;color:var(--text)" id="pathDialogText"></div>'
+      + '</div>'
+      + '<div class="pe-foot"><span class="pe-foot-link" onclick="document.getElementById(\'pathDialog\').style.display=\'none\'"></span>'
+      +   '<div class="pe-foot-right">'
+      +     '<button class="pe-btn-cancel" onclick="document.getElementById(\'pathDialog\').style.display=\'none\'" data-i18n="common.close">关闭</button>'
+      +     '<button class="pe-btn-save" onclick="copyPathText()" data-i18n="common.copy">复制路径</button>'
+      +   '</div></div>'
+      + '</div>';
+    document.body.appendChild(dlg);
+  }
+  document.getElementById('pathDialogText').textContent = dir;
+  window.__pathDialogDir = dir;
+  dlg.style.display = 'flex';
+}
+function copyPathText() {
+  var t = window.__pathDialogDir || '';
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t);
+  showToast('已复制：' + t, 'success');
+}
+var _cfgSection = null;
 async function openSubExt(name, kind) {
   _subExtName = name; _subExtKind = kind || 'merge';
   var title = document.getElementById(_subExtKind === 'merge' ? 'subExtMergeTitle' : 'subExtScriptTitle');
@@ -8191,7 +8293,7 @@ var I18N = {
     'chain.uriList':'节点 URI','chain.filter':'过滤条件…','chain.empty':'暂无内容','chain.needContent':'请填写规则内容','chain.needUri':'请填写节点 URI',
     'chain.needName':'请填写代理组名','chain.saved':'chains 已保存','chain.tip':'左侧添加前插/后插；右侧是订阅原有内容，点删除加入删除名单。','pe.resetDone':'已重置','provMenu.reloadFile':'重新加载','provMenu.reloaded':'已重新加载','provMenu.fileTip':'直接编辑该订阅的本地配置文件；保存后立即重建节点索引。',
 'pe.subHint':'仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。','pe.subScriptHint':'仅对本订阅生效：导入/更新该订阅时执行此脚本，再进入全局扩展。',
-    'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）','prov.aggTitle':'订阅聚合','prov.aggDesc':'所有订阅的节点已合并进默认配置，规则 / 策略组全局共用；关闭「设置 → 聚合订阅」可改用单个订阅的独立配置','prov.aggWrap':'已聚合的订阅','prov.soloTip':'当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅','prov.inUse':'正在使用','prov.dragTip':'拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合','prov.aggOut':'未参与聚合（拖到这里移出聚合）','prov.aggOutEmpty':'暂无——把上方卡片拖下来即可移出聚合','prov.layoutSaved':'布局已保存','prov.updateAll':'更新全部订阅','prov.editDefaultCfg':'编辑默认配置文件','prov.openConfDir':'打开配置目录','prov.aggWrapHint':'拖动手柄可调整顺序，拖到下方即移出聚合','prov.aggOutPh':'把上方订阅卡片拖到这里，即可移出聚合','prov.layoutPending':'布局已保存，','prov.layoutPendingSec':' 秒后自动重启生效','prov.layoutRestarting':'正在重启引擎使布局生效…',
+    'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）','prov.aggTitle':'订阅聚合','prov.aggDesc':'所有订阅的节点已合并进默认配置，规则 / 策略组全局共用；关闭「设置 → 聚合订阅」可改用单个订阅的独立配置','prov.aggWrap':'已聚合的订阅','prov.soloTip':'当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅','prov.inUse':'正在使用','prov.dragTip':'拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合','prov.aggOut':'未参与聚合（拖到这里移出聚合）','prov.aggOutEmpty':'暂无——把上方卡片拖下来即可移出聚合','prov.layoutSaved':'布局已保存','prov.updateAll':'更新全部订阅','prov.editDefaultCfg':'编辑默认配置文件','prov.openConfDir':'打开配置目录','prov.aggWrapHint':'拖动手柄可调整顺序，拖到下方即移出聚合','prov.aggOutPh':'把上方订阅卡片拖到这里，即可移出聚合','prov.layoutPending':'布局已保存，','prov.layoutPendingSec':' 秒后自动重启生效','prov.layoutRestarting':'正在重启引擎使布局生效…','prov.pathTitle':'文件位置','prov.pathTip':'fnOS 文件管理器无法定位到具体目录，请手动前往：',
     'prov.chooseFile':'本地配置','prov.or':'或','prov.tooLarge':'文件过大（上限 2MB）',
     'settings.aggregate':'聚合订阅','settings.aggregateHint':'开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件',
     'settings.activeSub':'当前使用的订阅','settings.aggregateNone':'未选择（关闭聚合前需先选择）',
@@ -8250,7 +8352,7 @@ var I18N = {
     'net.strictRoute':'严格路由','net.strictRouteHint':'减少泄漏；复杂网络可能影响其它虚拟网卡',
     'net.exclude':'排除自定义网段','net.excludeHint':'每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。',
     'net.tunNote':"TUN 通过创建虚拟网卡并接管系统路由与 DNS 流向实现<b>透明代理</b>：所有从 NAS 发出的流量（命令行、Docker 容器、系统服务）按规则分流，程序无需任何配置。默认关闭；若配置不可用可能影响 NAS 访问互联网。已内置「自动检测出口网卡 + 关闭自动重定向」防自环保护，一般无需改动。",'net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':"两者不必同时开，也不互相依赖：<br>• <b>只开 TUN</b>：全部流量（命令行 / Docker / 系统服务）走代理，最彻底——日常推荐<br>• <b>只开系统代理</b>：仅新终端会话里读环境变量的程序走代理，覆盖最小<br>• <b>关闭 TUN 时</b>引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）<br>需要 UDP/QUIC 或完整 DNS 分流时才开 TUN；系统代理（环境变量）只影响命令行等主动读变量的程序。",'net.tipStack':"<b>TUN 协议栈</b><span class=\"tip-list\"><span><b class=\"tip-k\">mixed</b>TCP 走 System、UDP 走 gVisor，兼顾稳定性与兼容性</span><span><b class=\"tip-k\">system</b>所有流量走 System 栈</span><span><b class=\"tip-k\">gVisor</b>所有流量走 gVisor 栈</span></span>",'net.tipMtu':"<b>MTU</b>默认 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400",'net.tipExclude':"<b>排除网段</b>让指定目标网段绕过 TUN 自动路由，仅在开启「自动路由」时生效；每行一个 IPv4/IPv6 CIDR",
-    'common.cancel':'取消','common.save':'保存',
+    'common.cancel':'取消','common.save':'保存','common.close':'关闭','common.copy':'复制路径',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
     'toast.tunSwitched':'TUN 已切换','toast.latestVersion':'已是最新版本',
@@ -8398,7 +8500,7 @@ var I18N = {
     'chain.uriList':'Node URIs','chain.filter':'Filter…','chain.empty':'Nothing here','chain.needContent':'Rule content required','chain.needUri':'Node URI required',
     'chain.needName':'Group name required','chain.saved':'Chains saved','chain.tip':'Use the left form to prepend/append; the right side lists the subscription existing items — delete adds to the delete list.','pe.resetDone':'Reset','provMenu.reloadFile':'Reload','provMenu.reloaded':'Reloaded','provMenu.fileTip':'Edit this subscription local file directly; node index rebuilds on save.',
 'pe.subHint':'Applies to this subscription only: merge and script run on import/update before the global extension.','pe.subScriptHint':'Applies to this subscription only: this script runs on import/update before the global extension.',
-    'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)','prov.aggTitle':'Aggregated subscriptions','prov.aggDesc':'Nodes from all subscriptions are merged into the default config; rules and groups are shared globally. Turn off Settings → Aggregate subscriptions to use a single subscription own config','prov.aggWrap':'Aggregated subscriptions','prov.soloTip':'Single subscription mode: click a card to switch to it; the green dot marks the subscription in use','prov.inUse':'In use','prov.dragTip':'Drag to reorder; in aggregate mode drag to "Not aggregated" below to exclude','prov.aggOut':'Not aggregated (drop here to exclude)','prov.aggOutEmpty':'None - drag a card down here to exclude it','prov.layoutSaved':'Layout saved','prov.updateAll':'Update all','prov.editDefaultCfg':'Edit default config','prov.openConfDir':'Open config folder','prov.aggWrapHint':'Drag the handle to reorder; drag down to exclude','prov.aggOutPh':'Drag a subscription card here to exclude it','prov.layoutPending':'Layout saved, restarting in ','prov.layoutPendingSec':'s…','prov.layoutRestarting':'Restarting engine to apply layout…',
+    'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)','prov.aggTitle':'Aggregated subscriptions','prov.aggDesc':'Nodes from all subscriptions are merged into the default config; rules and groups are shared globally. Turn off Settings → Aggregate subscriptions to use a single subscription own config','prov.aggWrap':'Aggregated subscriptions','prov.soloTip':'Single subscription mode: click a card to switch to it; the green dot marks the subscription in use','prov.inUse':'In use','prov.dragTip':'Drag to reorder; in aggregate mode drag to "Not aggregated" below to exclude','prov.aggOut':'Not aggregated (drop here to exclude)','prov.aggOutEmpty':'None - drag a card down here to exclude it','prov.layoutSaved':'Layout saved','prov.updateAll':'Update all','prov.editDefaultCfg':'Edit default config','prov.openConfDir':'Open config folder','prov.aggWrapHint':'Drag the handle to reorder; drag down to exclude','prov.aggOutPh':'Drag a subscription card here to exclude it','prov.layoutPending':'Layout saved, restarting in ','prov.layoutPendingSec':'s…','prov.layoutRestarting':'Restarting engine to apply layout…','prov.pathTitle':'File location','prov.pathTip':'The fnOS file manager cannot jump to a specific folder. Please navigate manually:',
     'prov.chooseFile':'Local file','prov.or':'or','prov.tooLarge':'File too large (2MB max)',
     'settings.aggregate':'Aggregate subscriptions','settings.aggregateHint':'On: nodes from all subscriptions are merged into the default config. Off: use the selected subscription own config',
     'settings.activeSub':'Active subscription','settings.aggregateNone':'None (required before turning aggregation off)',
@@ -8457,7 +8559,7 @@ var I18N = {
     'net.strictRoute':'Strict route','net.strictRouteHint':'Reduces leaks; may affect other virtual NICs',
     'net.exclude':'Excluded CIDRs','net.excludeHint':'One IPv4/IPv6 CIDR per line; leave empty to exclude nothing.',
     'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",'net.tipStack':'<b>TUN Stack</b><span class="tip-list"><span><b class="tip-k">mixed</b>TCP via System, UDP via gVisor — balanced stability and compatibility</span><span><b class="tip-k">system</b>All traffic via the System stack</span><span><b class="tip-k">gVisor</b>All traffic via the gVisor stack</span></span>','net.tipMtu':"<b>MTU</b>Default 1500; try 1400 for VPN, PPPoE or multi-layer tunnels.",'net.tipExclude':"<b>Exclude subnets</b>Skip TUN auto route for specific target subnets; only effective when Auto route is on. One IPv4/IPv6 CIDR per line.",
-    'common.cancel':'Cancel','common.save':'Save',
+    'common.cancel':'Cancel','common.save':'Save','common.close':'Close','common.copy':'Copy path',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
     'toast.tunSwitched':'TUN toggled','toast.latestVersion':'Already up to date',

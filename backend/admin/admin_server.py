@@ -3617,7 +3617,7 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self._send_json({"success": False, "error": "缺少顶层键: " + section}, 400)
         text = open(fp, "r", encoding="utf-8").read()
         block = _ysw.safe_dump({section: new_doc[section]}, allow_unicode=True, sort_keys=False).rstrip("\n") + "\n"
-        pat = r'^' + _resw.escape(section) + r':.*?(?=^\S|\Z)'
+        pat = r'^' + _resw.escape(section) + r':.*?(?=^[^\s#-]|\Z)'
         if _resw.search(pat, text, _resw.MULTILINE | _resw.DOTALL):
             new_text = _resw.sub(pat, lambda _m: block, text, count=1, flags=_resw.MULTILINE | _resw.DOTALL)
         else:
@@ -4009,6 +4009,20 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self._send_json({"stamp": stamp, "server_time": int(time.time())})
         if path == "/api/providers/layout":
             return self._api_providers_layout()
+        if path == "/api/config-section":
+            q = parse_qs(urlparse(self.path).query)
+            section = (q.get("section", [""])[0] or "").strip()
+            if not section:
+                return self._send_json({"success": False, "error": "缺少 section"}, 400)
+            text = read_config()
+            import re as _reg
+            pat = r'^' + _reg.escape(section) + r':.*?(?=^[^\s#-]|\Z)'
+            m = _reg.search(pat, text, _reg.MULTILINE | _reg.DOTALL)
+            if not m:
+                return self._send_json({"success": True, "section": section,
+                                        "yaml": "", "empty": True,
+                                        "message": "配置里没有这一段"})
+            return self._send_json({"success": True, "section": section, "yaml": m.group(0)})
         if path.startswith("/api/sub-chain"):
             q = parse_qs(urlparse(self.path).query)
             name = (q.get("name", [""])[0] or "").strip()
@@ -5260,6 +5274,21 @@ class AdminHandler(BaseHTTPRequestHandler):
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/config-section":
             try:
+                if self.command == "GET":
+                    q = parse_qs(urlparse(self.path).query)
+                    section = (q.get("section", [""])[0] or "").strip()
+                    if not section:
+                        return self._send_json({"success": False, "error": "缺少 section"}, 400)
+                    text = read_config()
+                    import re as _reg
+                    pat = r'^' + _reg.escape(section) + r':.*?(?=^[^\s#-]|\Z)'
+                    m = _reg.search(pat, text, _reg.MULTILINE | _reg.DOTALL)
+                    if not m:
+                        return self._send_json({"success": True, "section": section,
+                                                "yaml": "", "empty": True,
+                                                "message": "配置里没有这一段"})
+                    return self._send_json({"success": True, "section": section,
+                                            "yaml": m.group(0)})
                 data = json.loads(body) if body else {}
                 section = data.get("section", "")
                 yaml_text = data.get("yaml", "")
@@ -5267,7 +5296,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                     return self._send_json({"success": False, "error": "缺少 section"}, 400)
                 text = read_config()
                 import re as _re
-                pattern = r'^' + _re.escape(section) + r':.*?(?=^\S|\Z)'
+                pattern = r'^' + _re.escape(section) + r':.*?(?=^[^\s#-]|\Z)'
                 replacement = yaml_text if yaml_text.endswith('\n') else yaml_text + '\n'
                 new_text = _re.sub(pattern, replacement, text, count=1, flags=_re.MULTILINE|_re.DOTALL)
                 if new_text == text:
@@ -5294,7 +5323,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                 with open(default_cfg, "r") as f:
                     default_text = f.read()
                 import re as _re
-                pattern = r'^' + _re.escape(section) + r':.*?(?=^\S|\Z)'
+                pattern = r'^' + _re.escape(section) + r':.*?(?=^[^\s#-]|\Z)'
                 m = _re.search(pattern, default_text, _re.MULTILINE|_re.DOTALL)
                 if not m:
                     return self._send_json({"success": False, "error": f"默认模板中未找到 section: {section}"}, 400)
