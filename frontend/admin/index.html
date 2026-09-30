@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930150534';
+  var B='unknown-20260930151254';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1141,9 +1141,10 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 /* 拖手柄（原层叠徽章）：按住它拖拽卡片排序；聚合状态下拖到「未参与聚合」即可移出 */
 /* 拖拽提示（非传统图标）：默认隐藏，鼠标悬停才显示，无背景 */
 /* 序号徽章（长显）：上到下排序号，整卡可拖 */
-.prov-drag-num{position:absolute;left:12px;top:50%;transform:translateY(-50%);min-width:22px;height:22px;padding:0 5px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:var(--card2);border:1px solid var(--border);color:var(--dim);font-size:11px;font-weight:700;font-variant-numeric:tabular-nums;z-index:3;transition:color .14s,border-color .14s}
-.prov-card:hover .prov-drag-num, .prov-mini:hover .prov-drag-num{color:var(--accent);border-color:var(--accent)}
-.prov-card.dragging .prov-drag-num, .prov-mini.dragging .prov-drag-num{color:var(--accent);border-color:var(--accent)}
+/* 序号（无背景方框，纯数字；悬停/拖拽时上主色） */
+.prov-drag-num{position:absolute;left:14px;top:50%;transform:translateY(-50%);min-width:16px;text-align:center;color:var(--faint);font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;z-index:3;transition:color .14s}
+.prov-card:hover .prov-drag-num, .prov-mini:hover .prov-drag-num{color:var(--accent)}
+.prov-card.dragging .prov-drag-num, .prov-mini.dragging .prov-drag-num{color:var(--accent)}
 /* 拖拽过程反馈 */
 .prov-card.dragging{opacity:.45;transform:scale(.98)}
 .prov-card.drop-before,.prov-mini.drop-before{box-shadow:-3px 0 0 0 var(--accent)}
@@ -1152,8 +1153,8 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-card.drop-bottom,.prov-mini.drop-bottom{box-shadow:0 3px 0 0 var(--accent)}
 .prov-agg-wrap.drag-over,.prov-agg-out.drag-over{border-color:var(--accent);background:rgba(78,110,242,.06)}
 /* 聚合模式：卡片左侧留出层叠徽章位置，避免压住协议徽章 */
-.prov-agg-wrap .prov-card, .prov-agg-out .prov-card{padding-left:42px}
-.prov-agg-wrap .prov-mini, .prov-agg-out .prov-mini{padding-left:42px}
+.prov-agg-wrap .prov-card, .prov-agg-out .prov-card{padding-left:34px}
+.prov-agg-wrap .prov-mini, .prov-agg-out .prov-mini{padding-left:34px}
 /* 非聚合模式：选中卡片 + 右上角绿点 */
 .prov-solo-tip{display:flex;align-items:center;gap:8px;padding:11px 14px;margin-bottom:14px;border-radius:11px;border:1px solid var(--border);background:var(--card2);font-size:12px;color:var(--dim);line-height:1.5}
 .prov-solo-tip svg{width:15px;height:15px;fill:currentColor;color:var(--accent);flex:none}
@@ -8379,7 +8380,7 @@ var I18N = {
     'net.dnsHijack':'DNS hijack','net.dnsHijackHint':'Hijack port 53 to the Mihomo DNS module',
     'net.strictRoute':'Strict route','net.strictRouteHint':'Reduces leaks; may affect other virtual NICs',
     'net.exclude':'Excluded CIDRs','net.excludeHint':'One IPv4/IPv6 CIDR per line; leave empty to exclude nothing.',
-    'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",'net.tipStack':"<b>TUN Stack</b><span class="tip-list"><span><b class="tip-k">mixed</b>TCP via System, UDP via gVisor — balanced stability and compatibility</span><span><b class="tip-k">system</b>All traffic via the System stack</span><span><b class="tip-k">gVisor</b>All traffic via the gVisor stack</span></span>",'net.tipMtu':"<b>MTU</b>Default 1500; try 1400 for VPN, PPPoE or multi-layer tunnels.",'net.tipExclude':"<b>Exclude subnets</b>Skip TUN auto route for specific target subnets; only effective when Auto route is on. One IPv4/IPv6 CIDR per line.",
+    'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",'net.tipStack':'<b>TUN Stack</b><span class="tip-list"><span><b class="tip-k">mixed</b>TCP via System, UDP via gVisor — balanced stability and compatibility</span><span><b class="tip-k">system</b>All traffic via the System stack</span><span><b class="tip-k">gVisor</b>All traffic via the gVisor stack</span></span>','net.tipMtu':"<b>MTU</b>Default 1500; try 1400 for VPN, PPPoE or multi-layer tunnels.",'net.tipExclude':"<b>Exclude subnets</b>Skip TUN auto route for specific target subnets; only effective when Auto route is on. One IPv4/IPv6 CIDR per line.",
     'common.cancel':'Cancel','common.save':'Save',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
