@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20261001065241';
+  var B='unknown-20261001065821';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1281,7 +1281,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-grid-inner .prov-card:active{transform:translateY(1px)}
 .prov-card.active{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent), 0 8px 22px rgba(78,110,242,.16)}
 .prov-card.active::before{content:'';position:absolute;inset:0;border-radius:inherit;background:linear-gradient(180deg,rgba(78,110,242,.07),transparent 45%);pointer-events:none}
-.prov-active-dot{position:absolute;right:12px;top:12px;width:10px;height:10px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.18);z-index:2;animation:provDotPulse 2s ease-in-out infinite}
+.prov-active-dot{position:absolute;right:10px;top:7px;width:9px;height:9px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 3px rgba(34,197,94,.18);z-index:2;animation:provDotPulse 2s ease-in-out infinite}
 @keyframes provDotPulse{0%,100%{box-shadow:0 0 0 3px rgba(34,197,94,.18)}50%{box-shadow:0 0 0 6px rgba(34,197,94,.06)}}
 /* 订阅卡片选项菜单 */
 .prov-menu{position:fixed;z-index:200;min-width:190px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.28);padding:6px}
