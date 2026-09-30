@@ -816,13 +816,20 @@ input.no-spin::-webkit-outer-spin-button,input.no-spin::-webkit-inner-spin-butto
    原理：flex-wrap + 各控件 flex-grow/basis 差异，让 flex 自动决定换行时机 */
 @media(max-width:860px){
   .dns-field{flex-wrap:wrap;gap:8px}
-  .dns-field .dns-field-label{flex:0 1 auto;min-width:0}
+  /* 标签 flex-basis 置 0 并占满剩余：flex-wrap 按 basis 分行，basis 为
+     内容宽度时控件会被挤到下一行（TUN 行的徽章+开关即如此）。basis=0 后
+     控件永远留在第一行，标签文字自行折行 */
+  .dns-field .dns-field-label{flex:1 1 0;min-width:0}
   .dns-field .dns-field-label small{white-space:normal;word-break:break-word}
   /* 短控件（开关）固定不换行 */
   .dns-field > .mx-switch, .dns-field > label{flex:0 0 auto}
-  /* 输入框（含 num-spin 包装的端口框/textarea）：一律换到整行通栏 */
-  .dns-field > input, .dns-field > .num-spin, .dns-field > textarea,
-  .dns-field > .dns-input, .dns-field > .mx-bypass{flex:1 1 100%;min-width:0;max-width:none}
+  /* 输入框：不换行，与下拉等宽 190px（跳过域名 textarea / GEO URL /
+     过滤标签编辑区为约定例外，仍整行通栏） */
+  .dns-field > input, .dns-field > .dns-input{flex:0 0 auto;width:190px;max-width:190px;min-width:0}
+  .dns-field > .num-spin{flex:0 0 auto;width:190px;max-width:190px}
+  .dns-field > .num-spin input[type=number]{width:100%;max-width:100%}
+  /* textarea 与标签编辑区：整行通栏（例外） */
+  .dns-field > textarea, .dns-field > .mx-bypass{flex:1 1 100%;min-width:0;max-width:none}
   /* 选项框（下拉）：不换行，保持与标签同行、可收缩 */
   .dns-field > select, .dns-field > .custom-select{flex:0 1 auto;min-width:0;max-width:100%}
   .dns-field > .custom-select .custom-select-trigger{min-width:0}
