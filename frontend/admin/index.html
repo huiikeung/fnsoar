@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930145841';
+  var B='unknown-20260930150534';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -700,6 +700,10 @@ tbody tr:hover{background:var(--card2)}
 .mx-tip::after{content:'';position:absolute;top:100%;left:13px;width:9px;height:9px;background:var(--card);border-right:1px solid var(--border);border-bottom:1px solid var(--border);transform:translate(-50%,-52%) rotate(45deg);border-bottom-right-radius:2px}
 .mx-tip b{display:block;margin-bottom:3px;font-size:12px;font-weight:600;color:var(--text);letter-spacing:-.1px}
 .mx-tip b + *{margin-top:2px}
+.mx-tip .tip-list{display:block;margin-top:3px}
+.mx-tip .tip-list > span{display:block;position:relative;padding-left:11px;margin-top:3px}
+.mx-tip .tip-list > span::before{content:'';position:absolute;left:1px;top:8px;width:4px;height:4px;border-radius:50%;background:var(--accent);opacity:.75}
+.mx-tip .tip-k{display:inline-block;min-width:44px;margin-right:2px;color:var(--text);font-weight:600;font-size:11px}
 .mx-help:hover .mx-tip{opacity:1;visibility:visible}
 .mx-tip.tip-down{bottom:auto;top:calc(100% + 8px)}
 .mx-tip.tip-down::after{top:auto;bottom:100%;border-right:1px solid var(--border);border-bottom:1px solid var(--border);border-left:0;border-top:0;transform:translate(-50%,52%) rotate(225deg)}
@@ -1116,7 +1120,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-solo-tip{grid-column:1/-1}
 /* 未参与聚合的订阅（从聚合包拖出来落到这里） */
 /* 两个独立区域（已聚合 / 未参与聚合）完全同样式 */
-.prov-agg-out{margin-top:14px;border:1.5px dashed var(--border);border-radius:14px;padding:12px 12px 14px;background:rgba(127,127,127,.03)}
+.prov-agg-out{grid-column:1/-1;margin-top:14px;border:1.5px dashed var(--border);border-radius:14px;padding:12px 12px 14px;background:rgba(127,127,127,.03)}
 .prov-agg-out .prov-agg-wrap-label{margin:0 2px 10px}
 /* 未聚合区空占：虚线订阅卡样式 */
 /* 未聚合区空占：纯虚线框 + 文字（无徽章、无背景块） */
@@ -8168,7 +8172,7 @@ var I18N = {
     'net.dnsHijack':'DNS 劫持','net.dnsHijackHint':'劫持 53 端口到 Mihomo DNS',
     'net.strictRoute':'严格路由','net.strictRouteHint':'减少泄漏；复杂网络可能影响其它虚拟网卡',
     'net.exclude':'排除自定义网段','net.excludeHint':'每一行一个 IPv4/IPv6 CIDR；留空表示不额外排除。',
-    'net.tunNote':"TUN 通过创建虚拟网卡并接管系统路由与 DNS 流向实现<b>透明代理</b>：所有从 NAS 发出的流量（命令行、Docker 容器、系统服务）按规则分流，程序无需任何配置。默认关闭；若配置不可用可能影响 NAS 访问互联网。已内置「自动检测出口网卡 + 关闭自动重定向」防自环保护，一般无需改动。",'net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':"两者不必同时开，也不互相依赖：<br>• <b>只开 TUN</b>：全部流量（命令行 / Docker / 系统服务）走代理，最彻底——日常推荐<br>• <b>只开系统代理</b>：仅新终端会话里读环境变量的程序走代理，覆盖最小<br>• <b>关闭 TUN 时</b>引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）<br>需要 UDP/QUIC 或完整 DNS 分流时才开 TUN；系统代理（环境变量）只影响命令行等主动读变量的程序。",'net.tipStack':"<b>TUN 协议栈</b>mixed：TCP 使用 System、UDP 使用 gVisor，兼顾稳定性与兼容性；system 全走 System；gVisor 全走 gVisor。",'net.tipMtu':"<b>MTU</b>默认值为 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400。",'net.tipExclude':"<b>让指定目标网段绕过 TUN 自动路由</b>仅在开启“自动路由”时生效。支持 IPv4/IPv6 CIDR，每行填写一个。",
+    'net.tunNote':"TUN 通过创建虚拟网卡并接管系统路由与 DNS 流向实现<b>透明代理</b>：所有从 NAS 发出的流量（命令行、Docker 容器、系统服务）按规则分流，程序无需任何配置。默认关闭；若配置不可用可能影响 NAS 访问互联网。已内置「自动检测出口网卡 + 关闭自动重定向」防自环保护，一般无需改动。",'net.tunHostRedirTitle':'与系统代理的关系','net.tunHostRedirNote':"两者不必同时开，也不互相依赖：<br>• <b>只开 TUN</b>：全部流量（命令行 / Docker / 系统服务）走代理，最彻底——日常推荐<br>• <b>只开系统代理</b>：仅新终端会话里读环境变量的程序走代理，覆盖最小<br>• <b>关闭 TUN 时</b>引擎会自动启用 nftables 透明接管（host-redirect），覆盖本机 TCP 与 DNS（UDP 不走代理）<br>需要 UDP/QUIC 或完整 DNS 分流时才开 TUN；系统代理（环境变量）只影响命令行等主动读变量的程序。",'net.tipStack':"<b>TUN 协议栈</b><span class=\"tip-list\"><span><b class=\"tip-k\">mixed</b>TCP 走 System、UDP 走 gVisor，兼顾稳定性与兼容性</span><span><b class=\"tip-k\">system</b>所有流量走 System 栈</span><span><b class=\"tip-k\">gVisor</b>所有流量走 gVisor 栈</span></span>",'net.tipMtu':"<b>MTU</b>默认 1500；VPN、PPPoE 或多层隧道环境异常时可尝试 1400",'net.tipExclude':"<b>排除网段</b>让指定目标网段绕过 TUN 自动路由，仅在开启「自动路由」时生效；每行一个 IPv4/IPv6 CIDR",
     'common.cancel':'取消','common.save':'保存',
     'service':'服务','TUN':'TUN','关闭全部连接':'关闭全部连接',
     'toast.configSaved':'配置已保存！服务正在重启...','toast.saved':'已保存',
@@ -8375,7 +8379,7 @@ var I18N = {
     'net.dnsHijack':'DNS hijack','net.dnsHijackHint':'Hijack port 53 to the Mihomo DNS module',
     'net.strictRoute':'Strict route','net.strictRouteHint':'Reduces leaks; may affect other virtual NICs',
     'net.exclude':'Excluded CIDRs','net.excludeHint':'One IPv4/IPv6 CIDR per line; leave empty to exclude nothing.',
-    'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",'net.tipStack':"<b>TUN Stack</b>mixed: TCP via System, UDP via gVisor — balanced stability and compatibility; system = all via System; gVisor = all via gVisor.",'net.tipMtu':"<b>MTU</b>Default 1500; try 1400 for VPN, PPPoE or multi-layer tunnels.",'net.tipExclude':"<b>Exclude target subnets from TUN auto route</b>Only effective when Auto route is on. Supports IPv4/IPv6 CIDR, one per line.",
+    'net.tunNote':"TUN creates a virtual NIC and takes over system routing and DNS for <b>transparent proxying</b>: all traffic leaving the NAS (CLI, Docker containers, system services) is split by rules — no app config needed. Off by default; a bad config may break NAS internet access. Built-in loop protection (auto-detect interface + auto-redirect off) is already enabled.",'net.tunHostRedirTitle':'Relation to system proxy','net.tunHostRedirNote':"They are independent — enable either or both:<br>• <b>TUN only</b>: all traffic (CLI / Docker / services) proxied — the most complete option, recommended<br>• <b>System proxy only</b>: only programs in new terminal sessions that read env vars — minimal coverage<br>• <b>With TUN off</b>: the engine automatically applies nftables host interception (host-redirect) covering host TCP and DNS (UDP not proxied)<br>Enable TUN when you need UDP/QUIC or full DNS splitting; system proxy (env vars) only affects CLI tools that read them.",'net.tipStack':"<b>TUN Stack</b><span class="tip-list"><span><b class="tip-k">mixed</b>TCP via System, UDP via gVisor — balanced stability and compatibility</span><span><b class="tip-k">system</b>All traffic via the System stack</span><span><b class="tip-k">gVisor</b>All traffic via the gVisor stack</span></span>",'net.tipMtu':"<b>MTU</b>Default 1500; try 1400 for VPN, PPPoE or multi-layer tunnels.",'net.tipExclude':"<b>Exclude subnets</b>Skip TUN auto route for specific target subnets; only effective when Auto route is on. One IPv4/IPv6 CIDR per line.",
     'common.cancel':'Cancel','common.save':'Save',
     'service':'Service','TUN':'TUN','关闭全部连接':'Close All',
     'toast.configSaved':'Config saved! Restarting…','toast.saved':'Saved',
