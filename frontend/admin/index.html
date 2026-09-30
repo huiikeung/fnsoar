@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930155852';
+  var B='unknown-20260930160812';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1104,6 +1104,23 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-agg-tools{flex:none;display:flex;flex-wrap:wrap;gap:8px;margin-left:auto;padding-left:8px}
 .prov-agg-tools .pe-btn{background:var(--card);border:1px solid var(--border);color:var(--text)}
 .prov-agg-tools .pe-btn:hover{border-color:var(--accent);color:var(--accent)}
+/* 窄屏（手机）：总览卡图标/文字/按钮竖向堆叠，按钮均分换行 */
+@media(max-width:760px){
+  .prov-agg{flex-wrap:wrap;gap:10px 12px;padding:14px}
+  .prov-agg-ic{width:38px;height:38px}
+  .prov-agg-ic svg{width:28px!important;height:28px!important}
+  .prov-agg-main{flex:1 1 100%;min-width:0}
+  .prov-agg-title{font-size:13.5px;gap:8px}
+  .prov-agg-pill{font-size:10.5px;padding:2px 8px}
+  .prov-agg-desc{font-size:11px;line-height:1.55}
+  .prov-agg-tools{flex:1 1 100%;margin-left:0;padding-left:0;gap:7px}
+  .prov-agg-tools .pe-btn{flex:1 1 auto;min-width:0;min-height:44px;justify-content:center;padding:7px 12px;font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+}
+/* 手机宽度：按钮 2+1 两行（最后一个占满整行），避免依具三个按钮文字宽度自动换行导致参差不齐 */
+@media(max-width:520px){
+  .prov-agg-tools .pe-btn{flex:1 1 calc(50% - 4px)}
+  .prov-agg-tools .pe-btn:last-child{flex:1 1 100%}
+}
 .prov-agg-wrap-hint{font-weight:400;color:var(--faint);letter-spacing:0;margin-left:4px}
 @media(max-width:760px){
   .prov-mini-name{max-width:100%}
