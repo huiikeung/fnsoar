@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930125719';
+  var B='unknown-20260930130320';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1122,7 +1122,11 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 /* 全局扩展编辑弹窗 */
 .modal-card.pe-modal{width:min(640px,96vw);max-width:96vw;max-height:92vh;display:flex;flex-direction:column;
   resize:both;overflow:hidden;min-width:min(360px,92vw);min-height:220px}
-.pe-modal .modal-body{overflow:auto;min-height:0}
+.pe-modal .modal-body{overflow:auto;min-height:0;flex:1 1 auto;display:flex;flex-direction:column}
+.pe-modal .modal-body > .ce-wrap{flex:1 1 auto;height:auto;min-height:200px}
+.pe-modal .modal-body > .chain-wrap{flex:1 1 auto;height:auto;min-height:260px}
+.pe-modal .modal-body > .pe-note{flex:0 0 auto}
+.pe-modal .modal-body > .pe-sec-row{flex:0 0 auto}
 .pe-note{display:flex;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(78,110,242,.08);border:1px solid rgba(78,110,242,.25);font-size:11.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
 .pe-note svg{width:14px;height:14px;flex:none;margin-top:3px;fill:var(--accent2)}
 /* 轻量代码编辑器（行号槽 + textarea） */
