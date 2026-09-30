@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930213517';
+  var B='unknown-20260930215204';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1154,6 +1154,26 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pma-btn:hover{filter:brightness(.94)}
 .pma-btn.del{background:rgba(248,81,73,.1);color:var(--red)}
 @media(max-width:760px){.prov-mini.swiped .prov-mini-main{transform:translateX(-258px)}.pma-btn{min-width:84px}}
+/* 手机端紧凒行简化：一行显示必要信息（序号/协议徽章/名称/节点数/流量），
+   隐去更新时间；名称与流量超长时省略号截断（悬停看全文） */
+.prov-mini{padding:12px 10px 12px 34px}
+.prov-mini-main{gap:8px}
+.prov-mini-badge{font-size:9.5px;padding:1px 5px}
+.prov-mini-name{flex:0 1 auto;max-width:34%;min-width:0}
+.prov-mini-time{display:none}
+.prov-mini-stat{flex:none;font-size:11px}
+.prov-mini-stat b{font-size:11.5px}
+.prov-mini-traf{flex:1 1 auto;min-width:0;max-width:42%;font-size:11px;text-align:right}
+.prov-mini-bar{height:2px}
+.pma-btn{min-width:78px;padding:0 8px;font-size:11.5px}
+/* 展开后空间有限＊隐去流量文字，保证名称/节点数仍可读 */
+.prov-mini.swiped .prov-mini-traf{display:none}
+/* 手机端展开不做位移（会把名称等内容整个推出左边），
+   而是把内容区收缩到下靠左＋按钮区占右，两者同屏可见 */
+.prov-mini.swiped .prov-mini-main{transform:none!important;width:calc(100% - 236px);overflow:hidden}
+.prov-mini.swiped .prov-mini-name{max-width:100%}
+/* 展开时最不必要的协议徽章先隐藏，把空间留给名称+节点数 */
+.prov-mini.swiped .prov-mini-badge{display:none}
 .pe-sec-state.on{color:#3fb950}
 /* chains 添加按钮（加高 + Verge 同款箭头图标） */
 .chain-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 16px;min-height:46px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:filter .12s, transform .08s}
@@ -5094,7 +5114,7 @@ async function runWebTest() {
              <span class="prov-mini-badge">${badge}</span>
              <span class="prov-mini-name" title="${esc(name)}">${esc(name)}</span>
              <span class="prov-mini-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b></span>
-             <span class="prov-mini-stat">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
+             <span class="prov-mini-stat prov-mini-time">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
              <span class="prov-mini-traf" title="${esc(traf2)}">${esc(traf2)}</span>
              </div>
              ${si && si.total > 0 ? '<span class="prov-mini-bar"><i class="' + barCls2 + '" style="width:' + pct2 + '%"></i></span>' : ''}
@@ -5433,33 +5453,25 @@ window.toggleCardActs = function(row, force) {
   if (willOpen) {
     row.classList.add('swiped');
     var main = row.querySelector('.prov-mini-main');
-    if (main) main.style.transform = 'translateX(-' + _cardActsW() + 'px)';
+    if (main && window.innerWidth > 760) main.style.transform = 'translateX(-' + _cardActsW() + 'px)';
   }
 };
 (function(){
   var isTouch = ('ontouchstart' in window) || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
   var sx = 0, sy = 0, tracking = false;
   document.addEventListener('dblclick', function(e) {
-    if (isTouch) return;
     var row = e.target.closest && e.target.closest('.prov-mini');
     if (!row || e.target.closest('.pma-btn')) return;
     toggleCardActs(row);
   }, true);
-  document.addEventListener('touchstart', function(e) {
-    var row = e.target.closest && e.target.closest('.prov-mini');
-    if (!row || e.target.closest('.pma-btn')) { tracking = false; return; }
-    var t = e.touches[0];
-    sx = t.clientX; sy = t.clientY; tracking = true;
-  }, {passive: true});
+  // 触屏上双击手势识别（两次 rapid tap 等价于双击）
+  var _lastTap = 0, _lastRow = null;
   document.addEventListener('touchend', function(e) {
-    if (!tracking) return;
-    tracking = false;
     var row = e.target.closest && e.target.closest('.prov-mini');
-    if (!row) return;
-    var t = e.changedTouches[0];
-    var dx = t.clientX - sx, dy = t.clientY - sy;
-    if (Math.abs(dx) < 40 || Math.abs(dx) < Math.abs(dy)) return;
-    toggleCardActs(row, dx < 0);
+    if (!row || e.target.closest('.pma-btn')) return;
+    var now = Date.now();
+    if (row === _lastRow && now - _lastTap < 320) { toggleCardActs(row); _lastTap = 0; return; }
+    _lastRow = row; _lastTap = now;
   }, {passive: true});
   document.addEventListener('click', function(e) {
     if (!e.target.closest || !e.target.closest('.prov-mini')) {
