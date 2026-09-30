@@ -133,6 +133,11 @@ SUB_META_FILE = f"{TRIM_PKGVAR}/sub-meta.json"
 AGG_BAK_FILE = f"{TRIM_PKGVAR}/config.aggregated.bak"   # 聚合态的 config.yaml 备份
 
 
+def _now_iso():
+    import datetime as _dt
+    return _dt.datetime.now().isoformat(timespec="seconds")
+
+
 def _aggregate_state():
     """读取聚合模式状态：{aggregate: bool, active_sub: str}。默认聚合开。"""
     try:
@@ -4247,6 +4252,47 @@ class AdminHandler(BaseHTTPRequestHandler):
                                 "expire": int(stored.get("expire", 0) or 0),
                             }
                     compact[name] = entry
+                # 单订模式购底：订阅自带配置的节点是内联 proxies，
+                # mihomo 会把它们归到 default / 按类型的 Compatible provider 下，
+                # 不会出现以订阅名命名的 provider → 卡片取不到数据。
+                _agg_st = _aggregate_state()
+                if not _agg_st["aggregate"] and _agg_st["active_sub"]:
+                    seen, _solo_total = set(), 0
+                    for _pn, _it in (raw.get("providers") or {}).items():
+                        for _px in (_it.get("proxies") or []):
+                            _nm = _px.get("name") if isinstance(_px, dict) else None
+                            if _nm and _nm not in seen:
+                                seen.add(_nm)
+                                _solo_total += 1
+                    if _solo_total:
+                        _si = {}
+                        for _it2 in (raw.get("providers") or {}).values():
+                            if _it2.get("subscriptionInfo"):
+                                _si = _it2["subscriptionInfo"]
+                                break
+                        _si_final = {
+                            "upload": (_si.get("Upload") or 0),
+                            "download": (_si.get("Download") or 0),
+                            "total": (_si.get("Total") or 0),
+                            "expire": (_si.get("Expire") or 0)
+                        } if _si else None
+                        if not _si_final:
+                            # 引擎未下发时，用保存订阅时验证得到的 userinfo 兜底
+                            _stored = (load_sub_meta().get(_agg_st["active_sub"]) or {}).get("userInfo")
+                            if isinstance(_stored, dict) and _stored:
+                                _si_final = {
+                                    "upload": int(_stored.get("upload", 0) or 0),
+                                    "download": int(_stored.get("download", 0) or 0),
+                                    "total": int(_stored.get("total", 0) or 0),
+                                    "expire": int(_stored.get("expire", 0) or 0)
+                                }
+                        compact[_agg_st["active_sub"]] = {
+                            "count": _solo_total,
+                            "updatedAt": _now_iso(),
+                            "vehicleType": "Compatible",
+                            "subInfo": _si_final
+                        }
+                        raw = {"providers": {}}
                 return self._send_json({"providers": compact})
             except Exception as e:
                 return self._send_json({"providers": {}, "error": str(e)}, 502)
