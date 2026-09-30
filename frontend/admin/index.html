@@ -1016,6 +1016,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-card:hover{border-color:var(--faint)}
 .filter-sec{margin-bottom:8px}
 .filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
+/* 订阅卡片选项菜单 */
+.prov-menu{position:fixed;z-index:200;min-width:190px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.28);padding:6px}
+.prov-menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:none;background:transparent;color:var(--text);font-size:12.5px;text-align:left;border-radius:7px;cursor:pointer;transition:background .12s}
+.prov-menu-item:hover{background:var(--card2)}
+.prov-menu-item svg{width:15px;height:15px;fill:currentColor;color:var(--dim);flex-shrink:0}
+.prov-menu-item:hover svg{color:var(--accent)}
 /* 订阅节点过滤：固定标签列宽 + 名称正则也改行式布局，
    使「名称关键词」「名称正则」两个编辑区严格等宽（示例文字换到第二行） */
 #vcfg-card-filter .dns-field .dns-field-label{flex:0 0 300px;min-width:0}
@@ -1744,6 +1750,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       <div class="prov-import-row">
         <input type="text" id="provImportUrl" data-i18n="prov.importPh" placeholder="输入订阅链接，点击导入…" class="prov-import-input">
         <button class="btn btn-primary" onclick="importProvider()" style="padding:10px 18px;font-size:13px" data-i18n="prov.import">导入</button>
+      <div class="prov-import-row" style="margin-top:8px;align-items:center">
+        <span style="font-size:12px;color:var(--faint)" data-i18n="prov.localTip">或直接使用本地配置文件：</span>
+        <input type="file" id="provLocalFile" accept=".yaml,.yml,.txt" style="display:none" onchange="uploadLocalConfig(this)">
+        <button class="pe-btn" style="background:var(--card2);border:1px solid var(--border)" onclick="document.getElementById('provLocalFile').click()" data-i18n="prov.chooseFile">选择文件</button>
+        <span style="font-size:11px;color:var(--faint)" data-i18n="prov.localTip2">支持 Clash 完整配置 / 节点列表（base64）</span>
+      </div>
       </div>
       <!-- 订阅卡片列表 -->
       <div class="prov-grid" id="provGrid"></div>
@@ -1788,6 +1800,22 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
 
     
+      <!-- 订阅文件编辑器弹窗 -->
+      <div class="modal-backdrop" id="subFileModal" style="display:none" onclick="if(event.target===this)closeSubFileEditor()">
+        <div class="modal-card mx-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
+          <div class="mx-head">
+            <h3 id="subFileTitle">订阅文件</h3>
+            <span class="mx-close" onclick="closeSubFileEditor()" title="关闭">&times;</span>
+          </div>
+          <div class="mx-body" style="padding:14px 18px">
+            <textarea id="subFileText" class="ce-area" style="width:100%;height:46vh;min-height:280px;resize:vertical"></textarea>
+          </div>
+          <div class="pe-foot" style="padding:12px 18px 16px;display:flex;justify-content:flex-end;gap:8px">
+            <button class="pe-btn-cancel" onclick="closeSubFileEditor()" data-i18n="common.cancel">取消</button>
+            <button class="pe-btn-save" id="subFileSaveBtn" data-i18n="common.save">保存</button>
+          </div>
+        </div>
+      </div>
       <!-- 全局扩展覆写配置 编辑弹窗 -->
       <div class="modal-backdrop" id="peMergeModal" style="display:none" onclick="if(event.target===this)closePeModal('merge')">
         <div class="modal-card pe-modal">
@@ -2420,6 +2448,16 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           </div>
           <div class="set-card">
             <div class="set-title" data-i18n="settings.advanced">高级设置</div>
+            <div class="set-item">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.aggregate">聚合订阅</span>
+                <small style="display:block;font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:2px" data-i18n="settings.aggregateHint">开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件</small>
+              </div>
+              <label class="toggle"><input type="checkbox" id="setAggregate" checked onchange="toggleAggregate(this.checked)"><span class="toggle-track"></span></label>
+            </div>
+            <div class="set-item" id="activeSubRow" style="display:none">
+              <div class="set-item-left"><span class="set-item-label" data-i18n="settings.activeSub">当前使用的订阅</span></div>
+              <span class="set-val" id="setActiveSub" style="font-size:12px;color:var(--dim)">-</span>
+            </div>
             <div class="set-item set-item-chev" onclick="gotoConfigModule('vcfg-card-basic')">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.runtimeConfig">运行时配置</span></div>
               <span class="set-chev">›</span>
@@ -4570,7 +4608,14 @@ async function runWebTest() {
  }
  const IC = {
    refresh: 'M17.65,6.35C16.2,4.9 14.21,4 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20C15.73,20 18.84,17.45 19.73,14H17.65C16.83,16.33 14.61,18 12,18A6,6 0 0,1 6,12A6,6 0 0,1 12,6C13.66,6 15.14,6.69 16.22,7.78L13,11H20V4L17.65,6.35Z',
-   edit: 'M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z',
+   menu: 'M12,16A2,2 0 0,1 2,14A2,2 0 0,1 12,14A2,2 0 0,1 12,16M12,10A2,2 0 0,1 2,8A2,2 0 0,1 12,8A2,2 0 0,1 12,10M12,4A2,2 0 0,1 2,2A2,2 0 0,1 12,2A2,2 0 0,1 12,4',
+  use: 'M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z',
+  rules: 'M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z',
+  groups: 'M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 1.08-.24 2.09-.64 3z',
+  extMerge: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z',
+  extScript: 'M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z',
+  qr: 'M3 11h8V3H3v8zm2-6h4v4H5V5zM3 21h8v-8H3v8zm2-6h4v4H5v-4zM13 3v8h8V3h-8zm6 6h-4V5h4v4zM13 13h2v2h-2v-2zm4 0h2v2h-2v-2zm0 4h2v2h-2v-2zm-4 0h2v2h-2v-2zm4 4h2v2h-2v-2zm-8 0h2v2H9v-2zm4-4h2v2h-2v-2z',
+  edit: 'M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z',
    trash: 'M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19M8,9H16V19H8V9M15.5,4L14.5,3H9.5L8.5,4H5V6H19V4H15.5Z',
    nodes: 'M16,11H20V21H16M4,7H8V21H4M10,2H14V21H10Z',
    clock: 'M12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22C6.47,22 2,17.5 2,12A10,10 0 0,1 12,2M12.5,7V12.25L17,14.92L16.25,16.15L11,13V7H12.5Z',
@@ -4653,7 +4698,7 @@ async function runWebTest() {
           </div>
           <div class="prov-actions">
             <button class="prov-act-btn prov-update" onclick="updateProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.refresh)}${t('providers.update')}</button>
-           <button class="prov-act-btn prov-edit" onclick="openProvModal('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.edit)}${t('providers.edit')}</button>
+           <button class="prov-act-btn prov-edit" onclick="openProvMenu(event, '${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.menu)}${t('providers.edit')}</button>
            <button class="prov-act-btn prov-del" onclick="deleteProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.trash)}${t('providers.delete')}</button>
          </div>
        </div>`;
@@ -4792,6 +4837,175 @@ async function runWebTest() {
      .then(r => r.json()).then(d => { if (d.success) showToast(d.message, 'success'); else showToast(d.error || '删除失败', 'error'); loadProviders(); })
      .catch(err => showToast('请求出错: ' + err, 'error'));
  }
+// ── 聚合订阅开关 ──────────────────
+async function loadAggregateState() {
+  try {
+    var r = await fetch('api/aggregate');
+    var d = await r.json();
+    var sw = document.getElementById('setAggregate');
+    var row = document.getElementById('activeSubRow');
+    var val = document.getElementById('setActiveSub');
+    if (sw) sw.checked = !!d.aggregate;
+    if (row) row.style.display = d.aggregate ? 'none' : '';
+    if (val) val.textContent = d.active_sub || t('settings.aggregateNone');
+  } catch (e) {}
+}
+async function toggleAggregate(on) {
+  try {
+    var r = await fetch('api/aggregate/set', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ aggregate: !!on }) });
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '切换失败');
+    showToast(d.message || '已切换', 'success');
+    loadAggregateState();
+  } catch (e) {
+    showToast(e.message || '切换失败', 'error');
+    loadAggregateState();
+  }
+}
+// 订阅文件编辑器（复用 ce-area 样式）
+var _subFileSave = null;
+function openSubFileEditor(title, content, onSave) {
+  document.getElementById('subFileTitle').textContent = title;
+  var ta = document.getElementById('subFileText');
+  ta.value = content || '';
+  _subFileSave = onSave;
+  document.getElementById('subFileModal').style.display = 'flex';
+  setTimeout(function() { ta.focus(); }, 60);
+}
+function closeSubFileEditor() {
+  document.getElementById('subFileModal').style.display = 'none';
+  _subFileSave = null;
+}
+document.getElementById('subFileSaveBtn').addEventListener('click', async function() {
+  if (!_subFileSave) return;
+  var text = document.getElementById('subFileText').value;
+  try {
+    var r = await _subFileSave(text);
+    var d = await (r.json ? r.json() : Promise.resolve(r));
+    if (d && d.success === false) throw new Error(d.error || '保存失败');
+    showToast((d && d.message) || '已保存', 'success');
+    closeSubFileEditor();
+    loadProviders();
+  } catch (e) { showToast(e.message || '保存失败', 'error'); }
+});
+// ── 订阅卡片选项菜单（参考 Clash Verge Rev 的 profile menu） ──────────
+var _provMenuName = '';
+function closeProvMenu() {
+  var m = document.getElementById('provMenu');
+  if (m) m.remove();
+  document.removeEventListener('click', _provMenuOutside);
+}
+function _provMenuOutside(e) {
+  var m = document.getElementById('provMenu');
+  if (m && !m.contains(e.target)) closeProvMenu();
+}
+function openProvMenu(ev, name) {
+  ev.stopPropagation();
+  closeProvMenu();
+  _provMenuName = name;
+  var items = [
+    { k: 'use', icon: IC.use, label: t('provMenu.use'), run: function() { setActiveSub(name); } },
+    { k: 'info', icon: IC.edit, label: t('provMenu.info'), run: function() { openProvModal(name); } },
+    { k: 'file', icon: IC.edit, label: t('provMenu.editFile'), run: function() { editSubFile(name); } },
+    { k: 'rules', icon: IC.rules, label: t('provMenu.rules'), run: function() { gotoConfigModule('vcfg-card-advanced'); } },
+    { k: 'nodes', icon: IC.nodes, label: t('provMenu.nodes'), run: function() { gotoConfigModule('vcfg-card-basic'); } },
+    { k: 'groups', icon: IC.groups, label: t('provMenu.groups'), run: function() { showSection('groups'); } },
+    { k: 'extMerge', icon: IC.extMerge, label: t('provMenu.extMerge'), run: function() { openPeModal('merge'); } },
+    { k: 'extScript', icon: IC.extScript, label: t('provMenu.extScript'), run: function() { openPeModal('script'); } },
+    { k: 'open', icon: IC.external, label: t('provMenu.openFile'), run: function() { openSubFile(name); } },
+    { k: 'update', icon: IC.refresh, label: t('provMenu.update'), run: function() { updateProvider(name, false); } },
+    { k: 'updateProxy', icon: IC.clock, label: t('provMenu.updateProxy'), run: function() { updateProvider(name, true); } },
+    { k: 'qr', icon: IC.qr, label: t('provMenu.qr'), run: function() { showSubQr(name); } }
+  ];
+  var html = '<div class="prov-menu" id="provMenu">';
+  items.forEach(function(it) {
+    if (!it.label || it.label === it.k) return;
+    html += '<button class="prov-menu-item" data-k="' + it.k + '">' + svgIcon(it.icon) + '<span>' + it.label + '</span></button>';
+  });
+  html += '</div>';
+  document.body.insertAdjacentHTML('beforeend', html);
+  var m = document.getElementById('provMenu');
+  // 定位到点击处（翻转防溢出）
+  var r = ev.currentTarget.getBoundingClientRect();
+  var mw = 190, mh = items.length * 36 + 12;
+  var left = Math.min(r.left, window.innerWidth - mw - 8);
+  var top = r.bottom + 6;
+  if (top + mh > window.innerHeight - 8) top = Math.max(8, r.top - mh - 6);
+  m.style.left = left + 'px';
+  m.style.top = top + 'px';
+  m.addEventListener('click', function(e) {
+    var b = e.target.closest('.prov-menu-item');
+    if (!b) return;
+    var it = items.filter(function(x) { return x.k === b.dataset.k; })[0];
+    closeProvMenu();
+    if (it && it.run) it.run();
+  });
+  setTimeout(function() { document.addEventListener('click', _provMenuOutside); }, 0);
+}
+// 设为当前使用订阅（聚合关闭时生效）
+async function setActiveSub(name) {
+  try {
+    var r = await fetch('api/aggregate/set', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ active_sub: name }) });
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '设置失败');
+    showToast(t('provMenu.usedToast') + ': ' + name, 'success');
+    loadSettings();
+  } catch (e) { showToast(e.message || '设置失败', 'error'); }
+}
+// 编辑订阅文件（读本地 payload 到代码编辑器）
+async function editSubFile(name) {
+  try {
+    var r = await fetch('api/sub-file?name=' + encodeURIComponent(name));
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '读取失败');
+    openSubFileEditor(t('provMenu.editFile') + ' · ' + name, d.content || '', function(text) {
+      return fetch('api/sub-file', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, content: text }) });
+    });
+  } catch (e) { showToast(e.message || '读取失败', 'error'); }
+}
+// 打开订阅所在目录（宿主桥）
+function openSubFile(name) {
+  if (!_versionData) { showToast('版本信息未加载', 'error'); return; }
+  var dir = (_versionData.config_dir || '').replace(/\/+$/, '');
+  _openPathInFileManager(dir + '/providers');
+}
+// 分享二维码（订阅链接 → 简易二维码弹窗）
+function showSubQr(name) {
+  showToast(t('provMenu.qrTodo'), 'info');
+}
+// 更新订阅（可选走代理）
+async function updateProvider(name, viaProxy) {
+  try {
+    var r = await fetch('api/providers/update', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name: name, via_proxy: !!viaProxy }) });
+    var d = await r.json();
+    showToast(d.success ? (d.message || '已更新') : (d.error || '更新失败'), d.success ? 'success' : 'error');
+    if (d.success) loadProviders();
+  } catch (e) { showToast(e.message || '更新失败', 'error'); }
+}
+// 本地配置文件直达
+async function uploadLocalConfig(input) {
+  var f = input.files && input.files[0];
+  if (!f) return;
+  if (f.size > 2 * 1024 * 1024) { showToast(t('prov.tooLarge'), 'error'); input.value = ''; return; }
+  var reader = new FileReader();
+  reader.onload = async function() {
+    var name = f.name.replace(/\.[^.]+$/, '');
+    try {
+      var r = await fetch('api/providers/upload', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: name, content: String(reader.result || '') }) });
+      var d = await r.json();
+      if (d.success === false) throw new Error(d.error || '导入失败');
+      showToast(d.message || ('已导入 ' + name), 'success');
+      loadProviders();
+    } catch (e) { showToast(e.message || '导入失败', 'error'); }
+    input.value = '';
+  };
+  reader.readAsText(f);
+}
 // ── 快速导入订阅 ─────────────────────────────
 async function importProvider() {
   const url = document.getElementById("provImportUrl").value.trim();
@@ -7103,6 +7317,15 @@ var I18N = {
         'pe.scriptNoteHtml':'对所有订阅的配置写入生效，在全局扩展配置合并之后由本机 node 执行（超时 10 秒，node 缺失或报错时跳过、不影响保存）。<br>函数签名：<b>function main(config, profileName) { return config; }</b>，返回修改后的配置对象。<br>执行顺序：订阅原文 + 应用设置 → 全局扩展配置 → <b>全局扩展脚本</b> → 应用设置回写<br>注意：应用设置接管的字段（端口 / TUN / DNS / Sniffer / GEO 数据源 / GEO 更新设置等）最终以应用设置为准，在脚本中修改不会生效；订阅自带的代理、规则、规则集可自由增改。',
     'pe.resetDefault':'重置为默认值',
 'pe.mergeNoteHtml':'对所有订阅的配置写入生效；应用设置已随配置合入，本模板在其之上深合并（字典递归合并、列表整体覆盖）。',
+    'provMenu.use':'使用此订阅','provMenu.info':'编辑信息','provMenu.editFile':'编辑订阅文件',
+    'provMenu.rules':'编辑规则','provMenu.nodes':'编辑节点','provMenu.groups':'编辑代理组',
+    'provMenu.extMerge':'扩展覆写配置','provMenu.extScript':'扩展脚本','provMenu.openFile':'打开文件',
+    'provMenu.update':'更新','provMenu.updateProxy':'更新（代理）','provMenu.qr':'分享二维码',
+    'provMenu.usedToast':'已设为当前使用的订阅','provMenu.qrTodo':'二维码分享开发中',
+    'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）',
+    'prov.chooseFile':'选择文件','prov.tooLarge':'文件过大（上限 2MB）',
+    'settings.aggregate':'聚合订阅','settings.aggregateHint':'开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件',
+    'settings.activeSub':'当前使用的订阅','settings.aggregateNone':'未选择（关闭聚合前需先选择）',
 'pe.pipelineHtml':'执行顺序：订阅原文 + 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 应用设置回写',
     'conn.resetCols':'恢复默认','vcfg.filterScopeHint':'订阅导入/更新时生效','vcfg.filterKwHint':'exclude-name-keywords · 命中任一即过滤，不区分大小写','vcfg.filterReHint':'exclude-name-regex · 命中任一即过滤，PCRE 忽略大小写',
     'vcfg.filterExHtml':'示例：<code>traffic.*expire</code> 匹配 “Traffic-Expire-30d”；<code>^(剩余|流量).*GB</code> 匹配以「剩余/流量」开头且含 GB 的节点名',
@@ -7296,6 +7519,15 @@ var I18N = {
         'pe.scriptNoteHtml':'Applies to all subscription config writes; runs on the local node after the global merge (10s timeout; skipped if node is missing or errors — saving is unaffected).<br>Signature: <b>function main(config, profileName) { return config; }</b> returns the modified config object.<br>Pipeline: subscription source + app settings → Global Merge → <b>Global Script</b> → app settings write-back<br>Note: app-managed fields (ports / TUN / DNS / Sniffer / GEO sources / GEO update settings) always follow the app settings — changes in the script will not take effect; proxies, rules and rule-sets from the subscription can be freely modified.',
     'pe.resetDefault':'Reset to default',
 'pe.mergeNoteHtml':'Applies to all subscription config writes; app settings are already merged into the config, and this template deep-merges on top (recursive dict merge, list replace).',
+    'provMenu.use':'Use this subscription','provMenu.info':'Edit info','provMenu.editFile':'Edit sub file',
+    'provMenu.rules':'Edit rules','provMenu.nodes':'Edit nodes','provMenu.groups':'Edit proxy groups',
+    'provMenu.extMerge':'Global merge config','provMenu.extScript':'Global script','provMenu.openFile':'Open file',
+    'provMenu.update':'Update','provMenu.updateProxy':'Update (via proxy)','provMenu.qr':'Share QR code',
+    'provMenu.usedToast':'Set as active subscription','provMenu.qrTodo':'QR sharing coming soon',
+    'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)',
+    'prov.chooseFile':'Choose file','prov.tooLarge':'File too large (2MB max)',
+    'settings.aggregate':'Aggregate subscriptions','settings.aggregateHint':'On: nodes from all subscriptions are merged into the default config. Off: use the selected subscription own config',
+    'settings.activeSub':'Active subscription','settings.aggregateNone':'None (required before turning aggregation off)',
 'pe.pipelineHtml':'Pipeline: subscription source + app settings → <b>Global Merge</b> → <b>Global Script</b> → subscription override → app settings write-back',
     'conn.resetCols':'Reset','vcfg.filterScopeHint':'Applied when subscriptions are imported/updated','vcfg.filterKwHint':'exclude-name-keywords · filtered if any match, case-insensitive','vcfg.filterReHint':'exclude-name-regex · filtered if any match, PCRE case-insensitive',
     'vcfg.filterExHtml':'Examples: <code>traffic.*expire</code> matches "Traffic-Expire-30d"; <code>^(剩余|流量).*GB</code> matches node names starting with Chinese remainder/traffic and containing GB',
@@ -8632,6 +8864,7 @@ loadDelayCache();
   refreshTun();
   refreshNetworkCard();
   fetchVersionInfo();
+  loadAggregateState();
   initHamburgerDrag();
   startTraffic();
   ensureAutoLoadConfig();  // 服务状态恢复（面板守护已启动）

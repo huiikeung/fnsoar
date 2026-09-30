@@ -130,6 +130,91 @@ PROFILES_DIR  = f"{TRIM_PKGVAR}/profiles"
 ACTIVE_FILE   = f"{TRIM_PKGVAR}/active"
 # 订阅元数据（官网/更新间隔等响应头信息，mihomo 不解析，这里单独持久化）
 SUB_META_FILE = f"{TRIM_PKGVAR}/sub-meta.json"
+AGG_BAK_FILE = f"{TRIM_PKGVAR}/config.aggregated.bak"   # 聚合态的 config.yaml 备份
+
+
+def _aggregate_state():
+    """读取聚合模式状态：{aggregate: bool, active_sub: str}。默认聚合开。"""
+    try:
+        with open(SUB_META_FILE, "r", encoding="utf-8") as f:
+            d = json.load(f)
+    except Exception:
+        d = {}
+    agg = d.get("__aggregate__") if isinstance(d, dict) else None
+    if not isinstance(agg, dict):
+        agg = {"aggregate": True, "active_sub": ""}
+    agg.setdefault("aggregate", True)
+    agg.setdefault("active_sub", "")
+    return agg
+
+
+def _save_aggregate_state(state):
+    meta = load_sub_meta()
+    meta["__aggregate__"] = {
+        "aggregate": bool(state.get("aggregate", True)),
+        "active_sub": (state.get("active_sub") or "").strip(),
+    }
+    save_sub_meta(meta)
+
+
+def _repair_proxy_refs(doc):
+    """剔除/替换对不存在代理的引用。
+
+    订阅节点过滤会把「公告/到期」类节点从 payload 删掉，但订阅配置内的
+    策略组与规则仍引用它们 —— mihomo 直接 fatal
+    (proxy group[x]: 'name' not found)。独立使用订阅配置前必须修复。
+    """
+    if not isinstance(doc, dict):
+        return doc
+    named = {"DIRECT", "REJECT"}
+    for p in (doc.get("proxies") or []):
+        if isinstance(p, dict) and p.get("name"):
+            named.add(p["name"])
+    named |= set((doc.get("proxy-providers") or {}).keys())
+    for g in (doc.get("proxy-groups") or []):
+        if isinstance(g, dict) and g.get("name"):
+            named.add(g["name"])
+    # 策略组引用
+    for g in (doc.get("proxy-groups") or []):
+        if not isinstance(g, dict):
+            continue
+        refs = g.get("proxies")
+        if isinstance(refs, list):
+            g["proxies"] = [r for r in refs if r in named] or ["DIRECT"]
+        # include-all / exclude-filter 等字段保持原样
+    # 规则目标（最后一段是策略名的）
+    _RULE_PREFIX = ("MATCH", "RULE-SET", "GEOSITE", "GEOIP", "DOMAIN", "DOMAIN-SUFFIX",
+                    "DOMAIN-KEYWORD", "IP-CIDR", "IP-CIDR6", "SRC-IP-CIDR", "DST-PORT",
+                    "SRC-PORT", "PROCESS-NAME", "IN-NAME", "IN-TYPE", "IN-USER", "NETWORK",
+                    "AND", "OR", "NOT", "SUB-RULE", "SCRIPT")
+    fixed_rules = []
+    for r in (doc.get("rules") or []):
+        parts = r.split(",") if isinstance(r, str) else (r if isinstance(r, list) else None)
+        if not parts or len(parts) < 2:
+            fixed_rules.append(r)
+            continue
+        target = str(parts[-1]).strip()
+        if target not in named and not target.startswith(_RULE_PREFIX):
+            parts[-1] = "DIRECT"
+            fixed_rules.append(",".join(str(x) for x in parts) if isinstance(r, str) else parts)
+        else:
+            fixed_rules.append(r)
+    doc["rules"] = fixed_rules
+    return doc
+
+
+def _engine_config_path():
+    return CONFIG_FILE
+
+
+def _restart_engine_async():
+    """异步重启引擎（engine-start 重启整条服务链）。"""
+    import subprocess as _sp
+    cli = "/usr/local/bin/appcenter-cli"
+    cmd = (f"cd {TRIM_APPDEST} && {cli} stop fnnas.fnsoar && sleep 2 "
+           f"&& {cli} start fnnas.fnsoar")
+    _sp.Popen(["sh", "-c", "sleep 1 && " + cmd + " >/dev/null 2>&1 &"],
+              start_new_session=True)
 MIHOMO_BIN    = f"{TRIM_APPDEST}/bin/mihomo"
 # The engine is a managed child of the panel daemon. fnOS tracks the admin
 # server (bin/mihomo wrapper) as the app daemon; the engine is launched via
@@ -3553,6 +3638,18 @@ class AdminHandler(BaseHTTPRequestHandler):
                                     "tun_enabled": tun_enabled,
                                     "ipv6_available": ipv6_available,
                                     "ipv6_udp_blocked": bool(running and ipv6_available and not tun_enabled)})
+        if path == "/api/aggregate":
+            st = _aggregate_state()
+            return self._send_json({"success": True, "aggregate": st["aggregate"],
+                                    "active_sub": st["active_sub"]})
+        if path.startswith("/api/sub-file"):
+            q = parse_qs(urlparse(self.path).query)
+            name = (q.get("name", [""])[0] or "").strip()
+            fp = _sub_file_path(name)
+            if not name or not os.path.exists(fp):
+                return self._send_json({"success": False, "error": "订阅文件不存在"}, 404)
+            return self._send_json({"success": True, "name": name, "path": fp,
+                                    "content": open(fp, "r", encoding="utf-8").read()})
         if path == "/api/config":
             return self._send_json({"config": read_config()})
         if path == "/api/profile-ext":
@@ -4432,6 +4529,178 @@ class AdminHandler(BaseHTTPRequestHandler):
                 result["restarting"] = queued
                 result["message"] = result.get("message", "订阅已删除") + ("，内核正在后台重启" if queued else "，内核已在重启队列中")
                 return self._send_json(result)
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/providers/upload":
+            # 本地配置文件直达：body 为文件内容（JSON 包 {name, content}），
+            # 落盘为 file 型 provider，与远程订阅同等参与聚合。
+            try:
+                data = json.loads(body) if body else {}
+                name = (data.get("name") or "").strip()
+                content = data.get("content") or ""
+                interval = int(data.get("interval") or 0)
+                if not name:
+                    return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+                if not content.strip():
+                    return self._send_json({"success": False, "error": "配置文件内容为空"}, 400)
+                # 内容校验：Clash 配置(base64/yaml) 或 节点列表
+                import yaml as _yu
+                try:
+                    doc = _yu.safe_load(content)
+                except Exception:
+                    doc = None
+                ok = False
+                if isinstance(doc, dict) and (doc.get("proxies") or doc.get("proxy-providers")):
+                    ok = True
+                else:
+                    # 节点列表判定：base64(含 :port 段) 或 yaml proxies 列表
+                    import base64 as _b64u
+                    raw = content.strip()
+                    is_b64_nodes = False
+                    try:
+                        dec = _b64u.b64decode(raw + "=" * (-len(raw) % 4), validate=False).decode("utf-8", "ignore")
+                        is_b64_nodes = ("://" in dec) and ("," in dec or "\n" in dec)
+                    except Exception:
+                        pass
+                    ok = is_b64_nodes or bool(re.search(r"^\s*-\s*name:", content, re.M))
+                if not ok:
+                    return self._send_json({"success": False,
+                                            "error": "无法识别的配置文件（既非 Clash 配置也非节点列表）"}, 400)
+                dest = _sub_file_path(name)
+                os.makedirs(os.path.dirname(dest), exist_ok=True)
+                with open(dest, "w", encoding="utf-8") as f:
+                    f.write(content)
+                ms = load_sub_meta()
+                ent = ms.setdefault(name, {})
+                ent["type"] = "file"
+                ent["url"] = ""
+                ent["interval"] = interval or 0
+                save_sub_meta(ms)
+                # 触发一次订阅侧刷新（file 型无需下载，仅重建 provider 索引）
+                try:
+                    request_provider_restart()
+                except Exception:
+                    pass
+                return self._send_json({"success": True, "name": name,
+                                        "message": f"本地配置「{name}」已导入"})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path.startswith("/api/sub-file"):
+            try:
+                if path.startswith("/api/sub-file/raw"):
+                    q = parse_qs(urlparse(self.path).query)
+                    name = (q.get("name", [""])[0] or "").strip()
+                    fp = _sub_file_path(name)
+                    if not name or not os.path.exists(fp):
+                        return self._send_json({"success": False, "error": "订阅文件不存在"}, 404)
+                    return self._send_file(fp, "application/x-yaml")
+                data = json.loads(body) if body else {}
+                if self.command == "GET":
+                    q = parse_qs(urlparse(self.path).query)
+                    name = (q.get("name", [""])[0] or "").strip()
+                    fp = _sub_file_path(name)
+                    if not name or not os.path.exists(fp):
+                        return self._send_json({"success": False, "error": "订阅文件不存在"}, 404)
+                    return self._send_json({"success": True, "name": name,
+                                            "path": fp,
+                                            "content": open(fp, "r", encoding="utf-8").read()})
+                name = (data.get("name") or "").strip()
+                content = data.get("content") or ""
+                if not name:
+                    return self._send_json({"success": False, "error": "缺少订阅名称"}, 400)
+                import yaml as _ysf
+                try:
+                    _ysf.safe_load(content)
+                except Exception as e:
+                    return self._send_json({"success": False, "error": f"YAML 语法错误: {e}"}, 400)
+                fp = _sub_file_path(name)
+                with open(fp, "w", encoding="utf-8") as f:
+                    f.write(content)
+                try:
+                    request_provider_restart()
+                except Exception:
+                    pass
+                return self._send_json({"success": True, "message": f"订阅「{name}」文件已保存"})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/aggregate":
+            try:
+                st = _aggregate_state()
+                return self._send_json({"success": True, "aggregate": st["aggregate"],
+                                        "active_sub": st["active_sub"]})
+            except Exception as e:
+                return self._send_json({"success": False, "error": str(e)}, 500)
+        if path == "/api/aggregate/set":
+            try:
+                data = json.loads(body) if body else {}
+                active = (data.get("active_sub") or "").strip()
+                st = _aggregate_state()
+                if active:
+                    st["active_sub"] = active
+                # 仅设置活跃订阅（不带 aggregate 键）：不动运行配置
+                if "aggregate" not in data:
+                    _save_aggregate_state(st)
+                    return self._send_json({"success": True,
+                                            "message": f"已选择订阅「{st['active_sub']}」",
+                                            "active_sub": st["active_sub"]})
+                want_agg = bool(data.get("aggregate", True))
+                # ── 切到「关闭聚合」：把活跃订阅的配置提升为引擎运行配置 ──
+                if not want_agg:
+                    sub_name = st["active_sub"]
+                    if not sub_name:
+                        return self._send_json({"success": False,
+                                                "error": "请先选择要使用的订阅（卡片菜单 → 使用）"}, 400)
+                    src = _sub_file_path(sub_name)
+                    # 节点过滤会把「公告/到期」类节点从 payload 里剔除，但配置内的
+                    # 策略组仍引用它们 —— 独立使用时 mihomo 会 fatal。
+                    # 优先用过滤前的原始 payload（导入时留的 .before-info-filter.bak）。
+                    bak = src + ".before-info-filter.bak"
+                    if os.path.exists(bak):
+                        src = bak
+                    if not os.path.exists(src):
+                        return self._send_json({"success": False,
+                                                "error": f"订阅「{sub_name}」没有本地配置文件"}, 400)
+                    sub_text = open(src, "r", encoding="utf-8").read()
+                    import yaml as _yv2
+                    try:
+                        doc = _yv2.safe_load(sub_text)
+                    except Exception as e:
+                        return self._send_json({"success": False, "error": f"订阅文件不是有效 YAML: {e}"}, 400)
+                    if not isinstance(doc, dict) or not (doc.get("proxies") or doc.get("proxy-providers")):
+                        return self._send_json({"success": False,
+                                                "error": "该订阅文件不是完整 Clash 配置（缺少 proxies/proxy-providers）"}, 400)
+                    # 备份聚合态配置（仅当当前就是聚合态时）
+                    if st["aggregate"]:
+                        try:
+                            import shutil as _sh
+                            _sh.copyfile(_engine_config_path(), AGG_BAK_FILE)
+                        except Exception:
+                            pass
+                    # 强制作正控制器端口：订阅自带的 external-controller 会让引擎
+                    # 脱离面板管理（面板固定连 MIHOMO_CTRL_PORT）；并修复节点过滤
+                    # 造成的悬空组/规则引用
+                    _doc = _yv2.safe_load(sub_text)
+                    if isinstance(_doc, dict):
+                        _doc["external-controller"] = f"127.0.0.1:{MIHOMO_CTRL_PORT}"
+                        _repair_proxy_refs(_doc)
+                        sub_text = _yv2.safe_dump(_doc, allow_unicode=True, sort_keys=False)
+                    write_config(sub_text)
+                    _save_aggregate_state({"aggregate": False, "active_sub": sub_name})
+                    _restart_engine_async()
+                    return self._send_json({"success": True, "message": f"已切换到订阅「{sub_name}」的独立配置，引擎重启中…"})
+                # ── 切回「聚合」：还原备份的聚合配置 ──
+                if os.path.exists(AGG_BAK_FILE):
+                    try:
+                        import shutil as _sh2
+                        _sh2.copyfile(AGG_BAK_FILE, _engine_config_path())
+                    except Exception as e:
+                        return self._send_json({"success": False, "error": f"还原聚合配置失败: {e}"}, 500)
+                else:
+                    return self._send_json({"success": False,
+                                            "error": "未找到聚合配置备份，请重新导入订阅或恢复默认"}, 400)
+                _save_aggregate_state({"aggregate": True, "active_sub": st["active_sub"]})
+                _restart_engine_async()
+                return self._send_json({"success": True, "message": "已恢复聚合配置，引擎重启中…"})
             except Exception as e:
                 return self._send_json({"success": False, "error": str(e)}, 500)
         if path == "/api/providers/probe-name":
