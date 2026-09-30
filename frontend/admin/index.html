@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930155541';
+  var B='unknown-20260930155852';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1040,12 +1040,14 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-head{display:flex;align-items:center;gap:10px;margin-bottom:14px}
 .prov-head h3{margin:0;font-size:20px;font-weight:700;letter-spacing:-.2px}
 .prov-import-row{display:flex;gap:10px;margin-bottom:18px;align-items:center;flex-wrap:wrap}
-/* 导入行：导入按钮默认透明描边，输入后才实心 */
-.btn-import{background:transparent;color:var(--accent);border:1.5px solid var(--accent);border-radius:8px;cursor:pointer;transition:background .14s, color .14s, opacity .14s}
-.btn-import:hover:not(:disabled){background:rgba(78,110,242,.1)}
-.btn-import.is-ready{background:var(--accent);color:#fff}
+/* 导入行两个按钮：尺寸完全一致；导入默认透明描边，
+   输入链接后文字/边框变主色（不填充背景） */
+.prov-import-row .btn{height:38px;padding:0 18px;border-radius:9px;font-size:13px;font-weight:600}
+.btn-import{background:transparent;color:var(--accent);border:1.5px solid var(--accent);transition:border-color .14s, color .14s, opacity .14s}
+.btn-import:hover:not(:disabled){background:rgba(78,110,242,.08)}
+.btn-import.is-ready{border-color:var(--accent);color:var(--accent);border-width:1.5px}
 .btn-import:disabled{opacity:.45;cursor:not-allowed}
-.btn-ghost{background:var(--card2);color:var(--text);border:1px solid var(--border);border-radius:8px;cursor:pointer;transition:border-color .14s, color .14s}
+.btn-ghost{background:var(--card2);color:var(--text);border:1px solid var(--border);transition:border-color .14s, color .14s}
 .btn-ghost:hover{border-color:var(--accent);color:var(--accent)}
 
 .prov-import-input{flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;font-size:13px;color:var(--text);outline:none;transition:border-color .15s}
@@ -1921,7 +1923,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
       <div class="prov-import-row">
         <input type="text" id="provImportUrl" data-i18n="prov.importPh" placeholder="输入订阅链接，点击导入…" class="prov-import-input" oninput="toggleImportBtn(this)">
-        <button class="btn btn-import" id="provImportBtn" onclick="importProvider()" style="padding:10px 18px;font-size:13px" data-i18n="prov.import">导入</button>
+        <button class="btn btn-import" id="provImportBtn" onclick="importProvider()" data-i18n="prov.import">导入</button>
         <input type="file" id="provLocalFile" accept=".yaml,.yml,.txt" style="display:none" onchange="uploadLocalConfig(this)">
         <button class="btn btn-ghost" onclick="document.getElementById('provLocalFile').click()" data-i18n="prov.chooseFile" title="支持 Clash 完整配置 / 节点列表（base64）">本地配置</button>
       </div>
