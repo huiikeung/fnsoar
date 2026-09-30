@@ -47,6 +47,12 @@ if [ -d "${FRONTEND_ADMIN}/icon" ]; then cp -a "${FRONTEND_ADMIN}/icon" "${DEST_
 if [ -d "${FRONTEND_ADMIN}/flags" ]; then cp -a "${FRONTEND_ADMIN}/flags" "${DEST_DIR}/admin/"; fi
 
 # Copy fnOS app manifest
+# fnOS 桌面图标（ui/config 里 icon: images/icon_{0}.png）——不覆写这里的话，
+# 已安装 APP 的桌面图标永远是安装时的旧文件
+mkdir -p "${DEST_DIR}/ui/images"
+for _sz in 64 128 256 512; do
+  [ -f "${FNPACK_DIR}/ui/images/icon_${_sz}.png" ] && cp -f "${FNPACK_DIR}/ui/images/icon_${_sz}.png" "${DEST_DIR}/ui/images/" || true
+done
 cp -f "${FNPACK_DIR}/app.json" "${DEST_DIR}/"
 # 桌面图标：app.json 的 "icon" 指向根目录 favicon.png（不覆写这里的话，
 # 已安装的 APP 桌面图标不会更新）
