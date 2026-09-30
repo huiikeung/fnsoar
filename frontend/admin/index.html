@@ -1017,7 +1017,10 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .filter-sec{margin-bottom:8px}
 .filter-ex{display:block;font-size:11px;color:var(--faint);line-height:1.6;margin-top:6px}
 /* chains 可视化编辑 */
-.chain-wrap{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:14px;align-items:start}
+.chain-wrap{display:grid;grid-template-columns:minmax(260px,340px) 1fr;gap:14px;align-items:stretch;height:52vh;min-height:300px}
+.chain-form{overflow:auto;min-height:0}
+.chain-list{display:flex;flex-direction:column;min-height:0}
+#chainItems{overflow:auto;min-height:0;flex:1}
 @media(max-width:760px){.chain-wrap{grid-template-columns:1fr}}
 .chain-f{margin-bottom:10px}
 .chain-f label{display:block;font-size:12.5px;font-weight:600;color:var(--text);margin-bottom:5px}
@@ -1034,6 +1037,10 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .chain-del{flex:none;width:24px;height:24px;border:none;background:transparent;color:var(--dim);font-size:14px;cursor:pointer;border-radius:6px}
 .chain-del:hover{background:rgba(248,81,73,.12);color:var(--red)}
 .pe-note{margin-bottom:12px}
+.pe-sec-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px}
+.pe-sec-label{font-size:12.5px;font-weight:600;color:var(--text)}
+.pe-sec-state{font-size:12px;color:var(--faint)}
+.pe-sec-state.on{color:#3fb950}
 /* 订阅卡片选项菜单 */
 .prov-menu{position:fixed;z-index:200;min-width:190px;max-height:70vh;overflow:auto;background:var(--card);border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 32px rgba(0,0,0,.28);padding:6px}
 .prov-menu-item{display:flex;align-items:center;gap:9px;width:100%;padding:8px 11px;border:none;background:transparent;color:var(--text);font-size:12.5px;text-align:left;border-radius:7px;cursor:pointer;transition:background .12s}
@@ -1085,7 +1092,8 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-btn svg{width:13px;height:13px;fill:currentColor}
 .pe-btn:hover{background:rgba(78,110,242,.18);color:var(--accent)}
 /* 全局扩展编辑弹窗 */
-.modal-card.pe-modal{width:min(640px,96vw);max-width:min(640px,96vw)}
+.modal-card.pe-modal{width:min(640px,96vw);max-width:min(640px,96vw);max-height:92vh;display:flex;flex-direction:column}
+.pe-modal .modal-body{overflow:auto;min-height:0}
 .pe-note{display:flex;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(78,110,242,.08);border:1px solid rgba(78,110,242,.25);font-size:11.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
 .pe-note svg{width:14px;height:14px;flex:none;margin-top:3px;fill:var(--accent2)}
 /* 轻量代码编辑器（行号槽 + textarea） */
@@ -1835,26 +1843,25 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           </div>
         </div>
       </div>
-      <!-- 订阅分享二维码弹窗 -->
+      <!-- 每订阅独立扩展弹窗（对齐全局扩展编辑弹窗） -->
       <div class="modal-backdrop" id="subExtModal" style="display:none" onclick="if(event.target===this)closeSubExt()">
-        <div class="modal-card mx-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
-          <div class="mx-head">
-            <h3 id="subExtTitle">扩展</h3>
-            <span class="mx-close" onclick="closeSubExt()" title="关闭">&times;</span>
+        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
+          <div class="modal-title">
+            <span id="subExtTitle">扩展</span>
           </div>
-          <div class="mx-body" style="padding:14px 18px">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
-              <span style="font-size:12px;font-weight:600" data-i18n="pe.mergeName">全局扩展覆写配置</span>
-              <span style="font-size:11px;color:var(--faint)" id="subExtStatus"></span>
+          <div class="modal-body" style="padding:16px 20px 6px">
+            <div class="pe-sec-row"><span class="pe-sec-label" data-i18n="pe.mergeName">全局扩展覆写配置</span><span class="pe-sec-state" id="subExtMergeState"></span></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="subExtMergeGutter"></div><textarea class="ce-area" id="subExtMergeText" spellcheck="false" oninput="ceSync('subExtMerge');" onscroll="ceScroll('subExtMerge');"></textarea></div>
+            <div class="pe-sec-row" style="margin-top:14px"><span class="pe-sec-label" data-i18n="pe.scriptName">全局扩展脚本</span><span class="pe-sec-state" id="subExtScriptState"></span></div>
+            <div class="ce-wrap"><div class="ce-gutter" id="subExtScriptGutter"></div><textarea class="ce-area" id="subExtScriptText" spellcheck="false" oninput="ceSync('subExtScript');" onscroll="ceScroll('subExtScript');"></textarea></div>
+            <div class="pe-note" style="margin-top:12px" data-i18n="pe.subHint">仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。</div>
+          </div>
+          <div class="pe-foot">
+            <button class="pe-foot-link" onclick="closeSubExt()" data-i18n="common.cancel">取消</button>
+            <div class="pe-foot-right">
+              <button class="pe-btn-cancel" onclick="closeSubExt()" data-i18n="common.cancel">取消</button>
+              <button class="pe-btn-save" onclick="saveSubExt()" data-i18n="common.save">保存</button>
             </div>
-            <textarea id="subExtMerge" class="ce-area" style="width:100%;height:18vh;min-height:120px;resize:vertical" placeholder="# 在此编写 YAML 合并模板"></textarea>
-            <div style="font-size:12px;font-weight:600;margin:12px 0 8px" data-i18n="pe.scriptName">全局扩展脚本</div>
-            <textarea id="subExtScript" class="ce-area" style="width:100%;height:18vh;min-height:120px;resize:vertical" placeholder="function main(config, profileName) { return config; }"></textarea>
-            <div style="font-size:11px;color:var(--faint);margin-top:6px" data-i18n="pe.subHint">仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。</div>
-          </div>
-          <div class="pe-foot" style="padding:12px 18px 16px;display:flex;justify-content:flex-end;gap:8px">
-            <button class="pe-btn-cancel" onclick="closeSubExt()" data-i18n="common.cancel">取消</button>
-            <button class="pe-btn-save" onclick="saveSubExt()" data-i18n="common.save">保存</button>
           </div>
         </div>
       </div>
@@ -1870,17 +1877,20 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       </div>
       <!-- 订阅文件编辑器弹窗 -->
       <div class="modal-backdrop" id="subFileModal" style="display:none" onclick="if(event.target===this)closeSubFileEditor()">
-        <div class="modal-card mx-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
-          <div class="mx-head">
-            <h3 id="subFileTitle">订阅文件</h3>
-            <span class="mx-close" onclick="closeSubFileEditor()" title="关闭">&times;</span>
+        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:min(760px,96vw)">
+          <div class="modal-title" id="subFileTitleRow">
+            <span id="subFileTitle">订阅文件</span>
           </div>
-          <div class="mx-body" style="padding:14px 18px">
-            <textarea id="subFileText" class="ce-area" style="width:100%;height:46vh;min-height:280px;resize:vertical"></textarea>
+          <div class="modal-body" style="padding:16px 20px 6px">
+            <div class="ce-wrap"><div class="ce-gutter" id="subFileGutter"></div><textarea class="ce-area" id="subFileText" spellcheck="false" oninput="ceSync('subFile');" onscroll="ceScroll('subFile');"></textarea></div>
+            <div class="pe-note" style="margin-top:12px" data-i18n="provMenu.fileTip">直接编辑该订阅的本地配置文件；保存后立即重建节点索引。</div>
           </div>
-          <div class="pe-foot" style="padding:12px 18px 16px;display:flex;justify-content:flex-end;gap:8px">
-            <button class="pe-btn-cancel" onclick="closeSubFileEditor()" data-i18n="common.cancel">取消</button>
-            <button class="pe-btn-save" id="subFileSaveBtn" data-i18n="common.save">保存</button>
+          <div class="pe-foot">
+            <button class="pe-foot-link" onclick="reloadSubFile()" data-i18n="provMenu.reloadFile">重新加载</button>
+            <div class="pe-foot-right">
+              <button class="pe-btn-cancel" onclick="closeSubFileEditor()" data-i18n="common.cancel">取消</button>
+              <button class="pe-btn-save" id="subFileSaveBtn" data-i18n="common.save">保存</button>
+            </div>
           </div>
         </div>
       </div>
@@ -4932,14 +4942,26 @@ async function toggleAggregate(on) {
   }
 }
 // 订阅文件编辑器（复用 ce-area 样式）
-var _subFileSave = null;
+var _subFileSave = null, _subFileName = '';
 function openSubFileEditor(title, content, onSave) {
   document.getElementById('subFileTitle').textContent = title;
   var ta = document.getElementById('subFileText');
   ta.value = content || '';
   _subFileSave = onSave;
   document.getElementById('subFileModal').style.display = 'flex';
+  ceSync('subFile');
   setTimeout(function() { ta.focus(); }, 60);
+}
+async function reloadSubFile() {
+  if (!_subFileName) return;
+  try {
+    var r = await fetch('api/sub-file?name=' + encodeURIComponent(_subFileName));
+    var d = await r.json();
+    if (d.success === false) throw new Error(d.error || '读取失败');
+    document.getElementById('subFileText').value = d.content || '';
+    ceSync('subFile');
+    showToast(t('provMenu.reloaded') || '已重新加载', 'info');
+  } catch (e) { showToast(e.message || '读取失败', 'error'); }
 }
 function closeSubFileEditor() {
   document.getElementById('subFileModal').style.display = 'none';
@@ -5025,6 +5047,7 @@ async function setActiveSub(name) {
 // 编辑订阅文件（读本地 payload 到代码编辑器）
 async function editSubFile(name) {
   try {
+    _subFileName = name;
     var r = await fetch('api/sub-file?name=' + encodeURIComponent(name));
     var d = await r.json();
     if (d.success === false) throw new Error(d.error || '读取失败');
@@ -5072,20 +5095,21 @@ async function openSubExt(name) {
   _subExtName = name;
   document.getElementById('subExtTitle').textContent = (t('pe.merge') || '扩展') + ' · ' + name;
   document.getElementById('subExtModal').style.display = 'flex';
-  var merge = document.getElementById('subExtMerge'), script = document.getElementById('subExtScript');
-  var st = document.getElementById('subExtStatus');
+  var merge = document.getElementById('subExtMergeText'), script = document.getElementById('subExtScriptText');
   merge.value = ''; script.value = '';
-  st.textContent = t('conn.loading');
+  ceSync('subExtMerge'); ceSync('subExtScript');
   try {
     var r = await fetch('api/profile-ext/sub?name=' + encodeURIComponent(name));
     var d = await r.json();
     if (d.success === false) throw new Error(d.error || '读取失败');
     merge.value = d.merge_config || '';
     script.value = d.script || '';
-    st.textContent = ((d.merge_config || '').trim() || (d.script || '').trim())
-      ? (t('pe.configured') || '已配置独立扩展') : (t('pe.notConfigured') || '未配置');
+    ceSync('subExtMerge'); ceSync('subExtScript');
+    var hasM = !!(d.merge_config || '').trim(), hasS = !!(d.script || '').trim();
+    var ms = document.getElementById('subExtMergeState'), ss = document.getElementById('subExtScriptState');
+    if (ms) { ms.textContent = hasM ? '✓' : '—'; ms.className = 'pe-sec-state' + (hasM ? ' on' : ''); }
+    if (ss) { ss.textContent = hasS ? '✓' : '—'; ss.className = 'pe-sec-state' + (hasS ? ' on' : ''); }
   } catch (e) {
-    st.textContent = t('net.saveFailed');
     showToast(e.message || '读取失败', 'error');
   }
 }
@@ -5094,8 +5118,8 @@ async function saveSubExt() {
   try {
     var r = await fetch('api/profile-ext/sub', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: _subExtName,
-        merge_config: document.getElementById('subExtMerge').value,
-        script: document.getElementById('subExtScript').value }) });
+        merge_config: document.getElementById('subExtMergeText').value,
+        script: document.getElementById('subExtScriptText').value }) });
     var d = await r.json();
     if (d.success === false) throw new Error(d.error || '保存失败');
     showToast(d.message || (t('pe.saved') || '已保存'), 'success');
@@ -5148,8 +5172,8 @@ function renderChainModal() {
   var body = document.getElementById('chainBody');
   if (_chain.advanced) {
     var yamlText = _chainYamlDumpChain();
-    body.innerHTML = '<div class="ce-wrap"><div class="ce-gutter" id="chainGutter"></div><textarea class="ce-area" id="chainYaml" spellcheck="false" oninput="ceSync(\'chain\');" onscroll="ceScroll(\'chain\');"></textarea></div>';
-    var ta = document.getElementById('chainYaml');
+    body.innerHTML = '<div class="ce-wrap"><div class="ce-gutter" id="chainGutter"></div><textarea class="ce-area" id="chainText" spellcheck="false" oninput="ceSync(\'chain\');" onscroll="ceScroll(\'chain\');"></textarea></div>';
+    var ta = document.getElementById('chainText');
     ta.value = yamlText;
     ceSync('chain');
     setTimeout(function() { ta.focus(); }, 60);
@@ -5311,7 +5335,7 @@ async function saveChainEditor() {
   var data = _chain.data;
   if (_chain.advanced) {
     try {
-      var doc = _parseSimpleYaml(document.getElementById('chainYaml').value);
+      var doc = _parseSimpleYaml(document.getElementById('chainText').value);
       data = { rules: { prepend: [], append: [], delete: [] }, proxies: { prepend: [], append: [], delete: [] }, 'proxy-groups': { prepend: [], append: [], delete: [] } };
       data[_chain.section] = doc;
     } catch (e) { showToast(e.message || '解析失败', 'error'); return; }
@@ -7698,7 +7722,7 @@ var I18N = {
     'chain.prepend':'添加前置规则','chain.append':'添加后置规则','chain.prependNode':'添加前置代理节点','chain.appendNode':'添加后置代理节点',
     'chain.groupType':'代理组类型','chain.groupName':'代理组名','chain.groupIcon':'代理组图标','chain.prependGroup':'添加前置代理组','chain.appendGroup':'添加后置代理组',
     'chain.uriList':'节点 URI','chain.filter':'过滤条件…','chain.empty':'暂无内容','chain.needContent':'请填写规则内容','chain.needUri':'请填写节点 URI',
-    'chain.needName':'请填写代理组名','chain.saved':'chains 已保存','chain.tip':'左侧添加前插/后插；右侧是订阅原有内容，点删除加入删除名单。','pe.resetDone':'已重置',
+    'chain.needName':'请填写代理组名','chain.saved':'chains 已保存','chain.tip':'左侧添加前插/后插；右侧是订阅原有内容，点删除加入删除名单。','pe.resetDone':'已重置','provMenu.reloadFile':'重新加载','provMenu.reloaded':'已重新加载','provMenu.fileTip':'直接编辑该订阅的本地配置文件；保存后立即重建节点索引。',
 'pe.subHint':'仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。',
     'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）',
     'prov.chooseFile':'选择文件','prov.tooLarge':'文件过大（上限 2MB）',
@@ -7905,7 +7929,7 @@ var I18N = {
     'chain.prepend':'Add prepend rule','chain.append':'Add append rule','chain.prependNode':'Add prepend node','chain.appendNode':'Add append node',
     'chain.groupType':'Group type','chain.groupName':'Group name','chain.groupIcon':'Group icon','chain.prependGroup':'Add prepend group','chain.appendGroup':'Add append group',
     'chain.uriList':'Node URIs','chain.filter':'Filter…','chain.empty':'Nothing here','chain.needContent':'Rule content required','chain.needUri':'Node URI required',
-    'chain.needName':'Group name required','chain.saved':'Chains saved','chain.tip':'Use the left form to prepend/append; the right side lists the subscription existing items — delete adds to the delete list.','pe.resetDone':'Reset',
+    'chain.needName':'Group name required','chain.saved':'Chains saved','chain.tip':'Use the left form to prepend/append; the right side lists the subscription existing items — delete adds to the delete list.','pe.resetDone':'Reset','provMenu.reloadFile':'Reload','provMenu.reloaded':'Reloaded','provMenu.fileTip':'Edit this subscription local file directly; node index rebuilds on save.',
 'pe.subHint':'Applies to this subscription only: merge and script run on import/update before the global extension.',
     'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)',
     'prov.chooseFile':'Choose file','prov.tooLarge':'File too large (2MB max)',
