@@ -3555,8 +3555,12 @@ class AdminHandler(BaseHTTPRequestHandler):
             return self._send_json({"success": True, **lay})
         try:
             data = _jl.loads(body or "{}")
+            if data.get("only_restart"):
+                _restart_engine_async()
+                return self._send_json({"success": True, "message": "\u5f15\u64ce\u91cd\u542f\u4e2d\u2026"})
             order = data.get("order") or []
             excluded = data.get("excluded") or []
+            want_restart = data.get("restart", True) is not False
             _save_sub_layout({"order": order, "excluded": excluded})
             st = _aggregate_state()
             changed = False
@@ -3566,7 +3570,7 @@ class AdminHandler(BaseHTTPRequestHandler):
                     return self._send_json({"success": False, "error": err}, 500)
             msg = ("已应用，引擎重启中…" if changed else "已保存")
             self._send_json({"success": True, "changed": changed, "message": msg})
-            if changed:
+            if changed and want_restart:
                 # 后台重启：会连同本服务一起停，必须在响应完成后再做
                 def _bg_restart():
                     try:
