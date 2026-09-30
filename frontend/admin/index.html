@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930143147';
+  var B='unknown-20260930144137';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1116,12 +1116,20 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-agg-out-label{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--dim);letter-spacing:.4px;margin:0 2px 10px}
 .prov-agg-out-label svg{width:14px;height:14px;fill:currentColor;color:var(--faint)}
 /* 未聚合区空占：虚线订阅卡样式 */
-.prov-agg-out-ph{display:flex;align-items:center;gap:10px;padding:14px 16px;border:1.5px dashed var(--border);border-radius:11px;color:var(--faint)}
-.prov-agg-out-ph .ph-badge{padding:1px 7px;border-radius:6px;font-size:10px;font-weight:700;background:rgba(127,127,127,.1);color:var(--faint)}
-.prov-agg-out-ph .ph-name{font-size:12px}
+/* 未聚合区空占：纯虚线框 + 文字（无徽章、无背景块） */
+.prov-agg-out-ph{display:flex;align-items:center;justify-content:center;gap:8px;padding:16px;border:1.5px dashed var(--border);border-radius:11px;color:var(--faint);font-size:12px}
+.prov-agg-out-ph svg{width:15px;height:15px;fill:currentColor;flex:none}
 .prov-agg-wrap-label{display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;color:var(--dim);letter-spacing:.4px;margin:0 2px 10px}
 .prov-agg-wrap-label svg{width:14px;height:14px;fill:currentColor;color:var(--accent)}
 .prov-grid-inner{gap:12px}
+/* 单订模式：一行一张大卡（保留信息完整的卡片，与聚合紧凑行区分） */
+.prov-solo-grid{grid-template-columns:1fr!important;max-width:860px}
+.prov-solo-grid .prov-card{display:grid;grid-template-columns:1fr auto;grid-template-areas:"top top" "info actions" "stats stats" "traffic traffic";gap:6px 14px;align-items:center}
+.prov-solo-grid .prov-card-top{grid-area:top}
+.prov-solo-grid .prov-url{grid-area:info}
+.prov-solo-grid .prov-actions{grid-area:actions;justify-content:flex-end}
+.prov-solo-grid .prov-stats{grid-area:stats}
+.prov-solo-grid .prov-traffic{grid-area:traffic}
 /* 层叠徽章（聚合模式：表示该订阅是聚合包的层） */
 /* 拖手柄（原层叠徽章）：按住它拖拽卡片排序；聚合状态下拖到「未参与聚合」即可移出 */
 /* 拖拽提示（非传统图标）：默认隐藏，鼠标悬停才显示，无背景 */
@@ -2949,8 +2957,18 @@ function showSection(name) {
     // 秒开：订阅卡片快照先铺底（内存 > localStorage），再后台静默刷新
     const grid = document.getElementById('provGrid');
     let snap = null;
-    try { snap = provSnapMem || localStorage.getItem('fnsoarProvSnap'); } catch (e) {}
-    if (snap && !grid.querySelector('.prov-card')) grid.innerHTML = snap;
+    let snapHtml = null;
+    try {
+      var raw = provSnapMem || localStorage.getItem('fnsoarProvSnap');
+      if (raw) {
+        var sn = null;
+        try { sn = JSON.parse(raw); } catch (e3) { sn = null; }
+        // 带模式标记的快照：与当前聚合/单订模式不一致则不还原（避免闪一下错样式）
+        if (sn && typeof sn === 'object' && sn.html) snapHtml = (sn.mode === (_provAgg && _provAgg.aggregate ? 'agg' : 'solo')) ? sn.html : null;
+        else snapHtml = raw;   // 旧格式（无标记）：保守不用
+      }
+    } catch (e) {}
+    if (snapHtml && !grid.querySelector('.prov-card')) grid.innerHTML = snapHtml;
     loadProviders(!!grid.querySelector('.prov-card'));
   }
     loadProfileExt();  // 全局扩展（合并模板/脚本）
@@ -4907,7 +4925,7 @@ async function runWebTest() {
        + '</div>'
        + '<div class="prov-agg-wrap" id="provAggIn"><div class="prov-agg-wrap-label">' + svgIcon(IC.layers) + (t('prov.aggWrap') || '已聚合的订阅') + '<span class="prov-agg-wrap-hint">' + (t('prov.aggWrapHint') || '拖动手柄可调整顺序，拖到下方即移出聚合') + '</span></div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridIn">';
      } else {
-       headHtml = '<div class="prov-solo-tip">' + svgIcon(IC.layers) + (t('prov.soloTip') || '当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅') + '</div><div class="prov-grid prov-grid-inner" id="provGridIn">';
+       headHtml = '<div class="prov-solo-tip">' + svgIcon(IC.layers) + (t('prov.soloTip') || '当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅') + '</div><div class="prov-grid prov-grid-inner prov-solo-grid" id="provGridIn">';
      }
    const order = agg.order || [];
    const ordered = entries.slice().sort((a, b) => {
@@ -4990,7 +5008,7 @@ async function runWebTest() {
      const inHtml = buildCards(inCards, agg.aggregate);
      const outHtml = buildCards(outCards, agg.aggregate);
       if (agg.aggregate) {
-        const outBox = '<div class="prov-agg-out" id="provAggOut"><div class="prov-agg-out-label">' + svgIcon(IC.boxout) + (t('prov.aggOut') || '未参与聚合（拖到这里移出聚合）') + '</div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridOut">' + (outHtml || '<div class="prov-agg-out-ph"><span class="ph-badge">HTTPS</span><span class="ph-name">' + (t('prov.aggOutPh') || '把上方订阅卡片拖到这里') + '</span></div>') + '</div></div>';
+        const outBox = '<div class="prov-agg-out" id="provAggOut"><div class="prov-agg-out-label">' + svgIcon(IC.boxout) + (t('prov.aggOut') || '未参与聚合（拖到这里移出聚合）') + '</div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridOut">' + (outHtml || '<div class="prov-agg-out-ph">' + (t('prov.aggOutPh') || '把上方订阅卡片拖到这里，即可移出聚合') + '</div>') + '</div></div>';
         grid.innerHTML = headHtml + inHtml + '</div>' + outBox;
       } else {
         grid.innerHTML = headHtml + inHtml + '</div>';
@@ -5002,7 +5020,7 @@ async function runWebTest() {
    const renderAndSnap = () => {
      render();
      if (grid.querySelector('.prov-card')) {
-       provSnapMem = grid.innerHTML;
+       provSnapMem = JSON.stringify({ mode: (agg && agg.aggregate) ? 'agg' : 'solo', html: grid.innerHTML });
        try { localStorage.setItem('fnsoarProvSnap', provSnapMem); } catch (e) {}
      }
    };
@@ -8076,7 +8094,7 @@ var I18N = {
     'chain.uriList':'节点 URI','chain.filter':'过滤条件…','chain.empty':'暂无内容','chain.needContent':'请填写规则内容','chain.needUri':'请填写节点 URI',
     'chain.needName':'请填写代理组名','chain.saved':'chains 已保存','chain.tip':'左侧添加前插/后插；右侧是订阅原有内容，点删除加入删除名单。','pe.resetDone':'已重置','provMenu.reloadFile':'重新加载','provMenu.reloaded':'已重新加载','provMenu.fileTip':'直接编辑该订阅的本地配置文件；保存后立即重建节点索引。',
 'pe.subHint':'仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。','pe.subScriptHint':'仅对本订阅生效：导入/更新该订阅时执行此脚本，再进入全局扩展。',
-    'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）','prov.aggTitle':'订阅聚合','prov.aggDesc':'所有订阅的节点已合并进默认配置，规则 / 策略组全局共用；关闭「设置 → 聚合订阅」可改用单个订阅的独立配置','prov.aggWrap':'已聚合的订阅','prov.soloTip':'当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅','prov.inUse':'正在使用','prov.dragTip':'拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合','prov.aggOut':'未参与聚合（拖到这里移出聚合）','prov.aggOutEmpty':'暂无——把上方卡片拖下来即可移出聚合','prov.layoutSaved':'布局已保存','prov.updateAll':'更新全部订阅','prov.editDefaultCfg':'编辑默认配置文件','prov.openConfDir':'打开配置目录','prov.aggWrapHint':'拖动手柄可调整顺序，拖到下方即移出聚合','prov.aggOutPh':'把上方订阅卡片拖到这里',
+    'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）','prov.aggTitle':'订阅聚合','prov.aggDesc':'所有订阅的节点已合并进默认配置，规则 / 策略组全局共用；关闭「设置 → 聚合订阅」可改用单个订阅的独立配置','prov.aggWrap':'已聚合的订阅','prov.soloTip':'当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅','prov.inUse':'正在使用','prov.dragTip':'拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合','prov.aggOut':'未参与聚合（拖到这里移出聚合）','prov.aggOutEmpty':'暂无——把上方卡片拖下来即可移出聚合','prov.layoutSaved':'布局已保存','prov.updateAll':'更新全部订阅','prov.editDefaultCfg':'编辑默认配置文件','prov.openConfDir':'打开配置目录','prov.aggWrapHint':'拖动手柄可调整顺序，拖到下方即移出聚合','prov.aggOutPh':'Drag a subscription card here to exclude it',
     'prov.chooseFile':'选择文件','prov.tooLarge':'文件过大（上限 2MB）',
     'settings.aggregate':'聚合订阅','settings.aggregateHint':'开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件',
     'settings.activeSub':'当前使用的订阅','settings.aggregateNone':'未选择（关闭聚合前需先选择）',
@@ -9263,15 +9281,13 @@ function _fnSdkCall(promise, ms) {
 // 注意：fnOS 宿主桥的 openFileManager 只接受目录，传文件路径无响应
 // （实测：传目录可跳转、传文件无任何反应），因此定位到所在目录。
 async function _openPathInFileManager(path) {
-  if (window.parent !== window && window.__fnSdk) {
+  if (window.__fnSdk && window.__fnSdk.TrimApp) {
     try {
       var sdk = new window.__fnSdk.TrimApp({ debug: true });
       await _fnSdkCall(sdk.ready());
-      if (sdk.isWeb && !sdk.isStandaloneWeb) {
-        await _fnSdkCall(sdk.openFileManager(path));
-        showToast('已打开文件管理器: ' + path, 'success');
-        return;
-      }
+      var r = await _fnSdkCall(sdk.openFileManager(path), 3000);
+      showToast('已打开文件管理器: ' + path, 'success');
+      return;
     } catch (e) { /* 宿主桥不可用/超时 → 回退为复制 */ }
   }
   try {
