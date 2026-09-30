@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20261001064243';
+  var B='unknown-20261001065241';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -3120,13 +3120,15 @@ function showSection(name) {
           var sn = null;
           try { sn = JSON.parse(raw); } catch (e3) { sn = null; }
           // 带模式标记的快照：与当前聚合/单订模式不一致则不还原
-          if (sn && typeof sn === 'object' && sn.html) {
+          // 还要校验构建刻：升级/改版后旧快照是旧模板的 DOM，还原会闪一下旧卡片
+          if (sn && typeof sn === 'object' && sn.html
+              && (!sn.build || sn.build === (window.__FNSoAR_BUILD__ || ''))) {
             snapHtml = (sn.mode === (_provAgg && _provAgg.aggregate ? 'agg' : 'solo')) ? sn.html : null;
           }
           // 旧格式快照（无模式标记）不还原：无法判定它属于哪种模式
         }
       } catch (e) {}
-      if (snapHtml && !grid.querySelector('.prov-card')) {
+      if (snapHtml && !grid.querySelector('.prov-mini')) {
         grid.innerHTML = snapHtml;
         // 快照可能带着展开态（swiped/内联位移），先清掉，避免闪一下展开的卡片
         grid.querySelectorAll('.prov-mini.swiped').forEach(function(r) { r.classList.remove('swiped'); });
@@ -5064,7 +5066,7 @@ async function runWebTest() {
    async function loadProviders(silent) {
    const grid = document.getElementById('provGrid');
    if (!grid) return;
-   if (!silent && grid.querySelector('.prov-card')) silent = true;
+   if (!silent && grid.querySelector('.prov-mini')) silent = true;
     if (!silent) grid.innerHTML = '<div class="prov-empty">' + t('conn.loading') + '</div>';
    // 静态订阅信息先渲染（api/proxy-providers 快），节点数/更新时间随后由
    // providers/proxies 异步补齐 —— 两者独立，不必等慢的一个都好了才显示
@@ -5171,26 +5173,9 @@ async function runWebTest() {
              </div>
            </div>`;
        }
-       return `<div class="prov-card${isActive ? ' active' : ''}${si ? '' : ' data-unlim="1"'}${soloAttrs} id="provcard-${esc(name)}" draggable="true">
-           ${activeDot}${dragHandle}
-           <div class="prov-head">
-              <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
-           ${trafficHtml}
-          <div class="prov-stats">
-            <span class="prov-stat">${svgIcon(IC.nodes)}<b>${nodeCount}</b> ${t('home.node')}</span>
-            <span class="prov-stat">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
-            <span class="prov-stat">${interval}s ${t('providers.update')}</span>
-          </div>
-            </div>
-          <div class="prov-actions">
-            <button class="prov-act-btn prov-update" onclick="updateProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.refresh)}${t('providers.update')}</button>
-           <button class="prov-act-btn prov-edit" onclick="openProvMenu(event, '${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.edit)}${t('providers.edit')}</button>
-           <button class="prov-act-btn prov-del" onclick="deleteProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.trash)}${t('providers.delete')}</button>
-         </div>
-       </div>`;
      }).join('');
      const inHtml = buildCards(inCards, true);   // 单订模式也用紧凒行，与聚合视觉一致
-     const outHtml = buildCards(outCards, agg.aggregate);
+     const outHtml = buildCards(outCards, true);
      // 单订视图：整行卡片（prov-solo-grid 此前只有 CSS、JS 从未应用，
      // 导致卡片走默认 auto-fill 半列栅格）
      grid.classList.toggle('prov-solo-grid', !agg.aggregate);
@@ -5206,8 +5191,8 @@ async function runWebTest() {
     };
    const renderAndSnap = () => {
      render();
-     if (grid.querySelector('.prov-card')) {
-       provSnapMem = JSON.stringify({ mode: (agg && agg.aggregate) ? 'agg' : 'solo', html: grid.innerHTML });
+     if (grid.querySelector('.prov-card, .prov-mini')) {
+       provSnapMem = JSON.stringify({ mode: (agg && agg.aggregate) ? 'agg' : 'solo', build: (typeof B !== 'undefined' ? B : ''), html: grid.innerHTML });
        try { localStorage.setItem('fnsoarProvSnap', provSnapMem); } catch (e) {}
      }
    };
