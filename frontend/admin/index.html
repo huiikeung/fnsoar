@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930170418';
+  var B='unknown-20260930171847';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -1177,19 +1177,23 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-grid-inner{gap:12px}
 /* 单订模式：一行一张大卡（保留信息完整的卡片，与聚合紧凑行区分） */
 .prov-solo-grid{grid-template-columns:1fr!important;max-width:none}
-/* 单订卡片：整行。左侧固定序号/拖拽栏；订阅链接整行不全截；
-   选中态不加边框（保留右上角绿点）；进度条贴卡片底边框 */
-.prov-solo-grid .prov-url{display:none}
-/* 官网入口同藏：它在隐式行里会把进度条顶离底边框 */
-.prov-solo-grid .prov-home{display:none}
-.prov-solo-grid .prov-card{display:grid;grid-template-columns:34px 1fr auto;grid-template-areas:"num top actions" "num stats actions" "traffic traffic traffic";gap:3px 14px;align-items:center;padding:14px 16px 0;padding-left:46px;overflow:hidden}
-.prov-solo-grid .prov-card .prov-drag-num{position:static;grid-area:num;transform:none;font-size:14px}
-.prov-solo-grid .prov-card-top{grid-area:top;align-items:center}
-.prov-solo-grid .prov-actions{grid-area:actions;align-self:start}
-.prov-solo-grid .prov-stats{grid-area:stats}
-.prov-solo-grid .prov-traffic{grid-area:traffic;margin:10px -16px 0 -46px;padding:0}
-/* 进度条贴底边框（左右一起出血） */
-.prov-solo-grid .prov-traffic-bar{border-radius:0;height:5px}
+/* ── 单订卡片：一行紧凑布局（序号 | 徽标 | 名称 | 小进度条 | 流量 | stats | 按钮） ── */
+.prov-solo-grid .prov-card{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;min-height:58px;padding:14px 18px 14px 46px;overflow:hidden}
+.prov-solo-grid .prov-card .prov-drag-num{position:static;flex:none;font-size:14px}
+.prov-solo-grid .prov-head{display:flex;align-items:center;gap:10px 16px;flex:1 1 auto;min-width:0;flex-wrap:wrap}
+.prov-solo-grid .prov-card-top{display:flex;align-items:center;gap:8px;min-width:0;flex:0 1 auto}
+.prov-solo-grid .prov-badge{flex:none}
+/* 流量：小进度条（名称后）+ 文字，同行 */
+.prov-solo-grid .prov-traffic{display:flex;align-items:center;gap:10px;min-width:0;flex:0 1 auto}
+.prov-solo-grid .prov-traffic-bar{order:-1;flex:none;width:96px;height:5px;border-radius:3px;margin:0}
+.prov-solo-grid .prov-traffic-line{white-space:nowrap;min-width:0}
+.prov-solo-grid .prov-stats{display:flex;align-items:center;gap:12px;flex:0 0 auto;flex-wrap:wrap;margin-left:auto}
+.prov-solo-grid .prov-actions{display:flex;align-items:center;gap:6px;flex:none;margin-left:auto}
+/* 窄屏：按钮独占一行右对齐 */
+@media(max-width:860px){
+  .prov-solo-grid .prov-stats{margin-left:0}
+  .prov-solo-grid .prov-actions{margin-left:auto}
+}
 /* 选中态不用边框/阴影，只保留右上角绿点 */
 .prov-solo-grid .prov-card.active{border-color:var(--border);box-shadow:none}
 .prov-solo-grid .prov-card.active::before{background:none}
@@ -5073,7 +5077,8 @@ async function runWebTest() {
        }
        return `<div class="prov-card${isActive ? ' active' : ''}${si ? '' : ' data-unlim="1"'}${soloAttrs} id="provcard-${esc(name)}" draggable="true">
            ${activeDot}${dragHandle}
-           <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
+           <div class="prov-head">
+              <div class="prov-card-top"><span class="prov-badge">${badge}</span><span class="prov-name" title="${esc(name)}">${esc(name)}</span></div>
           <div class="prov-url" title="${esc(url)}">${esc(url)}</div>
            ${home ? '<a class="prov-home" href="' + esc(home) + '" target="_blank" rel="noopener">' + svgIcon(IC.external) + t('prov.officialSite') + '</a>' : ''}
            ${trafficHtml}
@@ -5082,6 +5087,7 @@ async function runWebTest() {
             <span class="prov-stat">${svgIcon(IC.clock)}${fmtTime(updated)}</span>
             <span class="prov-stat">${interval}s ${t('providers.update')}</span>
           </div>
+            </div>
           <div class="prov-actions">
             <button class="prov-act-btn prov-update" onclick="updateProvider('${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.refresh)}${t('providers.update')}</button>
            <button class="prov-act-btn prov-edit" onclick="openProvMenu(event, '${name.replace(/'/g, String.fromCharCode(92)+"'")}')">${svgIcon(IC.edit)}${t('providers.edit')}</button>
@@ -5728,6 +5734,7 @@ function renderAggSec() {
   }
   body.innerHTML = html;
   renderAggSecList('');
+  setTimeout(function() { if (window.csInitAll) csInitAll(); }, 0);
 }
 function aggGroupNames() {
   if (_aggSec.section !== 'rules') return [];
