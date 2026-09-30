@@ -3,7 +3,7 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20260930152320';
+  var B='unknown-20260930153518';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
@@ -5413,7 +5413,7 @@ function saveProvLayout() {
 // 排除名单变化后防撑重启：连续拖多次只重启一次（默认 8 秒后）
 var _layoutRestartTimer = null, _layoutRestartLeft = 0, _layoutRestartTick = null;
 function scheduleLayoutRestart(ms) {
-  _layoutRestartLeft = Math.ceil((ms || 8000) / 1000);
+  _layoutRestartLeft = Math.ceil((ms || 4000) / 1000);
   if (_layoutRestartTimer) clearTimeout(_layoutRestartTimer);
   if (_layoutRestartTick) clearInterval(_layoutRestartTick);
   showToast((t('prov.layoutPending') || '布局已保存，') + _layoutRestartLeft + (t('prov.layoutPendingSec') || ' 秒后自动重启生效'), 'info', 12000);
@@ -5421,7 +5421,7 @@ function scheduleLayoutRestart(ms) {
     _layoutRestartLeft--;
     if (_layoutRestartLeft <= 0) { clearInterval(_layoutRestartTick); _layoutRestartTick = null; }
   }, 1000);
-  _layoutRestartTimer = setTimeout(applyLayoutRestart, ms || 8000);
+  _layoutRestartTimer = setTimeout(applyLayoutRestart, ms || 4000);
 }
 function applyLayoutRestart() {
   if (_layoutRestartTimer) { clearTimeout(_layoutRestartTimer); _layoutRestartTimer = null; }

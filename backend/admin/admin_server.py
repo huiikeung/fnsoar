@@ -235,6 +235,20 @@ def _save_sub_layout(layout):
     save_sub_meta(meta)
 
 
+def _restart_engine_only_async():
+    """异步只重启引擎（不停面板）：页面连接不断，约 1-2 秒。"""
+    def _bg():
+        try:
+            stop_service()
+            time.sleep(1)
+            start_service()
+        except Exception as e:
+            log(f"engine-only restart failed: {e}")
+            _restart_engine_async()
+    import threading as _th
+    _th.Thread(target=_bg, daemon=True).start()
+
+
 def _restart_engine_async():
     """异步重启引擎（engine-start 重启整条服务链）。"""
     import subprocess as _sp
@@ -3400,65 +3414,62 @@ def _sub_payload_digest(name):
             "groups": [x["name"] for x in groups] + ["DIRECT", "REJECT"]}
 
 
-def _apply_excluded_to_config(excluded):
-    """把「不参与聚合」的订阅从 config.yaml 的 proxy-providers 中移除；
-    把重新参与的补回来。返回 (changed, error)。"""
-    excluded = set(excluded or [])
-    content = read_config()
-    meta = load_sub_meta()
-    new_content = content
-    if excluded:
-        m = re.search(r'^proxy-providers:\s*$', new_content, re.M)
-        if m:
-            prefix = new_content[:m.start()]
-            suffix = new_content[m.start():]
-            for nm in excluded:
-                head, rest, found = _strip_provider_block(suffix, nm)
-                if found:
-                    suffix = "proxy-providers:\n" + head + rest
-                    new_content = prefix + suffix
-    import yaml as _ylay
-    try:
-        doc = _ylay.safe_load(new_content) or {}
-        have = set((doc.get("proxy-providers") or {}).keys())
-    except Exception:
-        have = set()
-    missing = []
-    for nm, ent in (meta or {}).items():
-        if not isinstance(nm, str) or nm.startswith("__") or nm in excluded or nm in have:
-            continue
-        if not isinstance(ent, dict):
-            continue
-        url = (ent.get("url") or "").strip()
-        if not url.startswith("http"):
-            continue
-        try:
-            iv = int(ent.get("interval") or 0)
-        except Exception:
-            iv = 0
-        missing.append((nm, url, iv or 3600))
-    if missing:
-        block_all = "".join(_provider_block(nm, url, iv, "http") for nm, url, iv in missing)
-        m = re.search(r'^proxy-providers:\s*\{\}\s*$', new_content, re.M)
-        if m:
-            new_content = new_content[:m.start()] + "proxy-providers:\n" + block_all + new_content[m.end():]
-        else:
-            m2 = re.search(r'^proxy-providers:\s*$', new_content, re.M)
-            if m2:
-                head, rest, _ = _strip_provider_block(new_content[m2.start():], "\x00never")
-                new_content = new_content[:m2.start()] + "proxy-providers:\n" + head + block_all + rest
-            else:
-                new_content = new_content.rstrip("\n") + "\n\nproxy-providers:\n" + block_all
-    if new_content == content:
-        return False, None
-    try:
-        doc2 = _ylay.safe_load(new_content)
-        assert isinstance(doc2, dict) and isinstance(doc2.get("proxy-providers"), dict), "invalid"
-    except Exception as e:
-        return False, f"布局应用后配置校验失败: {e}"
-    write_config(new_content)
-    return True, None
+def _comment_block(text, name):
+    """把指定 proxy-provider 块注释掉（保留原文，恢复时原样还原）。"""
+    pat = re.compile(r'^(  ' + re.escape(name) + r':\n(?:(?!  [^\s#])[ \t]+[^\n]*\n)+)', re.M)
+    m = pat.search(text)
+    if not m:
+        return text, False
+    block = m.group(1)
+    commented = "".join(("# " + l) if l.strip() else l for l in block.splitlines(keepends=True))
+    return text[:m.start()] + commented + text[m.end():], True
 
+
+def _uncomment_block(text, name):
+    """把被注释的指定块恢复（取消 '# ' 前缀）。"""
+    pat = re.compile(r'^(#   ' + re.escape(name) + r':\n(?:(?!#   [^\s#])#[ \t]*[^\n]*\n)+)', re.M)
+    for m in pat.finditer(text):
+        blk = m.group(1)
+        first = blk.splitlines()[0]
+        stripped = first[2:] if first.startswith("# ") else (first[1:] if first.startswith("#") else first)
+        if stripped.strip() != name + ":":
+            continue
+        restored = "".join((l[2:] if l.startswith("# ") else (l[1:] if l.startswith("#") else l))
+                           for l in blk.splitlines(keepends=True))
+        return text[:m.start()] + restored + text[m.end():], True
+    return text, False
+
+
+def _apply_excluded_to_config(excluded):
+    """排除订阅 = 注释掉对应 proxy-provider 块；恢复 = 取消注释。
+    注释方案保留原文，恢复时一字不差。"""
+    excluded = [str(x) for x in (excluded or [])]
+    try:
+        content = read_config()
+        new_content = content
+        for nm in excluded:
+            new_content, _ch = _comment_block(new_content, nm)
+        import yaml as _ylay2
+        doc = _ylay2.safe_load(new_content) or {}
+        have = set((doc.get("proxy-providers") or {}).keys())
+        for nm in (load_sub_meta() or {}):
+            if not isinstance(nm, str) or nm.startswith("__") or nm in excluded or nm in have:
+                continue
+            new_content, ch2 = _uncomment_block(new_content, nm)
+            if ch2:
+                doc = _ylay2.safe_load(new_content) or {}
+                have = set((doc.get("proxy-providers") or {}).keys())
+        if new_content == content:
+            return False, None
+        try:
+            doc2 = _ylay2.safe_load(new_content)
+            assert isinstance(doc2, dict) and isinstance(doc2.get("proxy-providers"), dict), "invalid"
+        except Exception as e:
+            return False, f"布局应用后配置校验失败: {e}"
+        write_config(new_content)
+        return True, None
+    except Exception as e:
+        return False, str(e)
 
 class AdminHandler(BaseHTTPRequestHandler):
     def log_message(self, fmt, *args):
@@ -3556,7 +3567,7 @@ class AdminHandler(BaseHTTPRequestHandler):
         try:
             data = _jl.loads(body or "{}")
             if data.get("only_restart"):
-                _restart_engine_async()
+                _restart_engine_only_async()
                 return self._send_json({"success": True, "message": "\u5f15\u64ce\u91cd\u542f\u4e2d\u2026"})
             order = data.get("order") or []
             excluded = data.get("excluded") or []
@@ -3568,14 +3579,14 @@ class AdminHandler(BaseHTTPRequestHandler):
                 changed, err = _apply_excluded_to_config(excluded)
                 if err:
                     return self._send_json({"success": False, "error": err}, 500)
-            msg = ("已应用，引擎重启中…" if changed else "已保存")
+            msg = ("已应用" if changed else "已保存")
             self._send_json({"success": True, "changed": changed, "message": msg})
             if changed and want_restart:
-                # 后台重启：会连同本服务一起停，必须在响应完成后再做
+                # 后台只重启引擎（面板不停，页面连接不断）
                 def _bg_restart():
                     try:
                         time.sleep(1)
-                        _restart_engine_async()
+                        _restart_engine_only_async()
                     except Exception:
                         pass
                 threading.Thread(target=_bg_restart, daemon=True).start()
