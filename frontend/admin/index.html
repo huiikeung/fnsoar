@@ -1,6 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
+<head><script>
+/* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
+(function(){try{
+  var B='unknown-20260930122449';
+  var k='fnsoar_build_stamp';
+  if(localStorage.getItem(k)!==B){
+    localStorage.setItem(k,B);
+    if(localStorage.getItem(k+'_had')){location.reload(true);return;}
+    localStorage.setItem(k+'_had','1');
+  }
+}catch(e){}})();
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="color-scheme" content="light dark">

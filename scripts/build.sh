@@ -32,6 +32,10 @@ mkdir -p "${DEST_DIR}/admin" "${DEST_DIR}/bin" "${DATA_DIR}"
 
 # Copy admin server (backend) + admin UI (frontend) — both live under admin/ at runtime
 echo "Copying admin files..."
+# 构建戳：每次打包写入唯一值，页面据此强制刷新（防 APP 内嵌 WebView 缓存旧页面）
+_stamp="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)-$(date +%Y%m%d%H%M%S)"
+sed -i "s/var B='[^']*';/var B='${_stamp}';/" "${FRONTEND_ADMIN}/index.html" 2>/dev/null || true
+
 for f in admin_server.py media_unlock.py server.js host_transparent.sh start_admin.sh \
          index.html ui.html favicon.png CHANGELOG.md; do
     src="${BACKEND_ADMIN}/${f}"
