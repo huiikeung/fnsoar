@@ -17,6 +17,10 @@
 #   scripts/      构建脚本
 #   dist/         构建产物与暂存目录
 #
+# 说明：frontend/dashboard 与 resources/core 按 .gitignore 设计不入库。
+#       打包时若 frontend/dashboard 缺失，会自动从 GitHub Release 下载最新版
+#       （确保任何人 clone 仓库后都能直接打出完整安装包）；内核仍需手动放入。
+#
 # 包结构为官方规范布局（由 fnpack build 校验并打包）：
 #   {manifest, cmd/, config/, wizard/, ICON.PNG, ICON_256.PNG, app/...}
 # 安装时 app/ 内容落到应用 target 目录，布局与历史版本完全一致：
@@ -58,6 +62,86 @@ for pair in "x86/mihomo-amd64.real:amd64" "arm/mihomo-arm64.real:arm64"; do
     fi
 done
 file "${CORE_DIR}/x86/mihomo-amd64.real" "${CORE_DIR}/arm/mihomo-arm64.real" | sed 's/^/  /'
+
+# 0b. 面板补齐：frontend/dashboard 缺失时自动从 GitHub Release 下载最新版
+#     （该目录设计上不入库，下载后仅落盘供本次打包，不会进入 git）
+echo "[0/6] 检查面板（frontend/dashboard）..."
+ensure_dashboards() {
+    local dd="${FRONTEND_DASHBOARD}"
+    local missing=0
+    if [ ! -f "${dd}/zashboard/index.html" ]; then missing=1; fi
+    if [ ! -f "${dd}/metacubexd/index.html" ]; then missing=1; fi
+    if [ "$missing" = "0" ]; then
+        echo "  ✓ 面板已存在，跳过下载"
+        return 0
+    fi
+    echo "  frontend/dashboard 不完整 → 自动从 GitHub Release 下载最新面板..."
+    mkdir -p "${dd}"
+    local tmp; tmp="$(mktemp -d)"
+
+    # 安装单个面板：$1=name  $2=repo  $3=asset 文件名
+    _install_dash() {
+        local name="$1" repo="$2" asset="$3"
+        if [ -f "${dd}/${name}/index.html" ]; then
+            echo "    ✓ ${name} 已存在"
+            return 0
+        fi
+        local api="https://api.github.com/repos/${repo}/releases/latest"
+        local url tag
+        url="$(curl -sL --retry 6 --retry-delay 3 -m 40 "${api}" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    d = json.load(sys.stdin)
+    print(next(a['browser_download_url'] for a in d.get('assets', []) if a.get('name') == '${asset}'))
+except Exception:
+    pass" 2>/dev/null)"
+        tag="$(curl -sL --retry 6 --retry-delay 3 -m 40 "${api}" 2>/dev/null | python3 -c "
+import sys, json
+try:
+    print(json.load(sys.stdin).get('tag_name', ''))
+except Exception:
+    pass" 2>/dev/null)"
+        if [ -z "${url}" ]; then
+            echo "    ⚠ ${name}: 无法从 GitHub API 获取下载地址，跳过（安装后可在 App 内更新面板）" >&2
+            return 0
+        fi
+        echo "    ↓ ${name} ${tag:-latest}（${asset}）"
+        if ! curl -fsL --retry 5 --retry-delay 3 -m 300 -o "${tmp}/${name}.pkg" "${url}"; then
+            echo "    ⚠ ${name}: 下载失败，跳过（安装后可在 App 内更新面板）" >&2
+            return 0
+        fi
+        local root="${tmp}/${name}x"
+        rm -rf "${root}"; mkdir -p "${root}"
+        case "${asset}" in
+            *.zip)
+                if command -v unzip >/dev/null 2>&1; then
+                    unzip -q "${tmp}/${name}.pkg" -d "${root}" || { echo "    ⚠ ${name}: 解压失败" >&2; return 0; }
+                else
+                    python3 -m zipfile -e "${tmp}/${name}.pkg" "${root}" || { echo "    ⚠ ${name}: 解压失败" >&2; return 0; }
+                fi
+                ;;
+            *) tar -xzf "${tmp}/${name}.pkg" -C "${root}" || { echo "    ⚠ ${name}: 解压失败" >&2; return 0; }
+                ;;
+        esac
+        # 定位 web 根（最浅的含 index.html 的目录）
+        local webroot
+        webroot="$(find "${root}" -name index.html -maxdepth 2 2>/dev/null | head -1)"
+        webroot="$(dirname "${webroot:-/nonexistent}")"
+        if [ ! -f "${webroot}/index.html" ]; then
+            echo "    ⚠ ${name}: 包内未找到 index.html，跳过" >&2
+            return 0
+        fi
+        rm -rf "${dd}/${name}"
+        cp -a "${webroot}" "${dd}/${name}"
+        echo "${tag#v}" > "${dd}/${name}/VERSION"
+        echo "    ✓ ${name} ${tag:-latest} 就绪"
+    }
+
+    _install_dash "zashboard"  "Zephyruso/zashboard"  "dist-cdn-fonts.zip"
+    _install_dash "metacubexd" "MetaCubeX/metacubexd" "compressed-dist.tgz"
+    rm -rf "${tmp}"
+}
+ensure_dashboards
 
 if [ -z "${APPNAME}" ]; then
     echo "错误: 无法从 manifest 解析 appname" >&2
