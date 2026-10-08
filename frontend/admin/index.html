@@ -3,20 +3,26 @@
 <head><script>
 /* 构建戳：部署版本变化时强制刷新一次，防 APP 内嵌 WebView 缓存旧页面 */
 (function(){try{
-  var B='unknown-20261001071023';
+  var B='unknown-20261008112105';
   window.__FNSoAR_BUILD__ = B;
   /* 验伪：HTML 可能被 APP 内嵌 WebView 缓存（缓存时脚本里的戳也是旧的），
      用不会被缓存的 /api/build-stamp 比对；不一致则带 ?v= 重新拉取
      （URL 变化必然穿过缓存），彻底解决「改了但 APP 里不生效」。 */
   fetch('api/build-stamp', {cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
-    if (!d || !d.stamp || d.stamp === B) return;
+    if (!d || !d.stamp) return;
+    if (d.stamp === B) { try { sessionStorage.setItem('fnsoar_redirected', '0'); } catch(e0) {} return; }
     var u = new URL(location.href);
     // 防循环：已带该戳的 URL 就不跳（说明带参刷新仍是旧文档，
     // 只能等 WebView 自己过期缓存，不能无限重定向）
     if (u.searchParams.get('v') === d.stamp) return;
-    try { if (sessionStorage.getItem('fnsoar_redirected') === d.stamp) return; } catch(e2) {}
-    try { sessionStorage.setItem('fnsoar_redirected', d.stamp); } catch(e3) {}
+    // 宽松重试：旧页面重定向一次可能仍被 WebView 内存缓存挡住，
+    // 允许本会话内最多再试 2 次（每次换新 URL 必穿过缓存）；成功加载后计数归零
+    var tries = 0;
+    try { tries = parseInt(sessionStorage.getItem('fnsoar_redirected') || '0', 10) || 0; } catch(e2) {}
+    if (tries >= 2) return;
+    try { sessionStorage.setItem('fnsoar_redirected', String(tries + 1)); } catch(e3) {}
     u.searchParams.set('v', d.stamp);
+    u.searchParams.set('_', Date.now());
     location.replace(u.toString());
   }).catch(function(){});
 }catch(e){}})();
@@ -76,7 +82,7 @@
 
 /* ── 系统模式：无 data-theme 时跟随系统 ────── */
 @media (prefers-color-scheme: light){
-  :root:not([data-theme]){--bg:#f5f6f8;--card:#ffffff;--card2:#f0f1f4;--border:#e2e4ea;--border-soft:rgba(0,0,0,.08);--text:#1f2328;--dim:#6b7280;--faint:#9ca3af;--accent:#4e6ef2;--accent2:#3b5bdb;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff;--grid-line:rgba(0,0,0,.08);--log-bg:#f8f9fa;--log-text:#374151--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;--mx-panel:#ffffff;--mx-tag:#eef2f8;--mx-accent:#627fe6;--mx-good:#239a58;--mx-good-strong:#2dbd74;--mx-warn:#b76b10}
+  :root:not([data-theme]){--bg:#f5f6f8;--card:#ffffff;--card2:#f0f1f4;--border:#e2e4ea;--border-soft:rgba(0,0,0,.08);--text:#1f2328;--dim:#6b7280;--faint:#9ca3af;--accent:#4e6ef2;--accent2:#3b5bdb;--green:#2e9e4f;--red:#e03131;--yellow:#b8860b;--on-accent:#fff;--grid-line:rgba(0,0,0,.08);--log-bg:#f8f9fa;--log-text:#374151;--mx-text:#182230;--mx-sub:#445066;--mx-muted:#667085;--mx-line:#dce2eb;--mx-inset:#f7f9fc;--mx-ctl:#ffffff;--mx-panel:#ffffff;--mx-tag:#eef2f8;--mx-accent:#627fe6;--mx-good:#239a58;--mx-good-strong:#2dbd74;--mx-warn:#b76b10}
 }
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%}
@@ -88,7 +94,9 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar.collapsed{width:56px}
 .sidebar.hidden{display:none}
 @media(min-width:861px){.sidebar.hidden{display:flex}}
-@media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important;position:relative;height:100%;z-index:auto;box-shadow:none}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:200px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
+@media(max-width:860px){.sidebar{width:56px;display:none!important}.sidebar.hidden{display:none!important}.sidebar.mobile-visible{display:flex!important;position:relative;height:100%;z-index:auto;box-shadow:none}.sidebar .sidebar-header{padding:14px 0 10px;justify-content:center}.sidebar .sidebar-header>div{display:none}.sidebar .sidebar-header img{width:32px;height:32px;border-radius:8px;margin:0}.sidebar .nav-item{justify-content:center;padding:9px 0}.sidebar .nav-item .ic{width:auto;margin:0}.sidebar .nav-item>span:not(.ic){display:none}.sidebar .nav .group-label{display:none}.sidebar .sidebar-bottom{padding:8px;display:flex;flex-direction:column;align-items:center;gap:2px}.sidebar .sidebar-bottom .nav-item{justify-content:center;padding:9px 0}.sidebar.expanded{width:200px!important}.sidebar.expanded .sidebar-header{padding:18px 18px 14px;justify-content:flex-start}.sidebar.expanded .sidebar-header>div{display:block}.sidebar.expanded .sidebar-header img{width:34px;height:34px;border-radius:8px;margin:0}.sidebar.expanded .nav-item{justify-content:flex-start;padding:9px 12px}.sidebar.expanded .nav-item .ic{width:18px;margin:0}.sidebar.expanded .nav-item>span:not(.ic){display:inline}.sidebar.expanded .nav .group-label{display:block}
+/* 窄屏展开态也隐藏「面板」分组标题：让 Zashboard/Metacubexd 紧贴上方导航项显示，不再被分组标题隔开 */
+.sidebar.expanded .nav .group-label[data-i18n="sidebar.panels"]{display:none}.sidebar.expanded .sidebar-bottom{padding:12px 14px 16px;display:block}.sidebar.expanded .sidebar-bottom .nav-item{justify-content:flex-start;padding:9px 12px}}
 .sidebar-hidden-toggle{display:none;position:fixed;z-index:140;width:36px;height:36px;border-radius:8px;background:var(--card);border:1px solid var(--border);align-items:center;justify-content:center;cursor:grab;color:var(--text);box-shadow:0 2px 8px rgba(0,0,0,.15);user-select:none;touch-action:none}
 @media(max-width:860px){.sidebar-hidden-toggle{display:flex}}
 .sidebar.collapsed .sidebar-header{padding:14px 0 10px;justify-content:center}
@@ -106,6 +114,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .sidebar-header .t2{font-size:11px;color:var(--dim);margin-top:2px;white-space:nowrap}
 .nav{padding:6px 10px;flex-grow:1;overflow-y:auto}
 .nav .group-label{font-size:10.5px;color:var(--faint);text-transform:uppercase;letter-spacing:.8px;padding:14px 10px 6px}
+/* 侧栏「面板」分组短分隔线（Zashboard 上方）：图标态/窄屏显示；
+   桌面展开态有「面板」分组标题承担分隔，不重复显示 */
+.nav-sep{width:22px;height:1px;margin:8px auto;background:var(--border)}
+@media(min-width:861px){.sidebar:not(.collapsed) .nav-sep{display:none}}
+.sidebar.expanded .nav-sep{margin:8px 0 8px 12px}
 .nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;color:var(--dim);font-size:13.5px;cursor:pointer;transition:all .12s;user-select:none;margin-bottom:2px}
 .nav-item:hover{background:var(--card2);color:var(--text)}
 .nav-item.active{background:var(--card);color:var(--text);font-weight:600}
@@ -336,8 +349,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Noto Sans S
 .traffic-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
 .traffic-total{font-size:12px;color:var(--dim)}
 .traffic-total b{color:var(--text);font-weight:700}
-@media(max-width:760px){.home-grid{grid-template-columns:1fr}.traffic-speed-row{flex-direction:column;gap:8px}}
-@media(max-width:480px){.main{padding:14px 10px}.card{padding:14px 12px}.grid{grid-template-columns:1fr;gap:8px}.home-grid{grid-template-columns:1fr;gap:10px}.info-grid{grid-template-columns:1fr}.con-head{padding:10px 0}}
+@media(max-width:760px){.home-grid{grid-template-columns:1fr}.traffic-speed-row{flex-direction:column;gap:8px}
+/* 窄屏首页：系统信息整卡展开，不再内部滚动（与 Clash 信息一致） */
+.info-scroll{max-height:none;overflow-y:visible}}
+@media(max-width:480px){.main{padding:14px 10px}.card{padding:14px 12px}.grid{grid-template-columns:1fr;gap:8px}.home-grid{grid-template-columns:1fr;gap:10px}.con-head{padding:10px 0}}
 .hint{font-size:12px;color:var(--faint);margin-top:8px}
 input[type="text"],input[type="number"],textarea,select{background:var(--card2);border:1.5px solid var(--border);border-radius:10px;color:var(--text);padding:9px 13px;font-size:13px;outline:none;font-family:inherit;width:100%;transition:border-color .15s,box-shadow .15s}
 select{appearance:none;-webkit-appearance:none;padding-right:32px;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 8px center;cursor:pointer}
@@ -1018,6 +1033,11 @@ select.dns-input{appearance:none;-webkit-appearance:none;background-image:url("d
 .pg-check input{display:none}
 /* 编辑源文件：自定义可拖拽滚动条（覆盖全局隐藏） */
 #configYaml{scrollbar-width:auto}
+/* 配置页「编辑源文件」：左侧行号栏 + 编辑器（与弹窗编辑器同款观感） */
+.cfg-raw-wrap{flex:1;display:flex;min-height:260px;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--card2)}
+.cfg-raw-gutter{flex:none;width:44px;padding:12px 8px 12px 0;text-align:right;font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.5;color:var(--faint);background:var(--card);overflow:hidden;white-space:pre;user-select:none;border-right:1px solid var(--border)}
+#configYaml{box-shadow:none}
+@media(max-width:760px){.cfg-raw-gutter{width:36px;padding:12px 6px 12px 0;font-size:12px}}
 #configYaml::-webkit-scrollbar{display:block;width:12px}
 #configYaml::-webkit-scrollbar-track{background:transparent;border-radius:10px}
 #configYaml::-webkit-scrollbar-thumb{background:rgba(139,145,158,.35);border-radius:10px;border:3px solid transparent;background-clip:content-box}
@@ -1054,7 +1074,13 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .prov-import-input:focus{border-color:var(--accent)}
 .prov-import-input::placeholder{color:var(--faint)}
 .prov-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px}
-.pe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:14px}
+.pe-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:0}
+/* 全局扩展分区：与上方订阅卡片之间加可见分隔，避免手机端两种卡片混淆 */
+.pe-sec{margin-top:20px}
+.pe-sec-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 2px 10px}
+.pe-sec-title{font-size:13px;font-weight:700;color:var(--text)}
+.pe-sec-tag{font-size:10.5px;font-weight:600;color:var(--accent2);background:rgba(78,110,242,.1);border:1px solid rgba(78,110,242,.25);border-radius:20px;padding:2px 9px}
+.pe-sec-rule{flex:1;min-width:12px;height:1px;background:var(--border)}
 .pe-card{display:flex;align-items:center;gap:12px;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--card);min-width:0;transition:border-color .15s}
 .pe-card:hover{border-color:var(--faint)}
 .filter-sec{margin-bottom:8px}
@@ -1195,6 +1221,12 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
   .prov-mini-trafx .tx-exp{display:none}
 }
 .pe-sec-state.on{color:#3fb950}
+/* 手机端：全局扩展分区与订阅卡片拉开距离，仅保留分割线区分 */
+@media(max-width:760px){
+  .pe-sec{margin-top:16px}
+  .pe-sec-head{margin-bottom:8px}
+  .pe-sec-tag{font-size:10px;padding:1px 8px}
+}
 /* chains 添加按钮（加高 + Verge 同款箭头图标） */
 .chain-add-btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:14px 16px;min-height:46px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:13px;font-weight:600;cursor:pointer;transition:filter .12s, transform .08s}
 .chain-add-btn:hover{filter:brightness(1.08)}
@@ -1344,12 +1376,17 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
 .pe-note{display:flex;gap:8px;padding:10px 12px;border-radius:10px;background:rgba(78,110,242,.08);border:1px solid rgba(78,110,242,.25);font-size:11.5px;color:var(--dim);line-height:1.7;margin-bottom:12px}
 .pe-note svg{width:14px;height:14px;flex:none;margin-top:3px;fill:var(--accent2)}
 /* 轻量代码编辑器（行号槽 + textarea） */
-.ce-wrap{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card2);height:330px}
+.ce-wrap{display:flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;background:var(--card2);height:330px;position:relative}
 .ce-gutter{flex:none;width:40px;padding:10px 6px 10px 0;text-align:right;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;color:var(--faint);background:var(--card);overflow:hidden;white-space:pre;user-select:none}
-.ce-area{flex:1;min-width:0;min-height:0;padding:10px 12px;border:0;background:transparent;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;resize:none;outline:none;white-space:pre;overflow:auto;overflow-wrap:normal;word-break:normal;-webkit-user-select:text;user-select:text;cursor:text
+.ce-area{flex:1;min-width:0;min-height:0;padding:10px 12px;border:0;background:transparent;color:var(--text);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.6;resize:none;outline:none;white-space:pre;overflow:auto;overflow-wrap:normal;word-break:normal;-webkit-user-select:text;user-select:text;cursor:text}
 .ce-area{-webkit-appearance:none;appearance:none;-webkit-tap-highlight-color:transparent;border-radius:0}
+/* 编辑器右侧滑动块（替代被全局隐藏的滚动条）：可拖拽、可点轨跳转 */
+.ce-sb{position:absolute;top:8px;right:5px;bottom:8px;width:8px;z-index:3;touch-action:none;opacity:.5;transition:opacity .18s}
+.ce-sb:hover,.ce-sb.dragging{opacity:1}
+.ce-sb-thumb{position:absolute;left:0;display:block;width:8px;min-height:30px;border-radius:4px;background:rgba(127,127,127,.55);transition:background .15s}
+.ce-sb:hover .ce-sb-thumb,.ce-sb.dragging .ce-sb-thumb{background:var(--accent)}
 .ce-area:focus,.ce-area:active{border:0;box-shadow:none;outline:0;background:transparent}
-}.pe-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 20px 18px;border-top:1px solid var(--border-soft);flex-wrap:wrap}
+.pe-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 20px 18px;border-top:1px solid var(--border-soft);flex-wrap:wrap}
 .pe-foot-right{display:flex;gap:8px}
 .pe-foot-link{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;border:none;background:transparent;color:var(--faint);font-size:11.5px;cursor:pointer;transition:all .12s}
 .pe-foot-link:hover{color:var(--text);background:var(--card2)}
@@ -1714,6 +1751,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       <a class="nav-item" id="nav-test" onclick="showSection('test')"><span class="ic"><svg viewBox="0 0 24 24"><path d="M12,16A3,3 0 0,1 9,13C9,11.88 9.61,10.9 10.5,10.39L20.21,4.77L14.68,14.35C14.18,15.33 13.17,16 12,16M12,3C13.81,3 15.5,3.5 16.97,4.32L14.87,5.53C14,5.19 13,5 12,5A8,8 0 0,0 4,13C4,15.21 4.89,17.21 6.34,18.65H6.35C6.74,19.04 6.74,19.67 6.35,20.06C5.96,20.45 5.32,20.45 4.93,20.07V20.07C3.12,18.26 2,15.76 2,13A10,10 0 0,1 12,3M22,13C22,15.76 20.88,18.26 19.07,20.07V20.07C18.68,20.45 18.05,20.45 17.66,20.06C17.27,19.67 17.27,19.04 17.66,18.65V18.65C19.11,17.2 20,15.21 20,13C20,12 19.81,11 19.46,10.1L20.67,8C21.5,9.5 22,11.18 22,13Z"/></svg></span><span data-i18n="sidebar.test">测试</span></a>
       <a class="nav-item" id="nav-settings" onclick="showSection('settings')"><span class="ic"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></span><span data-i18n="sidebar.settings">设置</span></a>
       <div class="group-label" data-i18n="sidebar.panels">面板</div>
+      <div class="nav-sep" aria-hidden="true"></div>
       <a class="nav-item" id="nav-zashboard" onclick="openPanel('zashboard','Zashboard 面板')"><span class="ic"><svg viewBox="0 0 24 24"><path d="M13,3V9H21V3M13,21H21V11H13M3,21H11V15H3M3,13H11V3H3V13Z"/></svg></span><span>Zashboard</span></a>
       <a class="nav-item" id="nav-metacubexd" onclick="openPanel('metacubexd','Metacubexd 面板')"><span class="ic"><svg viewBox="0 0 24 24"><path d="M21 3H3c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h18c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 8H5v2h4V8zm0 3H5v2h4v-2zm0 3H5v2h4v-2zm3-6h7v2h-7V8zm0 3h7v2h-7v-2zm0 3h7v2h-7v-2z"/></svg></span><span>Metacubexd</span></a>
     </nav>
@@ -1750,7 +1788,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           <span class="svc-pill" id="homeSvcPill"><span class="pdot off" id="serviceDot"></span><span id="statusText">…</span></span>
           <span class="pid-pill" id="svcPid">PID -</span>
           <span style="position:relative">
-            <button class="ghead-tool" onclick="toggleHomeSettings()" title="首页模块设置"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
+            <button class="ghead-tool" id="homeSettingsBtn" onclick="toggleHomeSettings()" title="首页模块设置"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 0 0-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.07.62-.07.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg></button>
             <div class="home-settings-popup" id="homeSettingsPopup" style="display:none" onclick="event.stopPropagation()">
               <div class="home-settings-head" data-i18n="home.modules">首页模块</div>
               <label class="home-settings-item"><span>订阅信息</span><input type="checkbox" checked onchange="toggleHomeModule('sub',this.checked)"></label>
@@ -1792,7 +1830,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <span class="hcard-ic signal"><svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C17.93 4.07 6.07 4.07 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg></span>
             <span class="hcard-name">当前节点</span>
             <span class="flex-sp"></span>
-            <button class="ghead-tool" onclick="testCurGroupSpeed()" title="测速"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M15.9 5c-.17 0-.32.09-.41.23l-.07.15-5.18 11.65c-.16.29-.26.61-.26.96 0 1.11.9 2.01 2.01 2.01.96 0 1.77-.68 1.96-1.59l.01-.03L16.4 5.5c0-.28-.22-.5-.5-.5M2.06 10.06c.51.51 1.33.55 1.89.09 2.76-2.26 6.24-3.18 9.58-2.76l1.19-2.68c-4.35-.78-8.96.3-12.57 3.25-.64.53-.68 1.51-.09 2.1m19.88 0c.59-.59.55-1.57-.1-2.1-1.36-1.11-2.86-1.95-4.44-2.53l-.53 2.82c1.13.47 2.19 1.09 3.17 1.89.58.46 1.39.43 1.9-.08m-4.03 4.03c.6-.6.56-1.63-.14-2.12-.46-.33-.94-.61-1.44-.86l-.55 2.92c.11.07.22.14.32.22.57.4 1.33.32 1.81-.16m-11.83-.01c.5.5 1.27.54 1.85.13.94-.66 2.01-1.06 3.1-1.22l1.28-2.88c-2.13-.06-4.28.54-6.09 1.84-.69.51-.74 1.53-.14 2.13"/></svg></button>
+            <button class="ghead-tool" id="homeTestBtn" onclick="testCurGroupSpeed()" title="测速"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M15.9 5c-.17 0-.32.09-.41.23l-.07.15-5.18 11.65c-.16.29-.26.61-.26.96 0 1.11.9 2.01 2.01 2.01.96 0 1.77-.68 1.96-1.59l.01-.03L16.4 5.5c0-.28-.22-.5-.5-.5M2.06 10.06c.51.51 1.33.55 1.89.09 2.76-2.26 6.24-3.18 9.58-2.76l1.19-2.68c-4.35-.78-8.96.3-12.57 3.25-.64.53-.68 1.51-.09 2.1m19.88 0c.59-.59.55-1.57-.1-2.1-1.36-1.11-2.86-1.95-4.44-2.53l-.53 2.82c1.13.47 2.19 1.09 3.17 1.89.58.46 1.39.43 1.9-.08m-4.03 4.03c.6-.6.56-1.63-.14-2.12-.46-.33-.94-.61-1.44-.86l-.55 2.92c.11.07.22.14.32.22.57.4 1.33.32 1.81-.16m-11.83-.01c.5.5 1.27.54 1.85.13.94-.66 2.01-1.06 3.1-1.22l1.28-2.88c-2.13-.06-4.28.54-6.09 1.84-.69.51-.74 1.53-.14 2.13"/></svg></button>
             <button class="ghead-tool" onclick="showSection('groups')" title="策略组"><svg viewBox="0 0 24 24" style="width:16px;height:16px;fill:currentColor"><path d="M9,2V8H11V11H5C3.89,11 3,11.89 3,13V16H1V22H7V16H5V13H11V16H9V22H15V16H13V13H19V16H17V22H23V16H21V13C21,11.89 20.11,11 19,11H13V8H15V2H9Z"/></svg></button>
           </div>
           <div class="cur-node">
@@ -2031,7 +2069,13 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
       <!-- 订阅卡片列表 -->
       <div class="prov-grid" id="provGrid"></div>
       <!-- 全局扩展（对齐 Clash Verge Rev）：合并模板 + 全局脚本 -->
-      <div class="pe-grid">
+      <div class="pe-sec">
+        <div class="pe-sec-head">
+          <span class="pe-sec-title" data-i18n="pe.sectionTitle">全局扩展</span>
+          <span class="pe-sec-tag" data-i18n="pe.sectionScope">对所有订阅生效</span>
+          <span class="pe-sec-rule"></span>
+        </div>
+        <div class="pe-grid">
         <div class="pe-card">
           <div class="pe-ic">M</div>
           <div class="pe-info">
@@ -2047,6 +2091,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="pe-desc" data-i18n="pe.scriptDesc">全局覆写后、单配置增强前执行</div>
           </div>
           <button class="pe-btn" onclick="openPeModal('script')"><svg viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34a.9959.9959 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>编辑</button>
+        </div>
         </div>
       </div>
       <!-- 添加 / 编辑订阅弹窗 -->
@@ -2150,25 +2195,6 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
           <div class="modal-body" id="subQrBox" style="padding:16px 20px 20px"></div>
         </div>
       </div>
-      <!-- 订阅文件编辑器弹窗 -->
-      <div class="modal-backdrop" id="subFileModal" style="display:none" onclick="if(event.target===this)closeSubFileEditor()">
-        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:96vw">
-          <div class="modal-title" id="subFileTitleRow">
-            <span id="subFileTitle">订阅文件</span>
-          </div>
-          <div class="modal-body" style="padding:16px 20px 6px">
-            <div class="pe-note" data-i18n="provMenu.fileTip">直接编辑该订阅的本地配置文件；保存后立即重建节点索引。</div>
-            <div class="ce-wrap"><div class="ce-gutter" id="subFileGutter"></div><div class="ce-area" id="subFileText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subFile');" onscroll="ceScroll('subFile');"></div></div>
-          </div>
-          <div class="pe-foot">
-            <button class="pe-foot-link" onclick="reloadSubFile()" data-i18n="provMenu.reloadFile">重新加载</button>
-            <div class="pe-foot-right">
-              <button class="pe-btn-cancel" onclick="closeSubFileEditor()" data-i18n="common.cancel">取消</button>
-              <button class="pe-btn-save" id="subFileSaveBtn" data-i18n="common.save">保存</button>
-            </div>
-          </div>
-        </div>
-      </div>
       <!-- 全局扩展覆写配置 编辑弹窗 -->
       <div class="modal-backdrop" id="peMergeModal" style="display:none" onclick="if(event.target===this)closePeModal('merge')">
         <div class="modal-card pe-modal">
@@ -2204,6 +2230,26 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
         </div>
       </div>
     </section>
+
+      <!-- 订阅文件编辑器弹窗（放在 section 外：从配置页/订阅页打开都能正常显示） -->
+      <div class="modal-backdrop" id="subFileModal" style="display:none" onclick="if(event.target===this)closeSubFileEditor()">
+        <div class="modal-card pe-modal" style="width:min(760px,96vw);max-width:96vw">
+          <div class="modal-title" id="subFileTitleRow">
+            <span id="subFileTitle">订阅文件</span>
+          </div>
+          <div class="modal-body" style="padding:16px 20px 6px">
+            <div class="pe-note" id="subFileTip" data-i18n="provMenu.fileTip">直接编辑该订阅的本地配置文件；保存后立即重建节点索引。</div>
+            <div class="ce-wrap"><div class="ce-gutter" id="subFileGutter"></div><div class="ce-area" id="subFileText" contenteditable="true" spellcheck="false" role="textbox" oninput="ceSync('subFile');" onscroll="ceScroll('subFile');"></div><div class="ce-sb" id="subFileSb"><i class="ce-sb-thumb" id="subFileSbThumb"></i></div></div>
+          </div>
+          <div class="pe-foot">
+            <button class="pe-foot-link" onclick="reloadSubFile()" data-i18n="provMenu.reloadFile">重新加载</button>
+            <div class="pe-foot-right">
+              <button class="pe-btn-cancel" onclick="closeSubFileEditor()" data-i18n="common.cancel">取消</button>
+              <button class="pe-btn-save" id="subFileSaveBtn" data-i18n="common.save">保存</button>
+            </div>
+          </div>
+        </div>
+      </div>
 
     <!-- 连接 -->
     <section id="section-connections" style="display:none">
@@ -2276,7 +2322,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
               <span data-i18n="vcfg.resetAll">重置全部</span>
             </button>
-            <button class="con-raw-btn" onclick="showConfigRaw()" data-i18n-title="config.editRawTitle" title="编辑原始配置">
+            <button class="con-raw-btn" onclick="editConfigRawFile()" data-i18n-title="config.editRawTitle" title="编辑原始配置">
               <svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:currentColor"><path d="M20.71 7.04c.39-.39.39-1.04 0-1.41l-2.34-2.34c-.37-.39-1.02-.39-1.41 0l-1.84 1.83 3.75 3.75 1.84-1.83zM3 17.25V21h3.75L17.81 9.93l-3.75-3.75L3 17.25z"/></svg>
               <span data-i18n="config.editRaw">编辑源文件</span>
             </button>
@@ -2605,7 +2651,10 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
         </div>
         <div class="card" style="flex:1;display:flex;flex-direction:column;min-height:0;overflow:auto">
           <p style="color:var(--dim);font-size:12.5px;margin:0 0 12px 0" data-i18n="config.desc">直接编辑 config.yaml。保存后服务将自动重启。</p>
-          <textarea id="configYaml" style="flex:1;width:100%;min-height:300px;background:var(--card2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.5;padding:12px;resize:vertical;outline:none" spellcheck="false"></textarea>
+          <div class="cfg-raw-wrap">
+            <div class="cfg-raw-gutter" id="configGutter">1</div>
+            <textarea id="configYaml" style="flex:1;width:100%;min-height:0;background:transparent;border:none;border-radius:0;color:var(--text);font-family:'SF Mono','Fira Code','Cascadia Code',monospace;font-size:13px;line-height:1.5;padding:12px;resize:none;outline:none" spellcheck="false" oninput="syncConfigGutter()" onscroll="syncConfigGutterScroll()"></textarea>
+          </div>
           <div class="con-toolbar" style="margin-top:12px;margin-bottom:0;justify-content:flex-end">
             <button onclick="openConfigFile()" class="con-close-all"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg><span data-i18n="config.openFile">打开配置文件</span></button>
             <button onclick="loadConfigToEditor()" class="con-close-all"><svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:currentColor;vertical-align:-2px;margin-right:4px"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4a8 8 0 1 0 8 8c0-1.17-.26-2.28-.72-3.28l-1.6 1.6C17.85 10.85 18 11.4 18 12a6 6 0 1 1-6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg><span data-i18n="config.reload">重新加载</span></button>
@@ -2790,7 +2839,7 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.startupScript">启动脚本</span></div>
               <input class="set-input set-input-fill" data-i18n-placeholder="settings.startupScriptPlaceholder" data-i18n="ph.emptyNoExec" placeholder="留空则不执行" id="setStartupScript" onchange="saveBasicSetting('startup_script')">
             </div>
-            <div class="set-item">
+            <div class="set-item" id="rowShowIcons">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.showIcons">显示策略组图标</span></div>
               <label class="toggle"><input type="checkbox" id="setShowIcons" checked onchange="saveBasicSetting('show_icons')"><span class="toggle-track"></span></label>
             </div>
@@ -2803,7 +2852,6 @@ body.cfg-page .main::-webkit-scrollbar-corner{background:transparent}
             <div class="set-title" data-i18n="settings.advanced">高级设置</div>
             <div class="set-item">
               <div class="set-item-left"><span class="set-item-label" data-i18n="settings.aggregate">聚合订阅</span>
-                <small style="display:block;font-size:10.5px;color:var(--faint);line-height:1.5;margin-top:2px" data-i18n="settings.aggregateHint">开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件</small>
               </div>
               <label class="toggle"><input type="checkbox" id="setAggregate" checked onchange="toggleAggregate(this.checked)"><span class="toggle-track"></span></label>
             </div>
@@ -3655,7 +3703,7 @@ async function testCurGroupSpeed() {
   if (!now) { showToast('当前节点未知，请先选择节点', 'warning'); return; }
   // 只测当前节点，结果即时显示在卡片右侧（不等整组批量测速）
   const leaf = resolveTestTarget(now);
-  const btn = document.querySelector('#home-node .ghead-tool[title="测速"]');
+  const btn = document.getElementById('homeTestBtn');
   if (btn) { btn.classList.add('testing'); }
   try {
     const delay = await testOneNode(leaf, 5000, 'http://connect.rom.miui.com/generate_204');
@@ -3706,11 +3754,14 @@ function toggleHomeSettings() {
   const show = popup.style.display !== 'block';
   if (show) {
     applyHomeModuleSettings();
-    const btn = document.querySelector('.ghead-tool[title="首页模块设置"]');
+    const btn = document.getElementById('homeSettingsBtn');
     if (btn) {
       const r = btn.getBoundingClientRect();
-      popup.style.top = (r.bottom + 6) + 'px';
-      popup.style.right = (window.innerWidth - r.right) + 'px';
+      // 定位防护：夹在视口内，防个别设备（页面缩放/WebView 视口差）把弹窗挤出屏幕外
+      const top = Math.max(6, r.bottom + 6);
+      const right = Math.max(6, window.innerWidth - r.right);
+      popup.style.top = Math.min(top, Math.max(6, window.innerHeight - 80)) + 'px';
+      popup.style.right = Math.min(right, Math.max(6, window.innerWidth - 210)) + 'px';
     }
     popup.style.display = 'block';
   } else {
@@ -3720,7 +3771,7 @@ function toggleHomeSettings() {
 document.addEventListener('click', function(e) {
   const popup = document.getElementById('homeSettingsPopup');
   if (popup && popup.style.display === 'block') {
-    if (!popup.contains(e.target) && !e.target.closest('.ghead-tool[title="首页模块设置"]')) {
+    if (!popup.contains(e.target) && !e.target.closest('#homeSettingsBtn')) {
       popup.style.display = 'none';
     }
   }
@@ -4152,12 +4203,67 @@ function ceSync(name) {
   var s = '';
   for (var i = 1; i <= lines; i++) s += i + '\n';
   g.textContent = s;
+  if (name === 'subFile') ceSbUpdate();
 }
 function ceScroll(name) {
   var ta = document.getElementById(name + 'Text');
   var g = document.getElementById(name + 'Gutter');
   if (ta && g) g.scrollTop = ta.scrollTop;
+  if (name === 'subFile') ceSbUpdate();
 }
+// 右侧滑动块：尺寸/位置随内容滚动同步；内容不高出时隐藏
+function ceSbUpdate() {
+  var modal = document.getElementById('subFileModal');
+  if (!modal || modal.style.display === 'none') return;
+  var ta = document.getElementById('subFileText');
+  var sb = document.getElementById('subFileSb');
+  var th = document.getElementById('subFileSbThumb');
+  if (!ta || !sb || !th) return;
+  var sh = ta.scrollHeight, ch = ta.clientHeight;
+  if (sh <= ch + 2) { sb.style.display = 'none'; return; }
+  sb.style.display = '';
+  var trackH = sb.clientHeight;
+  var thH = Math.max(30, Math.round(trackH * ch / sh));
+  var maxScroll = sh - ch;
+  var maxTop = Math.max(1, trackH - thH);
+  var top = Math.round(maxTop * (ta.scrollTop / maxScroll));
+  th.style.height = thH + 'px';
+  th.style.top = top + 'px';
+  sb._thH = thH; sb._trackH = trackH; sb._maxScroll = maxScroll;
+}
+(function(){
+  var sb = document.getElementById('subFileSb');
+  var th = document.getElementById('subFileSbThumb');
+  var ta = document.getElementById('subFileText');
+  if (!sb || !th || !ta) return;
+  var dragY = 0, dragTop = 0;
+  var setPos = function(nt) {
+    var maxTop = Math.max(1, (sb._trackH || sb.clientHeight) - (sb._thH || 30));
+    nt = Math.max(0, Math.min(maxTop, nt));
+    th.style.top = nt + 'px';
+    if (sb._maxScroll) ta.scrollTop = Math.round(sb._maxScroll * (nt / maxTop));
+  };
+  th.addEventListener('pointerdown', function(e){
+    e.preventDefault(); e.stopPropagation();
+    sb.classList.add('dragging');
+    dragY = e.clientY; dragTop = parseFloat(th.style.top) || 0;
+    try { th.setPointerCapture(e.pointerId); } catch (err) {}
+  });
+  th.addEventListener('pointermove', function(e){
+    if (!sb.classList.contains('dragging')) return;
+    e.preventDefault();
+    setPos(dragTop + (e.clientY - dragY));
+  });
+  var endDrag = function(){ sb.classList.remove('dragging'); };
+  th.addEventListener('pointerup', endDrag);
+  th.addEventListener('pointercancel', endDrag);
+  sb.addEventListener('pointerdown', function(e){
+    if (e.target === th) return;
+    var r = sb.getBoundingClientRect();
+    setPos((e.clientY - r.top) - (sb._thH || 30) / 2);
+  });
+  window.addEventListener('resize', ceSbUpdate);
+})();
 function renderNoProxyTags() {
   const box = document.getElementById('spTags');
   const input = document.getElementById('spTagInput');
@@ -5092,7 +5198,7 @@ async function runWebTest() {
        + '<div class="prov-agg-tools">'
        +   '<button class="pe-btn" onclick="updateAllProviders()" title="' + (t('prov.updateAll') || '更新全部订阅') + '">' + svgIcon(IC.refresh) + '<span>' + (t('prov.updateAll') || '更新全部订阅') + '</span></button>'
        +   '<button class="pe-btn" id="aggEditBtn" onclick="openAggCfgMenu(event)" title="' + (t('prov.editDefaultCfg') || '编辑默认配置文件') + '">' + svgIcon(IC.edit) + '<span>' + (t('prov.editDefaultCfg') || '编辑默认配置文件') + '</span></button>'
-       +   '<button class="pe-btn" onclick="showPathDialog(\'config\')" title="' + (t('prov.openConfDir') || '打开配置目录') + '">' + svgIcon(IC.external) + '<span>' + (t('prov.openConfDir') || '打开配置目录') + '</span></button>'
+       +   '<button class="pe-btn" onclick="openConfigDir()" title="' + (t('prov.openConfDir') || '打开配置目录') + '">' + svgIcon(IC.external) + '<span>' + (t('prov.openConfDir') || '打开配置目录') + '</span></button>'
        + '</div>'
        + '</div>'
        + '<div class="prov-agg-wrap" id="provAggIn"><div class="prov-agg-wrap-label">' + svgIcon(IC.layers) + (t('prov.aggWrap') || '已聚合的订阅') + '<span class="prov-agg-wrap-hint">' + (t('prov.aggWrapHint') || '拖动手柄可调整顺序，拖到下方即移出聚合') + '</span></div><div class="prov-grid prov-grid-inner prov-grid-mini" id="provGridIn">';
@@ -5151,7 +5257,8 @@ async function runWebTest() {
            : (si ? t('prov.noTraffic') : fmtTraffic((localUsage[name] || {u: 0, d: 0}).u + (localUsage[name] || {u: 0, d: 0}).d));
          const acts = '<div class="prov-mini-acts">'
            + '<button class="pma-btn" onclick="event.stopPropagation();updateProvider(\'' + name.replace(/'/g, String.fromCharCode(92)+"'") + '\')">' + svgIcon(IC.refresh) + '<span>' + (t('providers.update') || '更新') + '</span></button>'
-           + '<button class="pma-btn" onclick="event.stopPropagation();openProvModal(\'' + name.replace(/'/g, String.fromCharCode(92)+"'") + '\')">' + svgIcon(IC.edit) + '<span>' + (t('providers.edit') || '编辑') + '</span></button>'
+           // 单订模式：编辑 = 选项菜单（规则/节点/代理组/扩展/文件…）；聚合模式维持资料表单
+           + '<button class="pma-btn" onclick="event.stopPropagation();' + (agg.aggregate ? 'openProvModal(\'' + name.replace(/'/g, String.fromCharCode(92)+"'") + '\')' : 'openProvMenu(event, \'' + name.replace(/'/g, String.fromCharCode(92)+"'") + '\')') + '">' + svgIcon(IC.edit) + '<span>' + (t('providers.edit') || '编辑') + '</span></button>'
            + '<button class="pma-btn del" onclick="event.stopPropagation();deleteProvider(\'' + name.replace(/'/g, String.fromCharCode(92)+"'") + '\')">' + svgIcon(IC.trash) + '<span>' + (t('providers.delete') || '删除') + '</span></button>'
            + '</div>';
          return `<div class="prov-mini${isActive ? ' active' : ''}"${soloAttrs} id="provcard-${esc(name)}" draggable="true">
@@ -5333,7 +5440,31 @@ async function loadAggregateState() {
     if (sw) sw.checked = !!d.aggregate;
     if (row) row.style.display = d.aggregate ? 'none' : '';
     if (val) val.textContent = d.active_sub || t('settings.aggregateNone');
+    syncAggModeUI(!!d.aggregate);
   } catch (e) {}
+}
+// 聚合模式相关的 UI 显隐（传布尔=已知模式，不传=按本地缓存的模式先处理防闪）：
+// 1) 左侧栏「配置」页入口——配置页编辑的是聚合默认配置（config.yaml），单订模式下无意义
+// 2) 设置-基础设置「显示策略组图标」行——策略组图标只在聚合策略组视图下使用
+function syncAggModeUI(agg) {
+  var nav = document.getElementById('nav-config');
+  var row = document.getElementById('rowShowIcons');
+  var on;
+  if (agg === true || agg === false) {
+    on = agg;
+  } else {
+    try {
+      var c = localStorage.getItem('fnsoarLastAggMode');
+      on = c ? (c === 'agg') : true;   // 无缓存时保守显示，等 loadAggregateState 修正
+    } catch (e) { on = true; }
+  }
+  if (nav) nav.style.display = on ? '' : 'none';
+  if (row) row.style.display = on ? '' : 'none';
+  // 正停留在配置页却被隐藏（如起始页=配置 + 单订模式）→ 退回首页
+  if (!on) {
+    var cur = document.querySelector('.main > section[style*="flex"]:not([style*="none"]), .main > section[style*="block"]:not([style*="none"])');
+    if (cur && cur.id === 'section-config' && typeof showSection === 'function') showSection('home');
+  }
 }
 // 同步布局状态（顺序/排除名单）到订阅页渲染
 async function loadProvLayout() {
@@ -5345,6 +5476,7 @@ async function loadProvLayout() {
       var ag = await (await fetch('api/aggregate')).json();
       if (ag && ag.success) { _provAgg.aggregate = !!ag.aggregate; _provAgg.active_sub = ag.active_sub || ''; }
       try { localStorage.setItem('fnsoarLastAggMode', _provAgg.aggregate ? 'agg' : 'solo'); } catch (e) {}
+      syncAggModeUI(_provAgg.aggregate);
     }
   } catch (e) {}
 }
@@ -5382,8 +5514,10 @@ async function toggleAggregate(on) {
 }
 // 订阅文件编辑器（复用 ce-area 样式）
 var _subFileSave = null, _subFileName = '';
-function openSubFileEditor(title, content, onSave) {
+function openSubFileEditor(title, content, onSave, tip) {
   document.getElementById('subFileTitle').textContent = title;
+  var tipEl = document.getElementById('subFileTip');
+  if (tipEl) tipEl.textContent = tip || (t('provMenu.fileTip') || '');
   var ta = document.getElementById('subFileText');
   ceSetText(ta, content || '');
   ceBindPlainPaste(ta);
@@ -5392,13 +5526,27 @@ function openSubFileEditor(title, content, onSave) {
   ceSync('subFile');
   setTimeout(function() { ta.focus(); }, 60);
 }
+// 编辑聚合默认配置（config.yaml）原文：与单订「编辑文件」同款弹窗，保存走 api/config（服务重启）
+async function editConfigRawFile() {
+  try {
+    var r = await fetch('api/config', { cache: 'no-store' });
+    var d = await r.json();
+    if (d && d.success === false) throw new Error(d.error || '读取失败');
+    _subFileName = '__config__';
+    openSubFileEditor((t('config.editRaw') || '编辑原始配置') + ' · config.yaml', (d && d.config) || '', function(text) {
+      return fetch('api/config', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ config: text }) });
+    }, t('provMenu.configFileTip') || '');
+  } catch (e) { showToast(e.message || '读取失败', 'error'); }
+}
 async function reloadSubFile() {
   if (!_subFileName) return;
   try {
-    var r = await fetch('api/sub-file?name=' + encodeURIComponent(_subFileName));
+    var isCfg = _subFileName === '__config__';
+    var r = await fetch(isCfg ? 'api/config' : 'api/sub-file?name=' + encodeURIComponent(_subFileName), { cache: 'no-store' });
     var d = await r.json();
     if (d.success === false) throw new Error(d.error || '读取失败');
-    ceSetText(document.getElementById('subFileText'), d.content || '');
+    ceSetText(document.getElementById('subFileText'), (isCfg ? d.config : d.content) || '');
     ceSync('subFile');
     showToast(t('provMenu.reloaded') || '已重新加载', 'info');
   } catch (e) { showToast(e.message || '读取失败', 'error'); }
@@ -5742,8 +5890,8 @@ function openAggCfgMenu(ev) {
     { icon: IC.groups, label: t('provMenu.groups'),     run: function() { editConfigSection('proxy-groups'); } },
     { icon: IC.extMerge,  label: t('provMenu.extMerge'),  run: function() { openPeModal('merge'); } },
     { icon: IC.extScript, label: t('provMenu.extScript'), run: function() { openPeModal('script'); } },
-    { icon: IC.external, label: t('provMenu.openFile'),   run: function() { showPathDialog('config'); } },
-    { icon: IC.edit,     label: t('config.editRaw'),      run: function() { showConfigRaw(); } }
+    { icon: IC.external, label: t('provMenu.openFile'),   run: function() { openConfigFile(); } },
+    { icon: IC.edit,     label: t('config.editRaw'),      run: function() { editConfigRawFile(); } }
   ];
   var html = '<div class="prov-menu" id="aggCfgMenu">';
   items.forEach(function(it) {
@@ -7703,11 +7851,41 @@ async function unlockCheckSingle(name) {
 function loadConfigToEditor() {
   var ta = document.getElementById('configYaml');
   if (ta) ta.value = '加载中…';
+  syncConfigGutter();
   fetch('api/config').then(r => r.json()).then(d => {
     if (ta) ta.value = d.config || '';
+    syncConfigGutter();
   }).catch(function(e) {
     if (ta) ta.value = '# 加载配置失败: ' + (e.message || e);
+    syncConfigGutter();
   });
+}
+// 配置页行号栏：内容变化重算行号、滚动时与编辑器联动
+function syncConfigGutter() {
+  var ta = document.getElementById('configYaml');
+  var g = document.getElementById('configGutter');
+  if (!ta || !g) return;
+  var lines = (ta.value || '').split('\n').length;
+  var s = '';
+  for (var i = 1; i <= lines; i++) s += i + '\n';
+  g.textContent = s;
+  // 行高对齐：textarea 实测行盒与 CSS 值可能有零星误差，按实测值校正栏的行高，
+  // 保证滚到底时行号与代码仍严格对齐
+  try {
+    var cs = getComputedStyle(ta);
+    var pad = parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom);
+    var lh = (ta.scrollHeight - pad) / Math.max(1, lines);
+    if (lh > 4 && lh < 200) g.style.lineHeight = lh.toFixed(2) + 'px';
+  } catch (e) {}
+}
+function syncConfigGutterScroll() {
+  var ta = document.getElementById('configYaml');
+  var g = document.getElementById('configGutter');
+  if (!ta || !g) return;
+  var maxTa = ta.scrollHeight - ta.clientHeight;
+  var maxG = g.scrollHeight - g.clientHeight;
+  // 比例映射：顶端/底端严格对齐，中段无累计偏差
+  g.scrollTop = maxTa > 0 ? (ta.scrollTop / maxTa) * maxG : 0;
 }
 function saveConfig() {
   const yaml = document.getElementById('configYaml').value;
@@ -8733,7 +8911,7 @@ var I18N = {
     'settings.startupScriptPlaceholder':'留空则不执行','settings.showIcons':'显示策略组图标','settings.appIcon':'软件图标','settings.appIconHint':'切换 fnOS 桌面与窗口显示的应用图标',
         'sys.load':'系统负载','sys.hostname':'主机名','sys.platform':'平台','sys.appVersion':'软件版本',
     'traffic.totalUp':'总上传','traffic.totalDown':'总下载','traffic.pts':'数据点:','traffic.sampled':'| 压缩后:','traffic.fps':'| 帧率:',
-    'home.modules':'首页模块','groups.title':'策略组','groups.viewAll':'全部','groups.viewRegion':'区域',
+    'home.modules':'首页模块','home.modulesTip':'首页模块设置','groups.title':'策略组','groups.viewAll':'全部','groups.viewRegion':'区域',
     'prov.import':'导入','prov.importPh':'输入订阅链接，点击导入…','prov.updateAll':'一键更新所有订阅',
     'prov.officialSite':'官网','prov.expireAt':'到期','prov.noExpire':'不限时','prov.daysAgo':'天前',
     'prov.noTraffic':'无流量统计','prov.expireTitle':'到期时间',
@@ -8755,13 +8933,15 @@ var I18N = {
 'pe.subHint':'仅对本订阅生效：导入/更新该订阅时先做上述合并与脚本，再进入全局扩展。','pe.subScriptHint':'仅对本订阅生效：导入/更新该订阅时执行此脚本，再进入全局扩展。',
     'prov.localTip':'或直接使用本地配置文件：','prov.localTip2':'支持 Clash 完整配置 / 节点列表（base64）','prov.aggTitle':'订阅聚合','prov.aggDesc':'所有订阅的节点已合并进默认配置，规则 / 策略组全局共用；关闭「设置 → 聚合订阅」可改用单个订阅的独立配置','prov.aggWrap':'已聚合的订阅','prov.soloTip':'当前使用单个订阅的独立配置：点击卡片即切换为该订阅，绿点标记正在使用的订阅','prov.inUse':'正在使用','prov.dragTip':'拖拽移动位置；聚合状态下拖到下方「未参与聚合」即可移出聚合','prov.aggOut':'未参与聚合（拖到这里移出聚合）','prov.aggOutEmpty':'暂无——把上方卡片拖下来即可移出聚合','prov.layoutSaved':'布局已保存','prov.updateAll':'更新全部订阅','prov.editDefaultCfg':'编辑默认配置文件','prov.openConfDir':'打开配置目录','prov.aggWrapHint':'拖动手柄可调整顺序，拖到下方即移出聚合','prov.aggOutPh':'把上方订阅卡片拖到这里，即可移出聚合','prov.actions':'操作','prov.swipeHint':'左滑操作','prov.layoutPending':'布局已保存，','prov.layoutPendingSec':' 秒后自动重启生效','prov.layoutRestarting':'正在重启引擎使布局生效…','prov.pathTitle':'文件位置','prov.pathTip':'fnOS 文件管理器无法定位到具体目录，请手动前往：',
     'prov.chooseFile':'本地配置','prov.or':'或','prov.tooLarge':'文件过大（上限 2MB）',
-    'settings.aggregate':'聚合订阅','settings.aggregateHint':'开启：所有订阅节点聚合到默认配置；关闭：使用所选订阅的独立配置文件',
+    'settings.aggregate':'聚合订阅',
     'settings.activeSub':'当前使用的订阅','settings.aggregateNone':'未选择（关闭聚合前需先选择）',
 'pe.pipelineHtml':'执行顺序：订阅原文 + 应用设置 → <b>全局扩展配置</b> → 全局扩展脚本 → 应用设置回写',
     'conn.resetCols':'恢复默认','vcfg.filterScopeHint':'订阅导入/更新时生效','vcfg.filterKwHint':'exclude-name-keywords · 命中任一即过滤，不区分大小写','vcfg.filterReHint':'exclude-name-regex · 命中任一即过滤，PCRE 忽略大小写',
     'vcfg.filterExHtml':'示例：<code>traffic.*expire</code> 匹配 “Traffic-Expire-30d”；<code>^(剩余|流量).*GB</code> 匹配以「剩余/流量」开头且含 GB 的节点名',
 'pe.mergeName':'全局扩展覆写配置','pe.mergeDesc':'应用到所有配置，先递归合并',
     'pe.scriptName':'全局扩展脚本','pe.scriptDesc':'全局覆写后、单配置增强前执行',
+    'pe.sectionTitle':'全局扩展','pe.sectionScope':'对所有订阅生效',
+    'provMenu.configFileTip':'直接编辑 config.yaml 原始配置；保存后服务会自动重启生效。',
     'dash.updatable':'可更新','core.rulesUnit':'条','core.rulesCount':'规则数量','logs.readFailed':'无法读取日志',
     'ph.yamlMerge':'# 在此编写 YAML 合并模板','ph.auth':'user:pass，多组用逗号','ph.noSet':'(留空不设置)',
     'ph.emptyNoEnable':'留空不启用','ph.emptyNoExec':'留空则不执行','ph.kwPerLine':'每行一个域名',
@@ -8940,7 +9120,7 @@ var I18N = {
     'settings.startupScriptPlaceholder':'Leave empty to skip','settings.showIcons':'Show Group Icons','settings.appIcon':'App Icon','settings.appIconHint':'Icon shown on the fnOS desktop and window',
         'sys.load':'System Load','sys.hostname':'Hostname','sys.platform':'Platform','sys.appVersion':'App Version',
     'traffic.totalUp':'Total Upload','traffic.totalDown':'Total Download','traffic.pts':'Data Points:','traffic.sampled':'| Sampled:','traffic.fps':'| FPS:',
-    'home.modules':'Home Modules','groups.title':'Groups','groups.viewAll':'All','groups.viewRegion':'Region',
+    'home.modules':'Home Modules','home.modulesTip':'Home Modules','groups.title':'Groups','groups.viewAll':'All','groups.viewRegion':'Region',
     'prov.import':'Import','prov.importPh':'Paste subscription URL and click Import…','prov.updateAll':'Update All',
     'prov.officialSite':'Website','prov.expireAt':'Expires','prov.noExpire':'No expiry','prov.daysAgo':'d ago',
     'prov.noTraffic':'No usage data','prov.expireTitle':'Expiry date',
@@ -8962,13 +9142,15 @@ var I18N = {
 'pe.subHint':'Applies to this subscription only: merge and script run on import/update before the global extension.','pe.subScriptHint':'Applies to this subscription only: this script runs on import/update before the global extension.',
     'prov.localTip':'Or use a local config file:','prov.localTip2':'Clash config or node list (base64)','prov.aggTitle':'Aggregated subscriptions','prov.aggDesc':'Nodes from all subscriptions are merged into the default config; rules and groups are shared globally. Turn off Settings → Aggregate subscriptions to use a single subscription own config','prov.aggWrap':'Aggregated subscriptions','prov.soloTip':'Single subscription mode: click a card to switch to it; the green dot marks the subscription in use','prov.inUse':'In use','prov.dragTip':'Drag to reorder; in aggregate mode drag to "Not aggregated" below to exclude','prov.aggOut':'Not aggregated (drop here to exclude)','prov.aggOutEmpty':'None - drag a card down here to exclude it','prov.layoutSaved':'Layout saved','prov.updateAll':'Update all','prov.editDefaultCfg':'Edit default config','prov.openConfDir':'Open config folder','prov.aggWrapHint':'Drag the handle to reorder; drag down to exclude','prov.aggOutPh':'Drag a subscription card here to exclude it','prov.actions':'Actions','prov.swipeHint':'Swipe left','prov.layoutPending':'Layout saved, restarting in ','prov.layoutPendingSec':'s…','prov.layoutRestarting':'Restarting engine to apply layout…','prov.pathTitle':'File location','prov.pathTip':'The fnOS file manager cannot jump to a specific folder. Please navigate manually:',
     'prov.chooseFile':'Local file','prov.or':'or','prov.tooLarge':'File too large (2MB max)',
-    'settings.aggregate':'Aggregate subscriptions','settings.aggregateHint':'On: nodes from all subscriptions are merged into the default config. Off: use the selected subscription own config',
+    'settings.aggregate':'Aggregate subscriptions',
     'settings.activeSub':'Active subscription','settings.aggregateNone':'None (required before turning aggregation off)',
 'pe.pipelineHtml':'Pipeline: subscription source + app settings → <b>Global Merge</b> → <b>Global Script</b> → subscription override → app settings write-back',
     'conn.resetCols':'Reset','vcfg.filterScopeHint':'Applied when subscriptions are imported/updated','vcfg.filterKwHint':'exclude-name-keywords · filtered if any match, case-insensitive','vcfg.filterReHint':'exclude-name-regex · filtered if any match, PCRE case-insensitive',
     'vcfg.filterExHtml':'Examples: <code>traffic.*expire</code> matches "Traffic-Expire-30d"; <code>^(剩余|流量).*GB</code> matches node names starting with Chinese remainder/traffic and containing GB',
 'pe.mergeName':'Global Merge Config','pe.mergeDesc':'Applied to all configs, merged recursively first',
     'pe.scriptName':'Global Script','pe.scriptDesc':'Runs after global merge, before per-config enhancements',
+    'pe.sectionTitle':'Global Extension','pe.sectionScope':'Applies to all subscriptions',
+    'provMenu.configFileTip':'Edit config.yaml directly; the service restarts automatically after saving.',
     'dash.updatable':'Updatable','core.rulesUnit':'rules','core.rulesCount':'Rule Count','logs.readFailed':'Failed to read logs',
     'ph.yamlMerge':'# Write YAML merge template here','ph.auth':'user:pass, comma-separated','ph.noSet':'(leave blank to skip)',
     'ph.emptyNoEnable':'Leave blank to disable','ph.emptyNoExec':'Leave blank to skip','ph.kwPerLine':'One domain per line',
@@ -9937,14 +10119,22 @@ function _fnSdkCall(promise, ms) {
   ]);
 }
 // 打开文件管理器定位到指定路径（宿主桥 + 超时 + 复制回退）。
-// 注意：fnOS 宿主桥的 openFileManager 只接受目录，传文件路径无响应
-// （实测：传目录可跳转、传文件无任何反应），因此定位到所在目录。
-async function _openPathInFileManager(path) {
+// isFile=true 时优先用宿主桥 openFile 直接打开文件（fnOS TrimApp SDK 提供；
+// openFileManager 只认目录、传文件无响应）。openFile 不可用或失败时自动
+// 回退：同路径再试 openFileManager（目录）→ 复制路径。
+async function _openPathInFileManager(path, isFile) {
   if (window.__fnSdk && window.__fnSdk.TrimApp) {
     try {
       var sdk = new window.__fnSdk.TrimApp({ debug: true });
       await _fnSdkCall(sdk.ready());
-      var r = await _fnSdkCall(sdk.openFileManager(path), 3000);
+      if (isFile && typeof sdk.openFile === 'function') {
+        try {
+          await _fnSdkCall(sdk.openFile(path), 3000);
+          showToast('已打开文件: ' + path, 'success');
+          return;
+        } catch (e) { /* 宿主桥不支持/打开失败 → 回退所在目录 */ }
+      }
+      await _fnSdkCall(sdk.openFileManager(path), 3000);
       showToast('已打开文件管理器: ' + path, 'success');
       return;
     } catch (e) { /* 宿主桥不可用/超时 → 回退为复制 */ }
@@ -9970,7 +10160,20 @@ async function openConfigFile() {
     } catch (e) {}
   }
   if (!dir) { showToast('未获取到配置目录', 'error'); return; }
-  // 定位到配置文件所在目录（宿主桥不支持文件级定位），目录内即为 config.yaml
+  // 直接用宿主桥 openFile 打开 config.yaml 文件本身；不支持/失败时回退所在目录
+  await _openPathInFileManager(dir.replace(/\/+$/, '') + '/config.yaml', true);
+}
+// 只打开配置所在目录（「打开配置目录」按钮用）
+async function openConfigDir() {
+  var dir = (_versionData && _versionData.config_dir) || '';
+  if (!dir) {
+    try {
+      var v = await (await fetch('api/version')).json();
+      _versionData = v;
+      dir = v.config_dir || '';
+    } catch (e) {}
+  }
+  if (!dir) { showToast('未获取到配置目录', 'error'); return; }
   await _openPathInFileManager(dir.replace(/\/+$/, ''));
 }
 async function copyPath(type) {
@@ -10341,6 +10544,8 @@ window.fnSoarInspectHost = function() {
 })();
 loadDelayCache();
   applyHomeModuleSettings();
+  // 先按上次已知的聚合模式隐藏/显示「配置」入口，避免单订模式下闪一下再被藏
+  syncAggModeUI();
   // 使用保存的起始页
   var ls = localStorage.getItem('vergeSettings');
   var vs = {};
