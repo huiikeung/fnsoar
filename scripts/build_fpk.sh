@@ -18,8 +18,8 @@
 #   dist/         构建产物与暂存目录
 #
 # 说明：frontend/dashboard 与 resources/core 按 .gitignore 设计不入库。
-#       打包时若 frontend/dashboard 缺失，会自动从 GitHub Release 下载最新版
-#       （确保任何人 clone 仓库后都能直接打出完整安装包）；内核仍需手动放入。
+#       打包时若缺失，会自动从 GitHub Release 下载最新版
+#       （确保任何人 clone 仓库后都能直接打出完整安装包）。
 #
 # 包结构为官方规范布局（由 fnpack build 校验并打包）：
 #   {manifest, cmd/, config/, wizard/, ICON.PNG, ICON_256.PNG, app/...}
@@ -51,13 +51,96 @@ APPNAME="$(sed -n 's/^appname[[:space:]]*=[[:space:]]*//p' "${FNPACK_DIR}/manife
 
 echo "=== fnSoar fpk build v${VERSION} (fnpack) ==="
 
-# 0. 架构校验：通用包需要双内核，单独包需要对应内核
-echo "[0/6] 校验内核二进制..."
+# 0. 内核/面板补齐：resources/core 与 frontend/dashboard 按 .gitignore 设计
+#    不入库，缺失时自动从 GitHub Release 下载最新版，确保任何人 clone 仓库后
+#    都能直接打出完整安装包。
+echo "[0/6] 校验内核与面板（缺失自动下载）..."
+ensure_cores() {
+    local api="https://api.github.com/repos/MetaCubeX/mihomo/releases/latest"
+    local miss_x86=0 miss_arm=0
+    if [ ! -f "${CORE_DIR}/x86/mihomo-amd64.real" ]; then miss_x86=1; fi
+    if [ ! -f "${CORE_DIR}/arm/mihomo-arm64.real" ]; then miss_arm=1; fi
+    if [ "$miss_x86" = "0" ] && [ "$miss_arm" = "0" ]; then
+        echo "  ✓ 内核已存在，跳过下载"
+        return 0
+    fi
+    echo "  resources/core 不完整 → 自动从 mihomo GitHub Release 下载最新内核..."
+    local tmp; tmp="$(mktemp -d)"
+
+    # 下载并安装单个架构内核：$1=arch 目录(x86/arm) $2=目标文件名 $3=首选资产正则 $4=备选资产正则
+    _install_core() {
+        local arch="$1" binname="$2" primary="$3" fallback="$4"
+        local dest="${CORE_DIR}/${arch}/${binname}"
+        if [ -f "${dest}" ]; then
+            echo "    ✓ ${arch} 内核已存在"
+            return 0
+        fi
+        local url tag
+        read -r url tag <<<"$(curl -sL --retry 6 --retry-delay 3 -m 40 "${api}" 2>/dev/null | python3 -c "
+import sys, json, re
+try:
+    d = json.load(sys.stdin)
+    assets = d.get('assets', [])
+    for pat in (r'${primary}', r'${fallback}'):
+        rx = re.compile(pat)
+        hit = next((a for a in assets if rx.match(a.get('name', ''))), None)
+        if hit:
+            print(hit['browser_download_url'], d.get('tag_name', ''))
+            break
+except Exception:
+    pass" 2>/dev/null)"
+        if [ -z "${url}" ]; then
+            echo "    ⚠ ${arch}: 无法从 GitHub API 获取下载地址，跳过（请手动放入 resources/core/${arch}/）" >&2
+            return 0
+        fi
+        echo "    ↓ ${arch} 内核 ${tag}（${url##*/}）"
+        if ! curl -fsL --retry 5 --retry-delay 3 -m 600 -o "${tmp}/core-${arch}.gz" "${url}"; then
+            echo "    ⚠ ${arch}: 下载失败，跳过（请手动放入 resources/core/${arch}/）" >&2
+            return 0
+        fi
+        mkdir -p "${CORE_DIR}/${arch}"
+        if ! gunzip -c "${tmp}/core-${arch}.gz" > "${dest}" 2>/dev/null; then
+            echo "    ⚠ ${arch}: 解压失败（非 gzip？），跳过" >&2
+            rm -f "${dest}"
+            return 0
+        fi
+        chmod 755 "${dest}"
+        # 校验：本机架构匹配就直接跑 -v；跨架构构建跑不了，退而校验 ELF 机器类型
+        # （e_machine：0x3E=62=x86-64，0xB7=183=aarch64）
+        local want_em=62
+        if [ "${arch}" = "arm" ]; then want_em=183; fi
+        local got_em
+        got_em="$(od -An -tu1 -j18 -N1 "${dest}" 2>/dev/null | tr -d ' ')"
+        if "${dest}" -v 2>/dev/null | grep -q "Mihomo Meta"; then
+            echo "    ✓ ${arch} 内核 ${tag} 就绪（可执行验证通过）"
+        elif [ "${got_em}" = "${want_em}" ]; then
+            echo "    ✓ ${arch} 内核 ${tag} 就绪（ELF 校验通过，跨架构构建未执行验证）"
+        else
+            echo "    ⚠ ${arch}: 下载的文件不是预期的 ${arch} ELF（e_machine=${got_em}），已删除" >&2
+            rm -f "${dest}"
+            return 0
+        fi
+    }
+
+    # amd64 优先 compatible 构建（老 CPU 可运行，与 App 内更新内核同款逻辑）；
+    # arm64 官方无 compatible 变体，取常规构建。文件名遵循仓库约定：
+    # x86 -> mihomo-amd64.real，arm -> mihomo-arm64.real
+    if [ "$miss_x86" = "1" ]; then
+        _install_core "x86" "mihomo-amd64.real" '^mihomo-linux-amd64-compatible-v[0-9.]+\.gz$' '^mihomo-linux-amd64-v[0-9.]+\.gz$'
+    fi
+    if [ "$miss_arm" = "1" ]; then
+        _install_core "arm" "mihomo-arm64.real" '^mihomo-linux-arm64-v[0-9.]+\.gz$' '^mihomo-linux-arm64-v[0-9.]+\.gz$'
+    fi
+    rm -rf "${tmp}"
+}
+ensure_cores
+
+# 兜底校验：自动下载也失败时仍按原逻辑硬错退出
 for pair in "x86/mihomo-amd64.real:amd64" "arm/mihomo-arm64.real:arm64"; do
     name="${pair%%:*}"
     if [ ! -f "${CORE_DIR}/${name}" ]; then
         echo "错误: 缺少 resources/core/${name}（${pair##*:} 内核）" >&2
-        echo "提示: 该文件默认不入库（见 .gitignore），请从既有安装包或官方 Release 获取后放入 resources/core/<arch>/" >&2
+        echo "提示: 自动下载失败。请手动从 GitHub Release（MetaCubeX/mihomo）获取后放入 resources/core/<arch>/" >&2
         exit 1
     fi
 done
